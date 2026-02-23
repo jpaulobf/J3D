@@ -177,7 +177,7 @@ public class SoftwareRenderer extends JPanel implements Runnable, KeyListener, M
             return;
         Point c = getLocationOnScreen();
         camera.yaw += (e.getXOnScreen() - (c.x + WIDTH / 2)) * 0.003;
-        camera.pitch -= (e.getYOnScreen() - (c.y + HEIGHT / 2)) * 0.003;
+        camera.pitch += (e.getYOnScreen() - (c.y + HEIGHT / 2)) * 0.003;
         camera.pitch = Math.max(-1.5, Math.min(1.5, camera.pitch));
         robot.mouseMove(c.x + WIDTH / 2, c.y + HEIGHT / 2);
     }
