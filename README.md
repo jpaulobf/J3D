@@ -1,4 +1,4 @@
-# 🚀 J3D - Java Software Renderer (Modular v9.1)
+# 🚀 J3D - Java Software Renderer
 
 O **J3D** é um motor de renderização 3D de alta performance processado inteiramente via software. Ao contrário de engines modernas que dependem de GPUs e APIs como OpenGL ou Vulkan, o J3D realiza todos os cálculos matemáticos de álgebra linear, projeção de perspectiva e rasterização de pixels diretamente na **CPU** utilizando **Java puro**.
 
