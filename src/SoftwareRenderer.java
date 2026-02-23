@@ -8,8 +8,8 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * MOTOR 3D NA CPU v7.0 - 10.000 OBJECTS INSANITY TEST
- * 10.000 Objetos Rotacionando + 5 Luzes Dinâmicas.
+ * MOTOR 3D NA CPU v7.5 - FULL LIGHTING & PERFORMANCE
+ * 15.000 Objetos + 5 Luzes Dinâmicas + Delta Time.
  */
 
 class Vertex {
@@ -55,7 +55,7 @@ class Mesh {
         m.triangles.add(new Triangle(0, 2, 1, Color.GRAY)); m.triangles.add(new Triangle(0, 3, 2, Color.GRAY));
         return m;
     }
-
+    
     public static Mesh createSphere(double radius, int latLines, int lonLines) {
         Mesh m = new Mesh();
         for (int i = 0; i <= latLines; i++) {
@@ -73,36 +73,16 @@ class Mesh {
         }
         return m;
     }
-
-    public static Mesh createGrid(int size, double tileSize) {
-        Mesh m = new Mesh();
-        int half = size / 2;
-        for (int z = -half; z <= half; z++) {
-            for (int x = -half; x <= half; x++) {
-                m.vertices.add(new Vertex(x * tileSize, 0, z * tileSize));
-            }
-        }
-        int row = size + 1;
-        for (int z = 0; z < size; z++) {
-            for (int x = 0; x < size; x++) {
-                int i = z * row + x;
-                Color col = (x + z) % 2 == 0 ? new Color(40, 40, 40) : new Color(60, 60, 60);
-                m.triangles.add(new Triangle(i, i + row, i + 1, col));
-                m.triangles.add(new Triangle(i + 1, i + row, i + row + 1, col));
-            }
-        }
-        return m;
-    }
 }
 
 class Matrix4 {
     double[][] m = new double[4][4];
     public Matrix4() { m[0][0]=m[1][1]=m[2][2]=m[3][3]=1; }
     public static Vertex multiply(Matrix4 mat, Vertex v) {
-        double x = v.x*mat.m[0][0]+v.y*mat.m[0][1]+v.z*mat.m[0][2]+v.w*mat.m[0][3];
-        double y = v.x*mat.m[1][0]+v.y*mat.m[1][1]+v.z*mat.m[1][2]+v.w*mat.m[1][3];
-        double z = v.x*mat.m[2][0]+v.y*mat.m[2][1]+v.z*mat.m[2][2]+v.w*mat.m[2][3];
-        double w = v.x*mat.m[3][0]+v.y*mat.m[3][1]+v.z*mat.m[3][2]+v.w*mat.m[3][3];
+        double x = v.x*mat.m[0][0] + v.y*mat.m[0][1] + v.z*mat.m[0][2] + v.w*mat.m[0][3];
+        double y = v.x*mat.m[1][0] + v.y*mat.m[1][1] + v.z*mat.m[1][2] + v.w*mat.m[1][3];
+        double z = v.x*mat.m[2][0] + v.y*mat.m[2][1] + v.z*mat.m[2][2] + v.w*mat.m[2][3];
+        double w = v.x*mat.m[3][0] + v.y*mat.m[3][1] + v.z*mat.m[3][2] + v.w*mat.m[3][3];
         Vertex res = new Vertex(x,y,z); res.w = w; return res;
     }
     public static Matrix4 multiply(Matrix4 a, Matrix4 b) {
@@ -156,8 +136,12 @@ public class SoftwareRenderer extends JPanel implements Runnable, KeyListener, M
     private BufferedImage frameImage = new BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_INT_RGB);
     private int[] pixels = ((DataBufferInt) frameImage.getRaster().getDataBuffer()).getData();
 
+    private long lastTime = System.nanoTime();
+    private int fps = 0, frames = 0;
+    private long lastFpsTime = System.currentTimeMillis();
+
     public static void main(String[] args) {
-        JFrame f = new JFrame("Engine 3D - 10.000 Object Stress Test");
+        JFrame f = new JFrame("Engine 3D v7.5 - 15.000 Objects & 5 Lights");
         SoftwareRenderer r = new SoftwareRenderer();
         f.add(r); f.pack(); f.setDefaultCloseOperation(3); f.setLocationRelativeTo(null); f.setVisible(true);
         new Thread(r).start();
@@ -171,56 +155,62 @@ public class SoftwareRenderer extends JPanel implements Runnable, KeyListener, M
         
         Mesh cubeMesh = Mesh.createCube();
         Mesh pyrMesh = Mesh.createPyramid();
-        
-        // Criar 10.000 objetos (Grade 100x100)
-        for(int i = 0; i < 10000; i++) {
-            int row = i / 100;
-            int col = i % 100;
+        for(int i = 0; i < 15000; i++) {
+            int col = i % 122; int row = i / 122;
             GameObject obj = new GameObject(i % 2 == 0 ? cubeMesh : pyrMesh);
-            obj.transform.x = col * 4 - 200;
-            obj.transform.z = row * 4 - 200;
-            obj.transform.rotY = i * 0.1;
+            obj.transform.x = col * 8 - 488; obj.transform.z = row * 8 - 488;
+            obj.transform.rotY = Math.random() * Math.PI;
             objects.add(obj);
         }
 
-        GameObject floor = new GameObject(Mesh.createGrid(220, 2.0));
-        floor.transform.y = -1.5;
-        objects.add(floor);
-        
-        // 5 LUZES
-        lights.add(new PointLight(0, 10, 0, Color.WHITE, 1.8)); 
-        lights.add(new PointLight(-180, 15, -180, Color.BLUE, 2.5)); 
-        lights.add(new PointLight(180, 15, -180, Color.RED, 2.5));  
-        lights.add(new PointLight(180, 15, 180, Color.GREEN, 2.5)); 
-        lights.add(new PointLight(-180, 15, 180, Color.CYAN, 2.5));  
+        // --- RESTAURANDO AS 5 LUZES ---
+        lights.add(new PointLight(0, 50, 0, Color.WHITE, 1.8));      // Central
+        lights.add(new PointLight(-450, 60, -450, Color.BLUE, 2.5)); // Canto Superior Esquerdo
+        lights.add(new PointLight(450, 60, -450, Color.RED, 2.5));   // Canto Superior Direito
+        lights.add(new PointLight(450, 60, 450, Color.GREEN, 2.5));  // Canto Inferior Direito
+        lights.add(new PointLight(-450, 60, 450, Color.CYAN, 2.5));  // Canto Inferior Esquerdo
 
-        lightGizmo = new GameObject(Mesh.createSphere(0.6, 8, 8));
-        camera.transform.z = 60; camera.transform.y = 15;
+        lightGizmo = new GameObject(Mesh.createSphere(2.0, 8, 8));
+        camera.transform.z = 350; camera.transform.y = 100;
     }
 
-    private void update() {
-        for(int i=0; i < 10000; i++) {
-            objects.get(i).transform.rotY += (i % 2 == 0 ? 0.04 : -0.03);
-        }
+    private void update(double dt) {
+        for(GameObject obj : objects) obj.transform.rotY += 1.5 * dt;
 
         PointLight spot = lights.get(0);
-        if(keys[KeyEvent.VK_UP]) spot.pos.z -= 1.5; if(keys[KeyEvent.VK_DOWN]) spot.pos.z += 1.5;
-        if(keys[KeyEvent.VK_LEFT]) spot.pos.x -= 1.5; if(keys[KeyEvent.VK_RIGHT]) spot.pos.x += 1.5;
-        if(keys[KeyEvent.VK_I]) spot.pos.y += 1.0; if(keys[KeyEvent.VK_K]) spot.pos.y -= 1.0;
+        double lightSpeed = 150.0 * dt;
+        if(keys[KeyEvent.VK_UP]) spot.pos.z -= lightSpeed; 
+        if(keys[KeyEvent.VK_DOWN]) spot.pos.z += lightSpeed;
+        if(keys[KeyEvent.VK_LEFT]) spot.pos.x -= lightSpeed; 
+        if(keys[KeyEvent.VK_RIGHT]) spot.pos.x += lightSpeed;
+        if(keys[KeyEvent.VK_I]) spot.pos.y += lightSpeed; 
+        if(keys[KeyEvent.VK_K]) spot.pos.y -= lightSpeed;
 
         lightGizmo.transform.x = spot.pos.x; lightGizmo.transform.y = spot.pos.y; lightGizmo.transform.z = spot.pos.z;
 
-        double sp = 0.8; // Velocidade maior para o mapa gigante
+        double camSpeed = 150.0 * dt;
         double sY = Math.sin(camera.yaw), cY = Math.cos(camera.yaw);
-        double fX = sY, fZ = -cY, rX = cY, rZ = sY;
+        if(keys[KeyEvent.VK_W]){ camera.transform.x += sY*camSpeed; camera.transform.z -= cY*camSpeed; }
+        if(keys[KeyEvent.VK_S]){ camera.transform.x -= sY*camSpeed; camera.transform.z += cY*camSpeed; }
+        if(keys[KeyEvent.VK_A]){ camera.transform.x -= cY*camSpeed; camera.transform.z -= sY*camSpeed; }
+        if(keys[KeyEvent.VK_D]){ camera.transform.x += cY*camSpeed; camera.transform.z += sY*camSpeed; }
 
-        if(keys[KeyEvent.VK_W]){ camera.transform.x += fX * sp; camera.transform.z += fZ * sp; }
-        if(keys[KeyEvent.VK_S]){ camera.transform.x -= fX * sp; camera.transform.z -= fZ * sp; }
-        if(keys[KeyEvent.VK_A]){ camera.transform.x -= rX * sp; camera.transform.z -= rZ * sp; }
-        if(keys[KeyEvent.VK_D]){ camera.transform.x += rX * sp; camera.transform.z += rZ * sp; }
+        frames++;
+        if (System.currentTimeMillis() - lastFpsTime >= 1000) {
+            fps = frames; frames = 0; lastFpsTime = System.currentTimeMillis();
+        }
     }
 
-    @Override public void run() { while(running){ update(); repaint(); try{Thread.sleep(16);}catch(Exception e){} } }
+    @Override public void run() { 
+        while(running){ 
+            long currentTime = System.nanoTime();
+            double deltaTime = (currentTime - lastTime) / 1_000_000_000.0;
+            lastTime = currentTime;
+            update(deltaTime); 
+            repaint(); 
+            try{Thread.sleep(1);}catch(Exception e){} 
+        } 
+    }
 
     @Override protected void paintComponent(Graphics g) {
         super.paintComponent(g);
@@ -228,10 +218,10 @@ public class SoftwareRenderer extends JPanel implements Runnable, KeyListener, M
         for(GameObject obj : objects) obj.draw(pixels, zBuffer, camera, lights, WIDTH, HEIGHT, wireframe);
         if (showLightGizmo) lightGizmo.draw(pixels, zBuffer, camera, null, WIDTH, HEIGHT, true);
         g.drawImage(frameImage, 0, 0, null);
-        
-        g.setColor(Color.WHITE);
-        g.drawString("OBJETOS ATIVOS: 10.000", 10, 20);
-        g.drawString("TRIÂNGULOS ESTIMADOS: ~120.000", 10, 40);
+        g.setColor(Color.GREEN);
+        g.setFont(new Font("Monospaced", Font.BOLD, 18));
+        g.drawString("FPS: " + fps, 10, 25);
+        g.drawString("LITES: 5 | OBJS: 15.000", 10, 50);
     }
 
     class GameObject {
@@ -240,7 +230,7 @@ public class SoftwareRenderer extends JPanel implements Runnable, KeyListener, M
 
         void draw(int[] pixels, double[] zBuf, Camera cam, List<PointLight> sceneLights, int w, int h, boolean wire) {
             Matrix4 view = cam.getViewMatrix(); Matrix4 model = transform.getModelMatrix();
-            Matrix4 proj = Matrix4.projection(90, (double)w/h, 0.01, 3000);
+            Matrix4 proj = Matrix4.projection(90, (double)w/h, 0.1, 10000);
             Matrix4 modelView = Matrix4.multiply(view, model);
 
             for (Triangle t : mesh.triangles) {
@@ -251,20 +241,20 @@ public class SoftwareRenderer extends JPanel implements Runnable, KeyListener, M
                 double nx = (v2.y-v1.y)*(v3.z-v1.z) - (v2.z-v1.z)*(v3.y-v1.y);
                 double ny = (v2.z-v1.z)*(v3.x-v1.x) - (v2.x-v1.x)*(v3.z-v1.z);
                 double nz = (v2.x-v1.x)*(v3.y-v1.y) - (v2.y-v1.y)*(v3.x-v1.x);
-                double len = Math.sqrt(nx*nx + ny*ny + nz*nz);
-                if(len > 0) { nx/=len; ny/=len; nz/=len; }
 
                 if (nx*v1.x + ny*v1.y + nz*v1.z < 0) {
-                    double rT=0, gT=0, bT=0, amb = 0.1;
-                    double mx = (v1.x+v2.x+v3.x)/3.0, my = (v1.y+v2.y+v3.y)/3.0, mz = (v1.z+v2.z+v3.z)/3.0;
+                    double len = Math.sqrt(nx*nx + ny*ny + nz*nz);
+                    nx/=len; ny/=len; nz/=len;
 
+                    double rT=0, gT=0, bT=0, amb = 0.12;
                     if (sceneLights != null && !wire) {
+                        double mx = (v1.x+v2.x+v3.x)/3.0, my = (v1.y+v2.y+v3.y)/3.0, mz = (v1.z+v2.z+v3.z)/3.0;
                         for(PointLight light : sceneLights) {
                             Vertex lV = Matrix4.multiply(view, light.pos);
                             double lx = lV.x-mx, ly = lV.y-my, lz = lV.z-mz;
                             double d = Math.sqrt(lx*lx+ly*ly+lz*lz);
                             double dot = Math.max(0, nx*(lx/d) + ny*(ly/d) + nz*(lz/d));
-                            double att = 1.0 / (1.0 + 0.003*d*d);
+                            double att = 1.0 / (1.0 + 0.0005*d*d);
                             rT += (t.baseColor.getRed()/255.0) * (light.color.getRed()/255.0) * dot * light.intensity * att;
                             gT += (t.baseColor.getGreen()/255.0) * (light.color.getGreen()/255.0) * dot * light.intensity * att;
                             bT += (t.baseColor.getBlue()/255.0) * (light.color.getBlue()/255.0) * dot * light.intensity * att;
@@ -276,7 +266,7 @@ public class SoftwareRenderer extends JPanel implements Runnable, KeyListener, M
                     Vertex[] p = new Vertex[3]; Vertex[] orig = {v1, v2, v3}; boolean clip = false;
                     for (int i=0; i<3; i++) {
                         Vertex pr = Matrix4.multiply(proj, orig[i]);
-                        if (pr.w <= 0.01) { clip=true; break; }
+                        if (pr.w <= 0.1) { clip=true; break; }
                         p[i] = new Vertex((pr.x/pr.w+1)*w/2, (1-pr.y/pr.w)*h/2, 1.0/pr.w);
                     }
                     if (!clip) {
@@ -333,6 +323,7 @@ public class SoftwareRenderer extends JPanel implements Runnable, KeyListener, M
     public void keyPressed(KeyEvent e){ 
         if(e.getKeyCode()==KeyEvent.VK_F2) wireframe=!wireframe;
         if(e.getKeyCode()==KeyEvent.VK_F3) showLightGizmo=!showLightGizmo;
+        if(keys[KeyEvent.VK_ESCAPE]) System.exit(0);
         if(e.getKeyCode()<256) keys[e.getKeyCode()]=true; 
     }
     public void keyReleased(KeyEvent e){ if(e.getKeyCode()<256) keys[e.getKeyCode()]=false; }
