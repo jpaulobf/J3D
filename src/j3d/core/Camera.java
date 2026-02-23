@@ -1,7 +1,7 @@
-package camera;
+package j3d.core;
 
-import geometry.Matrix4;
-import matriz.Transform;
+import j3d.math.Matrix4;
+import j3d.math.Transform;
 
 /**
  * Camera class representing the position and orientation of the camera in 3D

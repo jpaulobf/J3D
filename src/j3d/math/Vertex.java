@@ -1,4 +1,4 @@
-package geometry;
+package j3d.math;
 
 /**
  * Vertex class representing a point in 3D space with homogeneous coordinates.

@@ -1,6 +1,4 @@
-package matriz;
-
-import geometry.Matrix4;
+package j3d.math;
 
 /**
  * Transform class representing position and rotation of an object in 3D space.

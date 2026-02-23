@@ -1,6 +1,7 @@
+package j3d.core;
 import javax.swing.JFrame;
 
-import renderer.SoftwareRenderer;
+import j3d.render.SoftwareRenderer;
 
 /**
  * Launcher class to start the software renderer.

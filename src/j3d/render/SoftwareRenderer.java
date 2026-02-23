@@ -1,4 +1,4 @@
-package renderer;
+package j3d.render;
 
 import java.awt.Color;
 import java.awt.Dimension;
@@ -15,10 +15,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import javax.swing.JPanel;
-import camera.Camera;
-import game.GameObject;
-import geometry.Mesh;
-import light.PointLight;
+
+import j3d.core.Camera;
+import j3d.core.GameObject;
+import j3d.geometry.Mesh;
+import j3d.lighting.PointLight;
 
 /**
  * SoftwareRenderer class implementing a basic 3D software renderer using Java

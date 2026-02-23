@@ -1,4 +1,4 @@
-package geometry;
+package j3d.math;
 
 public class Matrix4 {
 

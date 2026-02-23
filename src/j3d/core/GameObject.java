@@ -1,14 +1,14 @@
-package game;
+package j3d.core;
 
 import java.awt.Color;
 import java.util.List;
-import camera.Camera;
-import geometry.Matrix4;
-import geometry.Mesh;
-import geometry.Triangle;
-import geometry.Vertex;
-import light.PointLight;
-import matriz.Transform;
+
+import j3d.geometry.Mesh;
+import j3d.geometry.Triangle;
+import j3d.lighting.PointLight;
+import j3d.math.Matrix4;
+import j3d.math.Transform;
+import j3d.math.Vertex;
 
 /**
  * GameObject class representing a game object with a mesh and a transform.

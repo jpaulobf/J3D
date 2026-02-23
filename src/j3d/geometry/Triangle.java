@@ -1,4 +1,4 @@
-package geometry;
+package j3d.geometry;
 
 import java.awt.Color;
 
