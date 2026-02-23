@@ -14,7 +14,6 @@ import java.awt.image.DataBufferInt;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import javax.swing.JFrame;
 import javax.swing.JPanel;
 import camera.Camera;
 import game.GameObject;
