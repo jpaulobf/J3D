@@ -20,12 +20,13 @@ import j3d.core.Camera;
 import j3d.core.GameObject;
 import j3d.geometry.Mesh;
 import j3d.lighting.PointLight;
+import j3d.input.InputManager;
 
 /**
  * SoftwareRenderer class implementing a basic 3D software renderer using Java
  * Swing.
  */
-public class SoftwareRenderer extends JPanel implements Runnable, KeyListener, MouseMotionListener {
+public class SoftwareRenderer extends JPanel implements Runnable {
 
     // Constants for screen dimensions
     private static final int WIDTH = 800, HEIGHT = 600;
@@ -34,7 +35,7 @@ public class SoftwareRenderer extends JPanel implements Runnable, KeyListener, M
     private List<GameObject> objects = new ArrayList<>();
     private List<PointLight> lights = new ArrayList<>();
     private GameObject lightGizmo;
-    private boolean[] keys = new boolean[256];
+    private InputManager input = new InputManager();
     private double[] zBuffer = new double[WIDTH * HEIGHT];
     private Robot robot;
     private BufferedImage frameImage = new BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_INT_RGB);
@@ -51,8 +52,7 @@ public class SoftwareRenderer extends JPanel implements Runnable, KeyListener, M
     public SoftwareRenderer() {
         setPreferredSize(new Dimension(WIDTH, HEIGHT));
         setFocusable(true);
-        addKeyListener(this);
-        addMouseMotionListener(this);
+
         try {
             robot = new Robot();
         } catch (Exception e) {
@@ -76,57 +76,71 @@ public class SoftwareRenderer extends JPanel implements Runnable, KeyListener, M
 
         camera.transform.z = 15;
         camera.transform.y = 5;
+
+        addKeyListener(input); 
+        addMouseMotionListener(input);
     }
 
     /**
      * Update method to handle game logic and input.
      */
     private void update() {
-        // Cálculo do fator de correção baseado em 60 FPS (16ms)
         double speedCorrection = 60.0 / TARGET_FPS;
 
-        for (GameObject obj : objects) {
-            if (obj != objects.get(2))
-                obj.transform.rotY += 0.03 * speedCorrection;
+        // 1. Toggles (F2, F3)
+        if (input.isKeyPressed(KeyEvent.VK_F2)) wireframe = !wireframe;
+        if (input.isKeyPressed(KeyEvent.VK_F3)) showLightGizmo = !showLightGizmo;
+
+        // 2. Rotação da Câmera (Matemática da v7.5 restaurada)
+        if (isFocusOwner()) {
+            java.awt.Point loc = getLocationOnScreen();
+            int centerX = loc.x + WIDTH / 2;
+            int centerY = loc.y + HEIGHT / 2;
+
+            // Calculamos o deslocamento em relação ao CENTRO da janela
+            int dx = input.getMouseX() - centerX;
+            int dy = input.getMouseY() - centerY;
+
+            // Só aplicamos se houver movimento (evita drift)
+            if (dx != 0 || dy != 0) {
+                camera.yaw += dx * 0.003;
+                // Use += ou -= conforme sua preferência de inversão de eixo Y
+                camera.pitch += dy * 0.003; 
+                camera.pitch = Math.max(-1.5, Math.min(1.5, camera.pitch));
+
+                // Reseta o mouse para o centro para o próximo frame
+                robot.mouseMove(centerX, centerY);
+            }
         }
 
-        PointLight spot = lights.get(0);
-        double lSp = 0.3 * speedCorrection;
-        if (keys[KeyEvent.VK_UP])
-            spot.pos.z -= lSp;
-        if (keys[KeyEvent.VK_DOWN])
-            spot.pos.z += lSp;
-        if (keys[KeyEvent.VK_LEFT])
-            spot.pos.x -= lSp;
-        if (keys[KeyEvent.VK_RIGHT])
-            spot.pos.x += lSp;
-        if (keys[KeyEvent.VK_I])
-            spot.pos.y += lSp;
-        if (keys[KeyEvent.VK_K])
-            spot.pos.y -= lSp;
+        // 3. Movimento da Câmera (W, S, A, D)
+        double camSp = 0.3 * speedCorrection;
+        double sY = Math.sin(camera.yaw);
+        double cY = Math.cos(camera.yaw);
 
-        // Atualiza a posição do gizmo da luz para coincidir com a posição da luz
+        if (input.isKeyHeld(KeyEvent.VK_W)) { camera.transform.x += sY * camSp; camera.transform.z -= cY * camSp; }
+        if (input.isKeyHeld(KeyEvent.VK_S)) { camera.transform.x -= sY * camSp; camera.transform.z += cY * camSp; }
+        if (input.isKeyHeld(KeyEvent.VK_A)) { camera.transform.x -= cY * camSp; camera.transform.z -= sY * camSp; }
+        if (input.isKeyHeld(KeyEvent.VK_D)) { camera.transform.x += cY * camSp; camera.transform.z += sY * camSp; }
+
+        // 4. Movimento da Luz (Setas e I, K)
+        j3d.lighting.PointLight spot = lights.get(0);
+        double lSp = 0.3 * speedCorrection;
+        if (input.isKeyHeld(KeyEvent.VK_UP))    spot.pos.z -= lSp;
+        if (input.isKeyHeld(KeyEvent.VK_DOWN))  spot.pos.z += lSp;
+        if (input.isKeyHeld(KeyEvent.VK_LEFT))  spot.pos.x -= lSp;
+        if (input.isKeyHeld(KeyEvent.VK_RIGHT)) spot.pos.x += lSp;
+        if (input.isKeyHeld(KeyEvent.VK_I))     spot.pos.y += lSp;
+        if (input.isKeyHeld(KeyEvent.VK_K))     spot.pos.y -= lSp;
+
+        // Sincroniza o Gizmo com a Luz
         lightGizmo.transform.x = spot.pos.x;
         lightGizmo.transform.y = spot.pos.y;
         lightGizmo.transform.z = spot.pos.z;
 
-        double camSp = 0.3 * speedCorrection;
-        double sY = Math.sin(camera.yaw), cY = Math.cos(camera.yaw);
-        if (keys[KeyEvent.VK_W]) {
-            camera.transform.x += sY * camSp;
-            camera.transform.z -= cY * camSp;
-        }
-        if (keys[KeyEvent.VK_S]) {
-            camera.transform.x -= sY * camSp;
-            camera.transform.z += cY * camSp;
-        }
-        if (keys[KeyEvent.VK_A]) {
-            camera.transform.x -= cY * camSp;
-            camera.transform.z -= sY * camSp;
-        }
-        if (keys[KeyEvent.VK_D]) {
-            camera.transform.x += cY * camSp;
-            camera.transform.z += sY * camSp;
+        // 5. Rotação dos objetos
+        for (j3d.core.GameObject obj : objects) {
+            if (obj != objects.get(2)) obj.transform.rotY += 0.03 * speedCorrection;
         }
 
         frames++;
@@ -168,49 +182,5 @@ public class SoftwareRenderer extends JPanel implements Runnable, KeyListener, M
         g.drawImage(frameImage, 0, 0, null);
         g.setColor(Color.WHITE);
         g.drawString("TARGET FPS: " + TARGET_FPS + " | ACTUAL FPS: " + fps, 10, 20);
-    }
-
-    /**
-     * Mouse moved method to handle camera rotation based on mouse movement.
-     */
-    public void mouseMoved(MouseEvent e) {
-        if (!isFocusOwner())
-            return;
-        Point c = getLocationOnScreen();
-        camera.yaw += (e.getXOnScreen() - (c.x + WIDTH / 2)) * 0.003;
-        camera.pitch += (e.getYOnScreen() - (c.y + HEIGHT / 2)) * 0.003;
-        camera.pitch = Math.max(-1.5, Math.min(1.5, camera.pitch));
-        robot.mouseMove(c.x + WIDTH / 2, c.y + HEIGHT / 2);
-    }
-
-    /**
-     * Mouse dragged method to handle mouse dragging (calls mouse moved).
-     */
-    public void mouseDragged(MouseEvent e) {
-        mouseMoved(e);
-    }
-
-    /**
-     * Key pressed method to handle keyboard input for toggling wireframe mode,
-     * light gizmo, and movement.
-     */
-    public void keyPressed(KeyEvent e) {
-        if (e.getKeyCode() == KeyEvent.VK_F2)
-            wireframe = !wireframe;
-        if (e.getKeyCode() == KeyEvent.VK_F3)
-            showLightGizmo = !showLightGizmo;
-        if (e.getKeyCode() < 256)
-            keys[e.getKeyCode()] = true;
-    }
-
-    /**
-     * Key released method to handle keyboard input.
-     */
-    public void keyReleased(KeyEvent e) {
-        if (e.getKeyCode() < 256)
-            keys[e.getKeyCode()] = false;
-    }
-
-    public void keyTyped(KeyEvent e) {
     }
 }
