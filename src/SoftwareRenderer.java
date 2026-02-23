@@ -8,8 +8,8 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * MOTOR 3D NA CPU v8.7 - 100.000 OBJETOS
- * Base 100% fiel à v7.5.
+ * MOTOR 3D NA CPU v8.9 - TARGET FPS CONTROL
+ * Velocidade normalizada para 60 FPS (16ms)
  */
 
 class Vertex {
@@ -55,7 +55,7 @@ class Mesh {
         m.triangles.add(new Triangle(0, 2, 1, Color.GRAY)); m.triangles.add(new Triangle(0, 3, 2, Color.GRAY));
         return m;
     }
-    
+
     public static Mesh createSphere(double radius, int latLines, int lonLines) {
         Mesh m = new Mesh();
         for (int i = 0; i <= latLines; i++) {
@@ -73,16 +73,36 @@ class Mesh {
         }
         return m;
     }
+
+    public static Mesh createGrid(int size, double tileSize) {
+        Mesh m = new Mesh();
+        int half = size / 2;
+        for (int z = -half; z <= half; z++) {
+            for (int x = -half; x <= half; x++) {
+                m.vertices.add(new Vertex(x * tileSize, 0, z * tileSize));
+            }
+        }
+        int row = size + 1;
+        for (int z = 0; z < size; z++) {
+            for (int x = 0; x < size; x++) {
+                int i = z * row + x;
+                Color col = (x + z) % 2 == 0 ? new Color(40, 40, 40) : new Color(60, 60, 60);
+                m.triangles.add(new Triangle(i, i + row, i + 1, col));
+                m.triangles.add(new Triangle(i + 1, i + row, i + row + 1, col));
+            }
+        }
+        return m;
+    }
 }
 
 class Matrix4 {
     double[][] m = new double[4][4];
     public Matrix4() { m[0][0]=m[1][1]=m[2][2]=m[3][3]=1; }
     public static Vertex multiply(Matrix4 mat, Vertex v) {
-        double x = v.x*mat.m[0][0] + v.y*mat.m[0][1] + v.z*mat.m[0][2] + v.w*mat.m[0][3];
-        double y = v.x*mat.m[1][0] + v.y*mat.m[1][1] + v.z*mat.m[1][2] + v.w*mat.m[1][3];
-        double z = v.x*mat.m[2][0] + v.y*mat.m[2][1] + v.z*mat.m[2][2] + v.w*mat.m[2][3];
-        double w = v.x*mat.m[3][0] + v.y*mat.m[3][1] + v.z*mat.m[3][2] + v.w*mat.m[3][3];
+        double x = v.x*mat.m[0][0]+v.y*mat.m[0][1]+v.z*mat.m[0][2]+v.w*mat.m[0][3];
+        double y = v.x*mat.m[1][0]+v.y*mat.m[1][1]+v.z*mat.m[1][2]+v.w*mat.m[1][3];
+        double z = v.x*mat.m[2][0]+v.y*mat.m[2][1]+v.z*mat.m[2][2]+v.w*mat.m[2][3];
+        double w = v.x*mat.m[3][0]+v.y*mat.m[3][1]+v.z*mat.m[3][2]+v.w*mat.m[3][3];
         Vertex res = new Vertex(x,y,z); res.w = w; return res;
     }
     public static Matrix4 multiply(Matrix4 a, Matrix4 b) {
@@ -136,12 +156,13 @@ public class SoftwareRenderer extends JPanel implements Runnable, KeyListener, M
     private BufferedImage frameImage = new BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_INT_RGB);
     private int[] pixels = ((DataBufferInt) frameImage.getRaster().getDataBuffer()).getData();
 
-    private long lastTime = System.nanoTime();
+    // VARIÁVEIS DE FPS ALVO
+    private int TARGET_FPS = 240; // Informe o FPS que desejar aqui
     private int fps = 0, frames = 0;
     private long lastFpsTime = System.currentTimeMillis();
 
     public static void main(String[] args) {
-        JFrame f = new JFrame("Engine 3D v8.7 - 100.000 Objects (Absolute v7.5 Logic)");
+        JFrame f = new JFrame("Engine 3D - v8.9 TARGET FPS");
         SoftwareRenderer r = new SoftwareRenderer();
         f.add(r); f.pack(); f.setDefaultCloseOperation(3); f.setLocationRelativeTo(null); f.setVisible(true);
         new Thread(r).start();
@@ -153,49 +174,47 @@ public class SoftwareRenderer extends JPanel implements Runnable, KeyListener, M
         try { robot = new Robot(); } catch (Exception e) {}
         setCursor(getToolkit().createCustomCursor(new BufferedImage(1,1,2), new Point(0,0), ""));
         
-        Mesh cubeMesh = Mesh.createCube();
-        Mesh pyrMesh = Mesh.createPyramid();
+        GameObject cube = new GameObject(Mesh.createCube());
+        cube.transform.x = -3;
+        objects.add(cube);
+
+        GameObject pyr = new GameObject(Mesh.createPyramid());
+        pyr.transform.x = 3;
+        objects.add(pyr);
+
+        GameObject floor = new GameObject(Mesh.createGrid(20, 2.0));
+        floor.transform.y = -1.5;
+        objects.add(floor);
         
-        // --- ESCALANDO PARA 100.000 OBJETOS ---
-        int side = 316; 
-        for(int i = 0; i < 100000; i++) {
-            int col = i % side; int row = i / side;
-            GameObject obj = new GameObject(i % 2 == 0 ? cubeMesh : pyrMesh);
-            obj.transform.x = col * 8 - (side * 4); obj.transform.z = row * 8 - (side * 4);
-            obj.transform.rotY = Math.random() * Math.PI;
-            objects.add(obj);
-        }
+        lights.add(new PointLight(0, 5, 0, Color.WHITE, 1.5));
+        lightGizmo = new GameObject(Mesh.createSphere(0.2, 8, 8));
 
-        lights.add(new PointLight(0, 50, 0, Color.WHITE, 1.8));      
-        lights.add(new PointLight(-450, 60, -450, Color.BLUE, 2.5)); 
-        lights.add(new PointLight(450, 60, -450, Color.RED, 2.5));   
-        lights.add(new PointLight(450, 60, 450, Color.GREEN, 2.5));  
-        lights.add(new PointLight(-450, 60, 450, Color.CYAN, 2.5));  
-
-        lightGizmo = new GameObject(Mesh.createSphere(2.0, 8, 8));
-        camera.transform.z = 350; camera.transform.y = 100;
+        camera.transform.z = 15; 
+        camera.transform.y = 5; 
     }
 
-    private void update(double dt) {
-        for(GameObject obj : objects) obj.transform.rotY += 1.5 * dt;
+    private void update() {
+        // Cálculo do fator de correção baseado em 60 FPS (16ms)
+        double speedCorrection = 60.0 / TARGET_FPS;
+
+        for(GameObject obj : objects) {
+            if(obj != objects.get(2)) obj.transform.rotY += 0.03 * speedCorrection;
+        }
 
         PointLight spot = lights.get(0);
-        double lightSpeed = 150.0 * dt;
-        if(keys[KeyEvent.VK_UP]) spot.pos.z -= lightSpeed; 
-        if(keys[KeyEvent.VK_DOWN]) spot.pos.z += lightSpeed;
-        if(keys[KeyEvent.VK_LEFT]) spot.pos.x -= lightSpeed; 
-        if(keys[KeyEvent.VK_RIGHT]) spot.pos.x += lightSpeed;
-        if(keys[KeyEvent.VK_I]) spot.pos.y += lightSpeed; 
-        if(keys[KeyEvent.VK_K]) spot.pos.y -= lightSpeed;
+        double lSp = 0.3 * speedCorrection;
+        if(keys[KeyEvent.VK_UP]) spot.pos.z -= lSp; if(keys[KeyEvent.VK_DOWN]) spot.pos.z += lSp;
+        if(keys[KeyEvent.VK_LEFT]) spot.pos.x -= lSp; if(keys[KeyEvent.VK_RIGHT]) spot.pos.x += lSp;
+        if(keys[KeyEvent.VK_I]) spot.pos.y += lSp; if(keys[KeyEvent.VK_K]) spot.pos.y -= lSp;
 
         lightGizmo.transform.x = spot.pos.x; lightGizmo.transform.y = spot.pos.y; lightGizmo.transform.z = spot.pos.z;
 
-        double camSpeed = 150.0 * dt;
+        double camSp = 0.3 * speedCorrection; 
         double sY = Math.sin(camera.yaw), cY = Math.cos(camera.yaw);
-        if(keys[KeyEvent.VK_W]){ camera.transform.x += sY*camSpeed; camera.transform.z -= cY*camSpeed; }
-        if(keys[KeyEvent.VK_S]){ camera.transform.x -= sY*camSpeed; camera.transform.z += cY*camSpeed; }
-        if(keys[KeyEvent.VK_A]){ camera.transform.x -= cY*camSpeed; camera.transform.z -= sY*camSpeed; }
-        if(keys[KeyEvent.VK_D]){ camera.transform.x += cY*camSpeed; camera.transform.z += sY*camSpeed; }
+        if(keys[KeyEvent.VK_W]){ camera.transform.x += sY*camSp; camera.transform.z -= cY*camSp; }
+        if(keys[KeyEvent.VK_S]){ camera.transform.x -= sY*camSp; camera.transform.z += cY*camSp; }
+        if(keys[KeyEvent.VK_A]){ camera.transform.x -= cY*camSp; camera.transform.z -= sY*camSp; }
+        if(keys[KeyEvent.VK_D]){ camera.transform.x += cY*camSp; camera.transform.z += sY*camSp; }
 
         frames++;
         if (System.currentTimeMillis() - lastFpsTime >= 1000) {
@@ -205,12 +224,12 @@ public class SoftwareRenderer extends JPanel implements Runnable, KeyListener, M
 
     @Override public void run() { 
         while(running){ 
-            long currentTime = System.nanoTime();
-            double deltaTime = (currentTime - lastTime) / 1_000_000_000.0;
-            lastTime = currentTime;
-            update(deltaTime); 
+            update(); 
             repaint(); 
-            try{Thread.sleep(1);}catch(Exception e){} 
+            try {
+                // Cálculo dinâmico do tempo de espera
+                Thread.sleep(1000 / TARGET_FPS);
+            } catch(Exception e) {} 
         } 
     }
 
@@ -220,10 +239,8 @@ public class SoftwareRenderer extends JPanel implements Runnable, KeyListener, M
         for(GameObject obj : objects) obj.draw(pixels, zBuffer, camera, lights, WIDTH, HEIGHT, wireframe);
         if (showLightGizmo) lightGizmo.draw(pixels, zBuffer, camera, null, WIDTH, HEIGHT, true);
         g.drawImage(frameImage, 0, 0, null);
-        g.setColor(Color.GREEN);
-        g.setFont(new Font("Monospaced", Font.BOLD, 18));
-        g.drawString("FPS: " + fps, 10, 25);
-        g.drawString("LITES: 5 | OBJS: 100.000", 10, 50);
+        g.setColor(Color.WHITE);
+        g.drawString("TARGET FPS: " + TARGET_FPS + " | ACTUAL FPS: " + fps, 10, 20);
     }
 
     class GameObject {
@@ -232,7 +249,7 @@ public class SoftwareRenderer extends JPanel implements Runnable, KeyListener, M
 
         void draw(int[] pixels, double[] zBuf, Camera cam, List<PointLight> sceneLights, int w, int h, boolean wire) {
             Matrix4 view = cam.getViewMatrix(); Matrix4 model = transform.getModelMatrix();
-            Matrix4 proj = Matrix4.projection(90, (double)w/h, 0.1, 25000); // AUMENTADO PARA NÃO FICAR PRETO
+            Matrix4 proj = Matrix4.projection(90, (double)w/h, 0.1, 1000);
             Matrix4 modelView = Matrix4.multiply(view, model);
 
             for (Triangle t : mesh.triangles) {
@@ -243,28 +260,26 @@ public class SoftwareRenderer extends JPanel implements Runnable, KeyListener, M
                 double nx = (v2.y-v1.y)*(v3.z-v1.z) - (v2.z-v1.z)*(v3.y-v1.y);
                 double ny = (v2.z-v1.z)*(v3.x-v1.x) - (v2.x-v1.x)*(v3.z-v1.z);
                 double nz = (v2.x-v1.x)*(v3.y-v1.y) - (v2.y-v1.y)*(v3.x-v1.x);
+                double len = Math.sqrt(nx*nx + ny*ny + nz*nz);
+                if(len > 0) { nx/=len; ny/=len; nz/=len; }
 
                 if (nx*v1.x + ny*v1.y + nz*v1.z < 0) {
-                    double len = Math.sqrt(nx*nx + ny*ny + nz*nz);
-                    nx/=len; ny/=len; nz/=len;
-
-                    double rT=0, gT=0, bT=0, amb = 0.12;
+                    int finalCol = t.baseColor.getRGB();
                     if (sceneLights != null && !wire) {
+                        double rT=0, gT=0, bT=0, amb = 0.15;
                         double mx = (v1.x+v2.x+v3.x)/3.0, my = (v1.y+v2.y+v3.y)/3.0, mz = (v1.z+v2.z+v3.z)/3.0;
                         for(PointLight light : sceneLights) {
                             Vertex lV = Matrix4.multiply(view, light.pos);
                             double lx = lV.x-mx, ly = lV.y-my, lz = lV.z-mz;
                             double d = Math.sqrt(lx*lx+ly*ly+lz*lz);
                             double dot = Math.max(0, nx*(lx/d) + ny*(ly/d) + nz*(lz/d));
-                            double att = 1.0 / (1.0 + 0.0005*d*d);
-                            rT += (t.baseColor.getRed()/255.0) * (light.color.getRed()/255.0) * dot * light.intensity * att;
-                            gT += (t.baseColor.getGreen()/255.0) * (light.color.getGreen()/255.0) * dot * light.intensity * att;
-                            bT += (t.baseColor.getBlue()/255.0) * (light.color.getBlue()/255.0) * dot * light.intensity * att;
+                            double att = 1.0 / (1.0 + 0.01*d*d);
+                            rT += (t.baseColor.getRed()/255.0) * dot * light.intensity * att;
+                            gT += (t.baseColor.getGreen()/255.0) * dot * light.intensity * att;
+                            bT += (t.baseColor.getBlue()/255.0) * dot * light.intensity * att;
                         }
+                        finalCol = new Color((int)(Math.min(1, rT+amb)*255), (int)(Math.min(1, gT+amb)*255), (int)(Math.min(1, bT+amb)*255)).getRGB();
                     }
-
-                    int finalCol = new Color((int)(Math.min(1, rT+amb)*255), (int)(Math.min(1, gT+amb)*255), (int)(Math.min(1, bT+amb)*255)).getRGB();
-
                     Vertex[] p = new Vertex[3]; Vertex[] orig = {v1, v2, v3}; boolean clip = false;
                     for (int i=0; i<3; i++) {
                         Vertex pr = Matrix4.multiply(proj, orig[i]);
@@ -322,13 +337,13 @@ public class SoftwareRenderer extends JPanel implements Runnable, KeyListener, M
         camera.pitch=Math.max(-1.5, Math.min(1.5, camera.pitch));
         robot.mouseMove(c.x+WIDTH/2, c.y+HEIGHT/2);
     }
+    public void mouseDragged(MouseEvent e) { mouseMoved(e); }
+
     public void keyPressed(KeyEvent e){ 
         if(e.getKeyCode()==KeyEvent.VK_F2) wireframe=!wireframe;
         if(e.getKeyCode()==KeyEvent.VK_F3) showLightGizmo=!showLightGizmo;
-        if(keys[KeyEvent.VK_ESCAPE]) System.exit(0);
         if(e.getKeyCode()<256) keys[e.getKeyCode()]=true; 
     }
     public void keyReleased(KeyEvent e){ if(e.getKeyCode()<256) keys[e.getKeyCode()]=false; }
     public void keyTyped(KeyEvent e){}
-    public void mouseDragged(MouseEvent e){ mouseMoved(e); }
 }
