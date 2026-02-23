@@ -8,8 +8,8 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * MOTOR 3D NA CPU v7.5 - FULL LIGHTING & PERFORMANCE
- * 15.000 Objetos + 5 Luzes Dinâmicas + Delta Time.
+ * MOTOR 3D NA CPU v8.7 - 100.000 OBJETOS
+ * Base 100% fiel à v7.5.
  */
 
 class Vertex {
@@ -141,7 +141,7 @@ public class SoftwareRenderer extends JPanel implements Runnable, KeyListener, M
     private long lastFpsTime = System.currentTimeMillis();
 
     public static void main(String[] args) {
-        JFrame f = new JFrame("Engine 3D v7.5 - 15.000 Objects & 5 Lights");
+        JFrame f = new JFrame("Engine 3D v8.7 - 100.000 Objects (Absolute v7.5 Logic)");
         SoftwareRenderer r = new SoftwareRenderer();
         f.add(r); f.pack(); f.setDefaultCloseOperation(3); f.setLocationRelativeTo(null); f.setVisible(true);
         new Thread(r).start();
@@ -155,20 +155,22 @@ public class SoftwareRenderer extends JPanel implements Runnable, KeyListener, M
         
         Mesh cubeMesh = Mesh.createCube();
         Mesh pyrMesh = Mesh.createPyramid();
-        for(int i = 0; i < 15000; i++) {
-            int col = i % 122; int row = i / 122;
+        
+        // --- ESCALANDO PARA 100.000 OBJETOS ---
+        int side = 316; 
+        for(int i = 0; i < 100000; i++) {
+            int col = i % side; int row = i / side;
             GameObject obj = new GameObject(i % 2 == 0 ? cubeMesh : pyrMesh);
-            obj.transform.x = col * 8 - 488; obj.transform.z = row * 8 - 488;
+            obj.transform.x = col * 8 - (side * 4); obj.transform.z = row * 8 - (side * 4);
             obj.transform.rotY = Math.random() * Math.PI;
             objects.add(obj);
         }
 
-        // --- RESTAURANDO AS 5 LUZES ---
-        lights.add(new PointLight(0, 50, 0, Color.WHITE, 1.8));      // Central
-        lights.add(new PointLight(-450, 60, -450, Color.BLUE, 2.5)); // Canto Superior Esquerdo
-        lights.add(new PointLight(450, 60, -450, Color.RED, 2.5));   // Canto Superior Direito
-        lights.add(new PointLight(450, 60, 450, Color.GREEN, 2.5));  // Canto Inferior Direito
-        lights.add(new PointLight(-450, 60, 450, Color.CYAN, 2.5));  // Canto Inferior Esquerdo
+        lights.add(new PointLight(0, 50, 0, Color.WHITE, 1.8));      
+        lights.add(new PointLight(-450, 60, -450, Color.BLUE, 2.5)); 
+        lights.add(new PointLight(450, 60, -450, Color.RED, 2.5));   
+        lights.add(new PointLight(450, 60, 450, Color.GREEN, 2.5));  
+        lights.add(new PointLight(-450, 60, 450, Color.CYAN, 2.5));  
 
         lightGizmo = new GameObject(Mesh.createSphere(2.0, 8, 8));
         camera.transform.z = 350; camera.transform.y = 100;
@@ -221,7 +223,7 @@ public class SoftwareRenderer extends JPanel implements Runnable, KeyListener, M
         g.setColor(Color.GREEN);
         g.setFont(new Font("Monospaced", Font.BOLD, 18));
         g.drawString("FPS: " + fps, 10, 25);
-        g.drawString("LITES: 5 | OBJS: 15.000", 10, 50);
+        g.drawString("LITES: 5 | OBJS: 100.000", 10, 50);
     }
 
     class GameObject {
@@ -230,7 +232,7 @@ public class SoftwareRenderer extends JPanel implements Runnable, KeyListener, M
 
         void draw(int[] pixels, double[] zBuf, Camera cam, List<PointLight> sceneLights, int w, int h, boolean wire) {
             Matrix4 view = cam.getViewMatrix(); Matrix4 model = transform.getModelMatrix();
-            Matrix4 proj = Matrix4.projection(90, (double)w/h, 0.1, 10000);
+            Matrix4 proj = Matrix4.projection(90, (double)w/h, 0.1, 25000); // AUMENTADO PARA NÃO FICAR PRETO
             Matrix4 modelView = Matrix4.multiply(view, model);
 
             for (Triangle t : mesh.triangles) {
