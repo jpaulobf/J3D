@@ -8,9 +8,8 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * MOTOR 3D NA CPU v4.3 - FPS PRECISION MOVEMENT
- * O centro da tela é o guia: W (Frente), S (Trás), A/D (Laterais).
- * I/K: Move a Luz no eixo Y | F2: Sólido/Wire | F3: Gizmo Luz.
+ * MOTOR 3D NA CPU v7.0 - 10.000 OBJECTS INSANITY TEST
+ * 10.000 Objetos Rotacionando + 5 Luzes Dinâmicas.
  */
 
 class Vertex {
@@ -158,7 +157,7 @@ public class SoftwareRenderer extends JPanel implements Runnable, KeyListener, M
     private int[] pixels = ((DataBufferInt) frameImage.getRaster().getDataBuffer()).getData();
 
     public static void main(String[] args) {
-        JFrame f = new JFrame("Engine 3D - FPS Precision Movement v4.3");
+        JFrame f = new JFrame("Engine 3D - 10.000 Object Stress Test");
         SoftwareRenderer r = new SoftwareRenderer();
         f.add(r); f.pack(); f.setDefaultCloseOperation(3); f.setLocationRelativeTo(null); f.setVisible(true);
         new Thread(r).start();
@@ -169,56 +168,56 @@ public class SoftwareRenderer extends JPanel implements Runnable, KeyListener, M
         setFocusable(true); addKeyListener(this); addMouseMotionListener(this);
         try { robot = new Robot(); } catch (Exception e) {}
         setCursor(getToolkit().createCustomCursor(new BufferedImage(1,1,2), new Point(0,0), ""));
-        objects.add(new GameObject(Mesh.createCube()));
-        GameObject pyr = new GameObject(Mesh.createPyramid()); pyr.transform.x = 4; objects.add(pyr);
-        GameObject floor = new GameObject(Mesh.createGrid(20, 2.0)); floor.transform.y = -1.5; objects.add(floor);
-        lights.add(new PointLight(0, 3, 5, Color.WHITE, 1.2));
-        lightGizmo = new GameObject(Mesh.createSphere(0.2, 8, 8));
-        camera.transform.z = 10; camera.transform.y = 1;
+        
+        Mesh cubeMesh = Mesh.createCube();
+        Mesh pyrMesh = Mesh.createPyramid();
+        
+        // Criar 10.000 objetos (Grade 100x100)
+        for(int i = 0; i < 10000; i++) {
+            int row = i / 100;
+            int col = i % 100;
+            GameObject obj = new GameObject(i % 2 == 0 ? cubeMesh : pyrMesh);
+            obj.transform.x = col * 4 - 200;
+            obj.transform.z = row * 4 - 200;
+            obj.transform.rotY = i * 0.1;
+            objects.add(obj);
+        }
+
+        GameObject floor = new GameObject(Mesh.createGrid(220, 2.0));
+        floor.transform.y = -1.5;
+        objects.add(floor);
+        
+        // 5 LUZES
+        lights.add(new PointLight(0, 10, 0, Color.WHITE, 1.8)); 
+        lights.add(new PointLight(-180, 15, -180, Color.BLUE, 2.5)); 
+        lights.add(new PointLight(180, 15, -180, Color.RED, 2.5));  
+        lights.add(new PointLight(180, 15, 180, Color.GREEN, 2.5)); 
+        lights.add(new PointLight(-180, 15, 180, Color.CYAN, 2.5));  
+
+        lightGizmo = new GameObject(Mesh.createSphere(0.6, 8, 8));
+        camera.transform.z = 60; camera.transform.y = 15;
     }
 
     private void update() {
-        objects.get(0).transform.rotY += 0.01;
-        objects.get(1).transform.rotY -= 0.02;
+        for(int i=0; i < 10000; i++) {
+            objects.get(i).transform.rotY += (i % 2 == 0 ? 0.04 : -0.03);
+        }
+
         PointLight spot = lights.get(0);
-        
-        // Controles da Luz
-        if(keys[KeyEvent.VK_UP]) spot.pos.z -= 0.2; if(keys[KeyEvent.VK_DOWN]) spot.pos.z += 0.2;
-        if(keys[KeyEvent.VK_LEFT]) spot.pos.x -= 0.2; if(keys[KeyEvent.VK_RIGHT]) spot.pos.x += 0.2;
-        if(keys[KeyEvent.VK_I]) spot.pos.y += 0.2; if(keys[KeyEvent.VK_K]) spot.pos.y -= 0.2;
+        if(keys[KeyEvent.VK_UP]) spot.pos.z -= 1.5; if(keys[KeyEvent.VK_DOWN]) spot.pos.z += 1.5;
+        if(keys[KeyEvent.VK_LEFT]) spot.pos.x -= 1.5; if(keys[KeyEvent.VK_RIGHT]) spot.pos.x += 1.5;
+        if(keys[KeyEvent.VK_I]) spot.pos.y += 1.0; if(keys[KeyEvent.VK_K]) spot.pos.y -= 1.0;
 
         lightGizmo.transform.x = spot.pos.x; lightGizmo.transform.y = spot.pos.y; lightGizmo.transform.z = spot.pos.z;
 
-        // --- MOVIMENTAÇÃO FPS CORRIGIDA ---
-        double sp = 0.15;
-        // O Yaw define o vetor "frente" no horizonte
-        double fX = Math.sin(camera.yaw);
-        double fZ = -Math.cos(camera.yaw);
-        
-        // O vetor "direita" é o Forward rotacionado 90 graus
-        double rX = Math.cos(camera.yaw);
-        double rZ = Math.sin(camera.yaw);
+        double sp = 0.8; // Velocidade maior para o mapa gigante
+        double sY = Math.sin(camera.yaw), cY = Math.cos(camera.yaw);
+        double fX = sY, fZ = -cY, rX = cY, rZ = sY;
 
-        // W: Frente (Segue o guia do centro da tela)
-        if(keys[KeyEvent.VK_W]){
-            camera.transform.x += fX * sp;
-            camera.transform.z += fZ * sp;
-        }
-        // S: Trás
-        if(keys[KeyEvent.VK_S]){
-            camera.transform.x -= fX * sp;
-            camera.transform.z -= fZ * sp;
-        }
-        // A: Esquerda (Strafe)
-        if(keys[KeyEvent.VK_A]){
-            camera.transform.x -= rX * sp;
-            camera.transform.z -= rZ * sp;
-        }
-        // D: Direita (Strafe)
-        if(keys[KeyEvent.VK_D]){
-            camera.transform.x += rX * sp;
-            camera.transform.z += rZ * sp;
-        }
+        if(keys[KeyEvent.VK_W]){ camera.transform.x += fX * sp; camera.transform.z += fZ * sp; }
+        if(keys[KeyEvent.VK_S]){ camera.transform.x -= fX * sp; camera.transform.z -= fZ * sp; }
+        if(keys[KeyEvent.VK_A]){ camera.transform.x -= rX * sp; camera.transform.z -= rZ * sp; }
+        if(keys[KeyEvent.VK_D]){ camera.transform.x += rX * sp; camera.transform.z += rZ * sp; }
     }
 
     @Override public void run() { while(running){ update(); repaint(); try{Thread.sleep(16);}catch(Exception e){} } }
@@ -229,6 +228,10 @@ public class SoftwareRenderer extends JPanel implements Runnable, KeyListener, M
         for(GameObject obj : objects) obj.draw(pixels, zBuffer, camera, lights, WIDTH, HEIGHT, wireframe);
         if (showLightGizmo) lightGizmo.draw(pixels, zBuffer, camera, null, WIDTH, HEIGHT, true);
         g.drawImage(frameImage, 0, 0, null);
+        
+        g.setColor(Color.WHITE);
+        g.drawString("OBJETOS ATIVOS: 10.000", 10, 20);
+        g.drawString("TRIÂNGULOS ESTIMADOS: ~120.000", 10, 40);
     }
 
     class GameObject {
@@ -237,7 +240,7 @@ public class SoftwareRenderer extends JPanel implements Runnable, KeyListener, M
 
         void draw(int[] pixels, double[] zBuf, Camera cam, List<PointLight> sceneLights, int w, int h, boolean wire) {
             Matrix4 view = cam.getViewMatrix(); Matrix4 model = transform.getModelMatrix();
-            Matrix4 proj = Matrix4.projection(90, (double)w/h, 0.01, 1000);
+            Matrix4 proj = Matrix4.projection(90, (double)w/h, 0.01, 3000);
             Matrix4 modelView = Matrix4.multiply(view, model);
 
             for (Triangle t : mesh.triangles) {
@@ -252,22 +255,24 @@ public class SoftwareRenderer extends JPanel implements Runnable, KeyListener, M
                 if(len > 0) { nx/=len; ny/=len; nz/=len; }
 
                 if (nx*v1.x + ny*v1.y + nz*v1.z < 0) {
-                    int finalCol = t.baseColor.getRGB();
+                    double rT=0, gT=0, bT=0, amb = 0.1;
+                    double mx = (v1.x+v2.x+v3.x)/3.0, my = (v1.y+v2.y+v3.y)/3.0, mz = (v1.z+v2.z+v3.z)/3.0;
+
                     if (sceneLights != null && !wire) {
-                        double rT=0, gT=0, bT=0, amb = 0.15;
-                        double mx = (v1.x+v2.x+v3.x)/3.0, my = (v1.y+v2.y+v3.y)/3.0, mz = (v1.z+v2.z+v3.z)/3.0;
                         for(PointLight light : sceneLights) {
                             Vertex lV = Matrix4.multiply(view, light.pos);
                             double lx = lV.x-mx, ly = lV.y-my, lz = lV.z-mz;
                             double d = Math.sqrt(lx*lx+ly*ly+lz*lz);
                             double dot = Math.max(0, nx*(lx/d) + ny*(ly/d) + nz*(lz/d));
-                            double att = 1.0 / (1.0 + 0.05*d*d);
-                            rT += (t.baseColor.getRed()/255.0) * dot * light.intensity * att;
-                            gT += (t.baseColor.getGreen()/255.0) * dot * light.intensity * att;
-                            bT += (t.baseColor.getBlue()/255.0) * dot * light.intensity * att;
+                            double att = 1.0 / (1.0 + 0.003*d*d);
+                            rT += (t.baseColor.getRed()/255.0) * (light.color.getRed()/255.0) * dot * light.intensity * att;
+                            gT += (t.baseColor.getGreen()/255.0) * (light.color.getGreen()/255.0) * dot * light.intensity * att;
+                            bT += (t.baseColor.getBlue()/255.0) * (light.color.getBlue()/255.0) * dot * light.intensity * att;
                         }
-                        finalCol = new Color((int)(Math.min(1, rT+amb)*255), (int)(Math.min(1, gT+amb)*255), (int)(Math.min(1, bT+amb)*255)).getRGB();
                     }
+
+                    int finalCol = new Color((int)(Math.min(1, rT+amb)*255), (int)(Math.min(1, gT+amb)*255), (int)(Math.min(1, bT+amb)*255)).getRGB();
+
                     Vertex[] p = new Vertex[3]; Vertex[] orig = {v1, v2, v3}; boolean clip = false;
                     for (int i=0; i<3; i++) {
                         Vertex pr = Matrix4.multiply(proj, orig[i]);
