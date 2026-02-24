@@ -64,7 +64,7 @@ public class Game implements Runnable {
         lightGizmo = new GameObject(Mesh.createSphere(0.2, 8, 8));
 
         // Em vez de Mesh.createCube(), usamos o nosso leitor!
-        GameObject car = new GameObject(ObjLoader.load("car.obj", Color.CYAN));
+        GameObject car = new GameObject(ObjLoader.load("res/Car.obj", Color.CYAN));
         car.transform.x = -3;
         car.transform.z = -5; 
         objects.add(car);
