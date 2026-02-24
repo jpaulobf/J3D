@@ -5,6 +5,8 @@ import j3d.render.SoftwareRenderer;
 import j3d.lighting.PointLight;
 import j3d.geometry.Mesh;
 import j3d.input.InputManager;
+import j3d.io.ObjLoader;
+
 import java.awt.Color;
 import java.awt.Point;
 import java.awt.Robot;
@@ -60,6 +62,12 @@ public class Game implements Runnable {
 
         lights.add(new PointLight(0, 5, 0, Color.WHITE, 1.5));
         lightGizmo = new GameObject(Mesh.createSphere(0.2, 8, 8));
+
+        // Em vez de Mesh.createCube(), usamos o nosso leitor!
+        GameObject car = new GameObject(ObjLoader.load("car.obj", Color.CYAN));
+        car.transform.x = -3;
+        car.transform.z = -5; 
+        objects.add(car);
 
         camera.transform.z = 15;
         camera.transform.y = 5;
