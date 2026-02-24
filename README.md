@@ -9,8 +9,9 @@ O projeto segue padrões de design modulares para facilitar a manutenção e exp
 * **`core`**: O núcleo da aplicação. Contém o `Launcher` (ponto de entrada) e o `GameObject`, que encapsula a lógica dos objetos.
 * **`render`**: Gerencia o pipeline de renderização (`SoftwareRenderer`), a `Camera`, o loop principal e os buffers (Imagem e Z-Buffer).
 * **`math`**: Biblioteca matemática contendo `Matrix4` e `Transform` para cálculos de álgebra linear e transformações.
-* **`geometry`**: Define as formas geométricas (`Mesh`) e primitivas de construção (`Vertex`, `Triangle`).
-* **`lighting`**: Gerencia fontes de luz e cálculos de iluminação (`PointLight`).
+* **`geometry`**: Define as formas geométricas (`Mesh`), que podem ser geradas ou carregadas de arquivos, e suas primitivas de construção (`Vertex`, `Triangle`).
+* **`lighting`**: Gerencia fontes de luz (`PointLight`) e materiais, aplicando cálculos de iluminação com base nas propriedades de superfície dos objetos (ex: cor difusa carregada de arquivos `.mtl`).
+* **`io`**: Responsável pela leitura e parsing de arquivos externos, como modelos `.obj` e seus respectivos materiais `.mtl`.
 
 ## 🛠️ Destaques Técnicos
 
@@ -24,6 +25,9 @@ Utilizamos sombreamento difuso para calcular a interação da luz com as faces:
 
 ### 3. Z-Buffering (Depth Buffer)
 Um buffer de profundidade armazena a distância de cada pixel, resolvendo o problema de visibilidade e garantindo que objetos próximos cubram corretamente os distantes.
+
+### 4. Parser de Modelos .obj e .mtl
+O motor agora é capaz de carregar modelos 3D a partir de arquivos **Wavefront (.obj)**. O parser integrado extrai vértices, normais e faces do modelo. Além disso, há suporte para arquivos de materiais **(.mtl)**, permitindo que cada objeto tenha suas próprias propriedades de superfície, como a cor difusa (`Kd`), que são aplicadas durante a renderização.
 
 ## 🎮 Comandos do Laboratório
 
