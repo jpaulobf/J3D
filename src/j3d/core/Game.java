@@ -66,7 +66,8 @@ public class Game implements Runnable {
         // Em vez de Mesh.createCube(), usamos o nosso leitor!
         GameObject car = new GameObject(ObjLoader.load("res/Car.obj", Color.CYAN));
         car.transform.x = -3;
-        car.transform.z = -5; 
+        car.transform.z = -5;
+        car.transform.setScale(2.0); 
         objects.add(car);
 
         camera.transform.z = 15;
