@@ -18,10 +18,10 @@ O projeto segue padrões de design modulares para facilitar a manutenção e exp
 ### 1. Sistema de Target FPS
 O motor possui um controle dinâmico de taxa de quadros (`TARGET_FPS`). Implementamos um fator de correção (`speedCorrection`) que normaliza o movimento com base em um padrão de 60 FPS (16ms), garantindo consistência física independente da fluidez visual.
 
-### 2. Iluminação Lambertiana
-Utilizamos sombreamento difuso para calcular a interação da luz com as faces:
-* **Atenuação de Distância**: A intensidade da luz diminui conforme se afasta da fonte.
-* **Produto Escalar (Dot Product)**: Determina o brilho com base no ângulo entre a normal da face e o vetor da luz.
+### 2. Iluminação Dinâmica (Flat & Gouraud)
+O motor implementa o modelo de reflexão difusa (Lambertiana) com suporte a dois modos de sombreamento alternáveis em tempo real:
+* **Flat Shading**: A luz é calculada uma vez por face, resultando em um visual facetado.
+* **Gouraud Shading**: A luz é calculada por vértice e interpolada através do triângulo, criando superfícies suaves.
 
 ### 3. Z-Buffering (Depth Buffer)
 Um buffer de profundidade armazena a distância de cada pixel, resolvendo o problema de visibilidade e garantindo que objetos próximos cubram corretamente os distantes.
@@ -34,11 +34,13 @@ O motor agora é capaz de carregar modelos 3D a partir de arquivos **Wavefront (
 | Categoria | Teclas | Função |
 | :--- | :--- | :--- |
 | **Movimento** | `W`, `S`, `A`, `D` | Navegação FPS (Frente, Trás, Strafe) |
+| **Movimento** | `Scroll do Mouse` | Sobe e desce a câmera verticalmente |
 | **Visão** | `Mouse` | Olhar ao redor (Yaw e Pitch) |
 | **Luz (X, Z)** | `Setas Direcionais` | Move o spot de luz pelo plano horizontal |
 | **Luz (Y)** | `I` / `K` | Sobe ou desce o spot de luz |
 | **Modos** | `F2` | Alterna entre Preenchimento Sólido e **Wireframe** |
-| **Gizmo** | `F3` | Mostra/Esconde a esfera da luz |
+| **Modos** | `F3` | Mostra/Esconde a esfera da luz |
+| **Modos** | `F4` | Alterna entre Flat Shading e **Gouraud Shading** |
 
 ## 🚀 Como Executar
 
