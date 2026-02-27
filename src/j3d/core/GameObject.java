@@ -18,6 +18,7 @@ public class GameObject {
     // Mesh representing the geometry of the game object and its transform
     public Mesh mesh;
     public Transform transform = new Transform();
+    public static boolean gouraud = false;
 
     /**
      * Constructor for GameObject.
@@ -60,23 +61,17 @@ public class GameObject {
             }
 
             if (nx * v1.x + ny * v1.y + nz * v1.z < 0) {
-                int finalCol = t.baseColor.getRGB();
+                int c1 = t.baseColor.getRGB(), c2 = t.baseColor.getRGB(), c3 = t.baseColor.getRGB();
                 if (sceneLights != null && !wire) {
-                    double rT = 0, gT = 0, bT = 0, amb = 0.15;
-                    double mx = (v1.x + v2.x + v3.x) / 3.0, my = (v1.y + v2.y + v3.y) / 3.0,
-                            mz = (v1.z + v2.z + v3.z) / 3.0;
-                    for (PointLight light : sceneLights) {
-                        Vertex lV = Matrix4.multiply(view, light.pos);
-                        double lx = lV.x - mx, ly = lV.y - my, lz = lV.z - mz;
-                        double d = Math.sqrt(lx * lx + ly * ly + lz * lz);
-                        double dot = Math.max(0, nx * (lx / d) + ny * (ly / d) + nz * (lz / d));
-                        double att = 1.0 / (1.0 + 0.01 * d * d);
-                        rT += (t.baseColor.getRed() / 255.0) * dot * light.intensity * att;
-                        gT += (t.baseColor.getGreen() / 255.0) * dot * light.intensity * att;
-                        bT += (t.baseColor.getBlue() / 255.0) * dot * light.intensity * att;
+                    if (gouraud) {
+                        c1 = calcLighting(v1, nx, ny, nz, sceneLights, view, t.baseColor);
+                        c2 = calcLighting(v2, nx, ny, nz, sceneLights, view, t.baseColor);
+                        c3 = calcLighting(v3, nx, ny, nz, sceneLights, view, t.baseColor);
+                    } else {
+                        double mx = (v1.x + v2.x + v3.x) / 3.0, my = (v1.y + v2.y + v3.y) / 3.0, mz = (v1.z + v2.z + v3.z) / 3.0;
+                        int flat = calcLighting(new Vertex(mx, my, mz), nx, ny, nz, sceneLights, view, t.baseColor);
+                        c1 = c2 = c3 = flat;
                     }
-                    finalCol = new Color((int) (Math.min(1, rT + amb) * 255), (int) (Math.min(1, gT + amb) * 255),
-                            (int) (Math.min(1, bT + amb) * 255)).getRGB();
                 }
 
                 Vertex[] p = new Vertex[3];
@@ -94,10 +89,26 @@ public class GameObject {
                     if (wire)
                         drawWireframe(pixels, p, t.baseColor.getRGB(), w, h);
                     else
-                        rasterize(pixels, zBuf, p, finalCol, w, h);
+                        rasterize(pixels, zBuf, p, c1, c2, c3, w, h);
                 }
             }
         }
+    }
+
+    private int calcLighting(Vertex v, double nx, double ny, double nz, List<PointLight> lights, Matrix4 view, Color base) {
+        double rT = 0, gT = 0, bT = 0, amb = 0.15;
+        for (PointLight light : lights) {
+            Vertex lV = Matrix4.multiply(view, light.pos);
+            double lx = lV.x - v.x, ly = lV.y - v.y, lz = lV.z - v.z;
+            double d = Math.sqrt(lx * lx + ly * ly + lz * lz);
+            double dot = Math.max(0, nx * (lx / d) + ny * (ly / d) + nz * (lz / d));
+            double att = 1.0 / (1.0 + 0.01 * d * d);
+            rT += (base.getRed() / 255.0) * dot * light.intensity * att;
+            gT += (base.getGreen() / 255.0) * dot * light.intensity * att;
+            bT += (base.getBlue() / 255.0) * dot * light.intensity * att;
+        }
+        return new Color((int) (Math.min(1, rT + amb) * 255), (int) (Math.min(1, gT + amb) * 255),
+                (int) (Math.min(1, bT + amb) * 255)).getRGB();
     }
 
     /**
@@ -105,11 +116,13 @@ public class GameObject {
      * @param pixels
      * @param zBuf
      * @param v
-     * @param color
+     * @param c1
+     * @param c2
+     * @param c3
      * @param w
      * @param h
      */
-    void rasterize(int[] pixels, double[] zBuf, Vertex[] v, int color, int w, int h) {
+    void rasterize(int[] pixels, double[] zBuf, Vertex[] v, int c1, int c2, int c3, int w, int h) {
         int minX = (int) Math.max(0, Math.min(v[0].x, Math.min(v[1].x, v[2].x)));
         int maxX = (int) Math.min(w - 1, Math.max(v[0].x, Math.max(v[1].x, v[2].x)));
         int minY = (int) Math.max(0, Math.min(v[0].y, Math.min(v[1].y, v[2].y)));
@@ -117,6 +130,11 @@ public class GameObject {
         double area = (v[1].y - v[2].y) * (v[0].x - v[2].x) + (v[2].x - v[1].x) * (v[0].y - v[2].y);
         if (area == 0)
             return;
+        
+        int r1 = (c1 >> 16) & 0xFF, g1 = (c1 >> 8) & 0xFF, b1 = c1 & 0xFF;
+        int r2 = (c2 >> 16) & 0xFF, g2 = (c2 >> 8) & 0xFF, b2 = c2 & 0xFF;
+        int r3 = (c3 >> 16) & 0xFF, g3 = (c3 >> 8) & 0xFF, b3 = c3 & 0xFF;
+
         for (int y = minY; y <= maxY; y++) {
             for (int x = minX; x <= maxX; x++) {
                 double w0 = ((v[1].y - v[2].y) * (x - v[2].x) + (v[2].x - v[1].x) * (y - v[2].y)) / area;
@@ -127,7 +145,10 @@ public class GameObject {
                     int idx = y * w + x;
                     if (d > (1.0 / zBuf[idx])) {
                         zBuf[idx] = 1.0 / d;
-                        pixels[idx] = color;
+                        int r = (int) (w0 * r1 + w1 * r2 + w2 * r3);
+                        int g = (int) (w0 * g1 + w1 * g2 + w2 * g3);
+                        int b = (int) (w0 * b1 + w1 * b2 + w2 * b3);
+                        pixels[idx] = (r << 16) | (g << 8) | b;
                     }
                 }
             }

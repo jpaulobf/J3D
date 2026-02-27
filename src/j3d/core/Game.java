@@ -88,6 +88,7 @@ public class Game implements Runnable {
 
         if (input.isKeyPressed(KeyEvent.VK_F2)) wireframe = !wireframe;
         if (input.isKeyPressed(KeyEvent.VK_F3)) showLightGizmo = !showLightGizmo;
+        if (input.isKeyPressed(KeyEvent.VK_F4)) GameObject.gouraud = !GameObject.gouraud;
 
         if (window.getFrame().isFocusOwner()) {
             java.awt.Point loc = window.getFrame().getLocationOnScreen();
