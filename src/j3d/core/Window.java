@@ -18,8 +18,18 @@ public class Window {
         JPanel panel = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
-                super.paintComponent(g);
-                g.drawImage(canvas, 0, 0, null);
+                // Não chamamos super.paintComponent(g) para evitar limpar a tela desnecessariamente
+                Graphics2D g2d = (Graphics2D) g;
+                
+                // Hints para priorizar velocidade na transferência da imagem para a tela
+                g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_SPEED);
+                g2d.setRenderingHint(RenderingHints.KEY_DITHERING, RenderingHints.VALUE_DITHER_DISABLE);
+                System.setProperty("sun.java2d.d3d", "true");
+                
+                g2d.drawImage(canvas, 0, 0, null);
+                
+                // Sincroniza com o display hardware para evitar tearing e lag visual
+                Toolkit.getDefaultToolkit().sync();
             }
         };
         panel.setPreferredSize(new Dimension(width, height));

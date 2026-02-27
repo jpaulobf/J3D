@@ -50,6 +50,7 @@ public class Game implements Runnable {
         // Setup da Cena
         GameObject cube = new GameObject(Mesh.createCube());
         cube.transform.x = -3;
+        cube.transform.setScale(0.5);
         objects.add(cube);
 
         GameObject pyr = new GameObject(Mesh.createPyramid());
@@ -67,7 +68,7 @@ public class Game implements Runnable {
         GameObject car = new GameObject(ObjLoader.load("res/Car.obj", Color.CYAN));
         car.transform.x = -3;
         car.transform.z = -5;
-        car.transform.setScale(2.0); 
+        car.transform.setScale(1.5); 
         objects.add(car);
 
         camera.transform.z = 15;
@@ -79,6 +80,7 @@ public class Game implements Runnable {
 
         window.getFrame().addKeyListener(input);
         window.getFrame().addMouseMotionListener(input);
+        window.getFrame().addMouseWheelListener(input);
     }
 
     private void update() {
@@ -101,6 +103,12 @@ public class Game implements Runnable {
                 camera.pitch = Math.max(-1.5, Math.min(1.5, camera.pitch));
                 robot.mouseMove(centerX, centerY);
             }
+        }
+
+        // Movimento vertical da câmera com Scroll
+        int scroll = input.getScrollDelta();
+        if (scroll != 0) {
+            camera.transform.y -= scroll * 0.5; // Invertido: Scroll para trás sobe, para frente desce (ou vice-versa conforme preferência)
         }
 
         double camSp = 0.3 * speedCorrection;
