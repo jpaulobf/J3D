@@ -1,8 +1,8 @@
-# 🚀 J3D - Java Software Renderer
+# J3D - Java Software Renderer
 
 O **J3D** é um motor de renderização 3D de alta performance processado inteiramente via software. Ao contrário de engines modernas que dependem de GPUs e APIs como OpenGL ou Vulkan, o J3D realiza todos os cálculos matemáticos de álgebra linear, projeção de perspectiva e rasterização de pixels diretamente na **CPU** utilizando **Java puro**.
 
-## 🏗️ Arquitetura Modular
+## Arquitetura Modular
 
 O projeto segue padrões de design modulares para facilitar a manutenção e expansão:
 
@@ -14,7 +14,7 @@ O projeto segue padrões de design modulares para facilitar a manutenção e exp
 * **`io`**: Responsável pela leitura e parsing de arquivos externos, como modelos `.obj` e seus respectivos materiais `.mtl`.
 * **`physics`**: Módulo de física responsável pela detecção de colisão entre entidades.
 
-## 🛠️ Destaques Técnicos
+## Destaques Técnicos
 
 ### 1. Sistema de Target FPS
 O motor possui um controle dinâmico de taxa de quadros (`TARGET_FPS`). Implementamos um fator de correção (`speedCorrection`) que normaliza o movimento com base em um padrão de 60 FPS (16ms), garantindo consistência física independente da fluidez visual.
@@ -44,7 +44,7 @@ Foram aplicadas diversas otimizações de baixo nível para maximizar o FPS em u
 *   **Redução de Garbage Collection**: Otimizações no loop principal para evitar a criação de objetos desnecessários a cada quadro, reduzindo a carga sobre o coletor de lixo.
 
 
-## 🎮 Comandos do Laboratório
+## Comandos do Laboratório
 
 | Categoria | Teclas | Função |
 | :--- | :--- | :--- |
@@ -57,7 +57,7 @@ Foram aplicadas diversas otimizações de baixo nível para maximizar o FPS em u
 | **Modos** | `F3` | Mostra/Esconde a esfera da luz |
 | **Modos** | `F4` | Alterna entre Flat Shading e **Gouraud Shading** |
 
-## 🚀 Como Executar
+## Como Executar
 
 1. Compile a partir da pasta `src`:
    `javac core/*.java geometry/*.java lighting/*.java math/*.java render/*.java`
