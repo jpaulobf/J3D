@@ -95,8 +95,8 @@ public class Game implements Runnable {
     private void initialSceneCameraConfiguration() {
         // Configuração inicial da câmera
         camera.transform.x = -6;
-        camera.transform.z = -15;
-        camera.transform.y = 3;
+        camera.transform.z = -20;
+        camera.transform.y = 14;
 
         // Orientação validada
         camera.yaw = -0.3;
@@ -209,25 +209,48 @@ public class Game implements Runnable {
             camera.transform.z += dz;
         }
 
-        // Controle do Carro (Objeto 0) - Tank Controls
-        if (!objects.isEmpty()) {
+        // Controle do Carro (Objeto 0) e Chão (Objeto 1)
+        if (objects.size() >= 2) {
             GameObject car = objects.get(0);
-            double carSpeed = 0.1 * speedCorrection;
-            double carRotSpeed = 0.05 * speedCorrection;
+            GameObject floor = objects.get(1);
+            double speed = 0.1 * speedCorrection;
+            double rotSpeed = 0.007 * speedCorrection;
+            boolean isMoving = false;
+            boolean movingForward = false;
 
-            if (input.isKeyHeld(KeyEvent.VK_DOWN)) {
-                car.transform.x += Math.sin(car.transform.rotY) * carSpeed;
-                car.transform.z -= Math.cos(car.transform.rotY) * carSpeed;
-            }
+            // Movimento Linear do Chão (Inverso ao do Carro)
             if (input.isKeyHeld(KeyEvent.VK_UP)) {
-                car.transform.x -= Math.sin(car.transform.rotY) * carSpeed;
-                car.transform.z += Math.cos(car.transform.rotY) * carSpeed;
+                floor.transform.z -= speed;
+                isMoving = true;
+                movingForward = true;
             }
-            if (input.isKeyHeld(KeyEvent.VK_RIGHT) && (input.isKeyHeld(KeyEvent.VK_UP) || input.isKeyHeld(KeyEvent.VK_DOWN))) {
-                car.transform.rotY -= carRotSpeed;
+            if (input.isKeyHeld(KeyEvent.VK_DOWN)) {
+                floor.transform.z += speed;
+                isMoving = true;
             }
-            if (input.isKeyHeld(KeyEvent.VK_LEFT) && (input.isKeyHeld(KeyEvent.VK_UP) || input.isKeyHeld(KeyEvent.VK_DOWN))) {
-                car.transform.rotY += carRotSpeed;
+
+            // Rotação do Chão (Apenas se estiver movendo)
+            if (isMoving) {
+                double theta = 0;
+
+                if (movingForward) {
+                    if (input.isKeyHeld(KeyEvent.VK_LEFT)) theta = -rotSpeed;
+                    if (input.isKeyHeld(KeyEvent.VK_RIGHT)) theta = rotSpeed;
+                } else {
+                    if (input.isKeyHeld(KeyEvent.VK_LEFT)) theta = rotSpeed;
+                    if (input.isKeyHeld(KeyEvent.VK_RIGHT)) theta = -rotSpeed;
+                }
+
+                if (theta != 0) {
+                    double cx = car.transform.x, cz = car.transform.z;
+                    double fx = floor.transform.x, fz = floor.transform.z;
+                    double dx2 = fx - cx, dz2 = fz - cz;
+                    double cos = Math.cos(theta), sin = Math.sin(theta);
+                    
+                    floor.transform.x = cx + (dx2 * cos - dz2 * sin);
+                    floor.transform.z = cz + (dx2 * sin + dz2 * cos);
+                    floor.transform.rotY += theta;
+                }
             }
         }
 
