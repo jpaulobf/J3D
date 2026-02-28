@@ -209,7 +209,29 @@ public class Game implements Runnable {
             camera.transform.z += dz;
         }
 
-        // Movimento da luz com as setas do teclado
+        // Controle do Carro (Objeto 0) - Tank Controls
+        if (!objects.isEmpty()) {
+            GameObject car = objects.get(0);
+            double carSpeed = 0.1 * speedCorrection;
+            double carRotSpeed = 0.05 * speedCorrection;
+
+            if (input.isKeyHeld(KeyEvent.VK_DOWN)) {
+                car.transform.x += Math.sin(car.transform.rotY) * carSpeed;
+                car.transform.z -= Math.cos(car.transform.rotY) * carSpeed;
+            }
+            if (input.isKeyHeld(KeyEvent.VK_UP)) {
+                car.transform.x -= Math.sin(car.transform.rotY) * carSpeed;
+                car.transform.z += Math.cos(car.transform.rotY) * carSpeed;
+            }
+            if (input.isKeyHeld(KeyEvent.VK_RIGHT)) {
+                car.transform.rotY -= carRotSpeed;
+            }
+            if (input.isKeyHeld(KeyEvent.VK_LEFT)) {
+                car.transform.rotY += carRotSpeed;
+            }
+        }
+
+        // Movimento da luz
         j3d.lighting.PointLight spot = lights.get(0);
         double lSp = 0.3 * speedCorrection;
         if (input.isKeyHeld(KeyEvent.VK_U))
