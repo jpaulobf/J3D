@@ -18,39 +18,90 @@ import java.util.List;
 
 public class Game implements Runnable {
 
-    private static final int WIDTH = 800, HEIGHT = 600;
-    private boolean running = true, wireframe = false, showLightGizmo = true;
-    
+    // Constantes para a resolução da janela
+    private static final int WIDTH = 800;
+    private static final int HEIGHT = 600;
+
+    // Variáveis de estado do jogo
+    private boolean running = true;
+    private boolean wireframe = false;
+    private boolean showLightGizmo = true;
+
+    // Componentes do jogo
     private Window window;
     private IRenderer renderer;
-    private InputManager input = new InputManager();
+    private InputManager input;
     private Robot robot;
-
-    private Camera camera = new Camera();
-    private List<GameObject> objects = new ArrayList<>();
-    private List<PointLight> lights = new ArrayList<>();
+    private Camera camera;
+    private List<GameObject> objects;
+    private List<PointLight> lights;
     private GameObject lightGizmo;
 
-    private int TARGET_FPS = 240;
-    private int fps = 0, frames = 0;
+    // Controle de FPS
+    private int TARGET_FPS = 60;
+    private int fps = 0;
+    private int frames = 0;
     private long lastFpsTime = System.currentTimeMillis();
 
+    /**
+     * Construtor do jogo, onde inicializamos a janela, o renderer, a câmera, os
+     * objetos e as luzes.
+     */
     public Game() {
+        // Inicialização do jogo
         window = new Window("Engine 3D - J3D Game", WIDTH, HEIGHT);
+        input = new InputManager();
+        camera = new Camera();
+        objects = new ArrayList<>();
+        lights = new ArrayList<>();
         renderer = new SoftwareRenderer(WIDTH, HEIGHT);
+
+        // Inicialização do renderer
         renderer.init();
 
         try {
             robot = new Robot();
-        } catch (Exception e) {}
-        
-        window.getFrame().setCursor(window.getFrame().getToolkit().createCustomCursor(
-            new BufferedImage(1, 1, 2), new Point(0, 0), ""));
+        } catch (Exception e) {
+        }
 
+        // Esconde o cursor
+        window.getFrame().setCursor(window.getFrame().getToolkit().createCustomCursor(
+                new BufferedImage(1, 1, 2), new Point(0, 0), ""));
+
+        // Configuração inicial dos objetos da cena
+        this.getSceneInitialObjets();
+
+        // Configuração inicial da câmera
+        this.initialSceneCameraConfiguration();
+
+        // Configuração dos listeners de input
+        window.getFrame().addKeyListener(input);
+        window.getFrame().addMouseMotionListener(input);
+        window.getFrame().addMouseWheelListener(input);
+    }
+
+    /**
+     * Configura a posição e orientação inicial da câmera para uma visão adequada da
+     * cena.
+     */
+    private void initialSceneCameraConfiguration() {
+        // Configuração inicial da câmera
+        camera.transform.z = 15;
+        camera.transform.y = 5;
+
+        // Orientação validada
+        camera.yaw = 2.3;
+        camera.pitch = 1.5;
+    }
+
+    /**
+     * Configura os objetos iniciais da cena, incluindo formas básicas, um modelo 3D
+     * importado e uma luz.
+     */
+    private void getSceneInitialObjets() {
         // Setup da Cena
         GameObject cube = new GameObject(Mesh.createCube());
         cube.transform.x = -3;
-        cube.transform.setScale(0.5);
         objects.add(cube);
 
         GameObject pyr = new GameObject(Mesh.createPyramid());
@@ -61,35 +112,37 @@ public class Game implements Runnable {
         floor.transform.y = -1.5;
         objects.add(floor);
 
+        // Configuração da luz
         lights.add(new PointLight(0, 5, 0, Color.WHITE, 1.5));
         lightGizmo = new GameObject(Mesh.createSphere(0.2, 8, 8));
 
-        // Em vez de Mesh.createCube(), usamos o nosso leitor!
+        // leitura do modelo 3D da cena, com textura e cor
         GameObject car = new GameObject(ObjLoader.load("res/Car.obj", Color.CYAN));
-        car.transform.x = -3;
+        car.transform.y = -1;
+        car.transform.x = -6;
         car.transform.z = -5;
-        car.transform.setScale(1.5); 
+        car.transform.setScale(1.5);
         objects.add(car);
-
-        camera.transform.z = 15;
-        camera.transform.y = 5;
-        
-        // Orientação validada
-        camera.yaw = 2.3; 
-        camera.pitch = 1.5; 
-
-        window.getFrame().addKeyListener(input);
-        window.getFrame().addMouseMotionListener(input);
-        window.getFrame().addMouseWheelListener(input);
     }
 
+    /**
+     * Atualiza o estado do jogo, processando o input do usuário para movimentar a
+     * câmera e a luz, e atualizando a rotação dos objetos. Também calcula o FPS
+     * atual e atualiza o título da janela com essa informação.
+     */
     private void update() {
+        // Correção de velocidade baseada no FPS para garantir movimento consistente
         double speedCorrection = 60.0 / TARGET_FPS;
 
-        if (input.isKeyPressed(KeyEvent.VK_F2)) wireframe = !wireframe;
-        if (input.isKeyPressed(KeyEvent.VK_F3)) showLightGizmo = !showLightGizmo;
-        if (input.isKeyPressed(KeyEvent.VK_F4)) GameObject.gouraud = !GameObject.gouraud;
+        // Toggle de modos de renderização e visualização
+        if (input.isKeyPressed(KeyEvent.VK_F2))
+            wireframe = !wireframe;
+        if (input.isKeyPressed(KeyEvent.VK_F3))
+            showLightGizmo = !showLightGizmo;
+        if (input.isKeyPressed(KeyEvent.VK_F4))
+            GameObject.gouraud = !GameObject.gouraud;
 
+        // Movimento da câmera com mouse
         if (window.getFrame().isFocusOwner()) {
             java.awt.Point loc = window.getFrame().getLocationOnScreen();
             int centerX = loc.x + WIDTH / 2;
@@ -100,7 +153,7 @@ public class Game implements Runnable {
 
             if (dx != 0 || dy != 0) {
                 camera.yaw += dx * 0.003;
-                camera.pitch += dy * 0.003; 
+                camera.pitch += dy * 0.003;
                 camera.pitch = Math.max(-1.5, Math.min(1.5, camera.pitch));
                 robot.mouseMove(centerX, centerY);
             }
@@ -109,35 +162,61 @@ public class Game implements Runnable {
         // Movimento vertical da câmera com Scroll
         int scroll = input.getScrollDelta();
         if (scroll != 0) {
-            camera.transform.y -= scroll * 0.5; // Invertido: Scroll para trás sobe, para frente desce (ou vice-versa conforme preferência)
+            camera.transform.y -= scroll * 0.5; // Invertido: Scroll para trás sobe, para frente desce (ou vice-versa
+                                                // conforme preferência)
         }
 
+        // Movimento da câmera com teclado (WASD)
         double camSp = 0.3 * speedCorrection;
         double sY = Math.sin(camera.yaw);
         double cY = Math.cos(camera.yaw);
 
-        if (input.isKeyHeld(KeyEvent.VK_W)) { camera.transform.x += sY * camSp; camera.transform.z -= cY * camSp; }
-        if (input.isKeyHeld(KeyEvent.VK_S)) { camera.transform.x -= sY * camSp; camera.transform.z += cY * camSp; }
-        if (input.isKeyHeld(KeyEvent.VK_A)) { camera.transform.x -= cY * camSp; camera.transform.z -= sY * camSp; }
-        if (input.isKeyHeld(KeyEvent.VK_D)) { camera.transform.x += cY * camSp; camera.transform.z += sY * camSp; }
+        if (input.isKeyHeld(KeyEvent.VK_W)) {
+            camera.transform.x += sY * camSp;
+            camera.transform.z -= cY * camSp;
+        }
+        if (input.isKeyHeld(KeyEvent.VK_S)) {
+            camera.transform.x -= sY * camSp;
+            camera.transform.z += cY * camSp;
+        }
+        if (input.isKeyHeld(KeyEvent.VK_A)) {
+            camera.transform.x -= cY * camSp;
+            camera.transform.z -= sY * camSp;
+        }
+        if (input.isKeyHeld(KeyEvent.VK_D)) {
+            camera.transform.x += cY * camSp;
+            camera.transform.z += sY * camSp;
+        }
 
+        // Movimento da luz com as setas do teclado
         j3d.lighting.PointLight spot = lights.get(0);
         double lSp = 0.3 * speedCorrection;
-        if (input.isKeyHeld(KeyEvent.VK_UP))    spot.pos.z -= lSp;
-        if (input.isKeyHeld(KeyEvent.VK_DOWN))  spot.pos.z += lSp;
-        if (input.isKeyHeld(KeyEvent.VK_LEFT))  spot.pos.x -= lSp;
-        if (input.isKeyHeld(KeyEvent.VK_RIGHT)) spot.pos.x += lSp;
-        if (input.isKeyHeld(KeyEvent.VK_I))     spot.pos.y += lSp;
-        if (input.isKeyHeld(KeyEvent.VK_K))     spot.pos.y -= lSp;
+        if (input.isKeyHeld(KeyEvent.VK_UP))
+            spot.pos.z -= lSp;
+        if (input.isKeyHeld(KeyEvent.VK_DOWN))
+            spot.pos.z += lSp;
+        if (input.isKeyHeld(KeyEvent.VK_LEFT))
+            spot.pos.x -= lSp;
+        if (input.isKeyHeld(KeyEvent.VK_RIGHT))
+            spot.pos.x += lSp;
+        if (input.isKeyHeld(KeyEvent.VK_I))
+            spot.pos.y += lSp;
+        if (input.isKeyHeld(KeyEvent.VK_K))
+            spot.pos.y -= lSp;
 
         lightGizmo.transform.x = spot.pos.x;
         lightGizmo.transform.y = spot.pos.y;
         lightGizmo.transform.z = spot.pos.z;
 
+        // Rotação dos objetos da cena (exceto o chão e o modelo importado)
+        int index = 0;
         for (j3d.core.GameObject obj : objects) {
-            if (obj != objects.get(2)) obj.transform.rotY += 0.03 * speedCorrection;
+            if (index < 2)
+                obj.transform.rotY += 0.03 * speedCorrection;
+            index++;
         }
 
+        // Atualização do FPS
         frames++;
         if (System.currentTimeMillis() - lastFpsTime >= 1000) {
             fps = frames;
@@ -149,20 +228,33 @@ public class Game implements Runnable {
 
     @Override
     public void run() {
+        double drawInterval = 1000000000.0 / TARGET_FPS;
+        double nextDrawTime = System.nanoTime() + drawInterval;
+
         while (running) {
             update();
             renderer.clear();
-            
+
             renderer.draw(camera, objects, lights, wireframe);
             if (showLightGizmo) {
                 renderer.draw(camera, Arrays.asList(lightGizmo), null, true);
             }
-            
+
             window.update(renderer.getFrameBuffer());
-            
+
             try {
-                Thread.sleep(1000 / TARGET_FPS);
-            } catch (Exception e) {}
+                double remainingTime = nextDrawTime - System.nanoTime();
+                remainingTime /= 1000000;
+
+                if (remainingTime < 0) {
+                    remainingTime = 0;
+                }
+
+                Thread.sleep((long) remainingTime);
+
+                nextDrawTime += drawInterval;
+            } catch (Exception e) {
+            }
         }
     }
 }
