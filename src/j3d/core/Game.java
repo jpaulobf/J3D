@@ -43,6 +43,8 @@ public class Game implements Runnable {
     private List<GameObject> gizmoList;
     private PhysicsEngine physics;
 
+    private double currentSteering = 0;
+
     // Controle de FPS
     private int TARGET_FPS = 60;
     private int fps = 0;
@@ -121,7 +123,7 @@ public class Game implements Runnable {
         // cube.transform.x = -3;
         // objects.add(cube);
 
-        GameObject floor = new GameObject(Mesh.createGrid(20, 2.0));
+        GameObject floor = new GameObject(Mesh.createGrid(100, 2.0));
         floor.transform.y = -1.5;
         floor.hasCollision = false; // Desativa colisão com o chão para não travar o movimento
         objects.add(floor);
@@ -217,6 +219,27 @@ public class Game implements Runnable {
             double rotSpeed = 0.007 * speedCorrection;
             boolean isMoving = false;
             boolean movingForward = false;
+
+            double maxSteering = 0.008 * speedCorrection;  // O máximo que o volante vira (limite da curva)
+            double steerAccel = 0.0015 * speedCorrection; // A velocidade com que a rotação se acumula
+
+            // =======================================================
+            // 1. INPUT DO VOLANTE COM INÉRCIA (A Rotação que se acumula!)
+            // =======================================================
+            if (input.isKeyHeld(KeyEvent.VK_LEFT)) {
+                currentSteering -= steerAccel; // Vira mais pra esquerda
+            } else if (input.isKeyHeld(KeyEvent.VK_RIGHT)) {
+                currentSteering += steerAccel; // Vira mais pra direita
+            } else {
+                // Se soltar as teclas, o volante volta ao centro sozinho suavemente (Fricção da direção)
+                currentSteering *= 0.85; 
+            }
+
+            // Trava o volante para o carro não ficar a girar infinitamente
+            currentSteering = Math.max(-maxSteering, Math.min(maxSteering, currentSteering));
+
+            // Aplica a rotação do volante ao carro (multiplicado para um efeito visual mais pronunciado)
+            car.transform.rotY = -currentSteering * 15.0;
 
             // Movimento Linear do Chão (Inverso ao do Carro)
             if (input.isKeyHeld(KeyEvent.VK_UP)) {
