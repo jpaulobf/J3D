@@ -213,23 +213,23 @@ public class Game implements Runnable {
 
         // Controle do Carro (Objeto 0) e Chão (Objeto 1)
         if (objects.size() >= 2) {
+
             GameObject car = objects.get(0);
             GameObject floor = objects.get(1);
+            
             double speed = 0.1 * speedCorrection;
             double rotSpeed = 0.007 * speedCorrection;
+            
             boolean isMoving = false;
             boolean movingForward = false;
 
-            double maxSteering = 0.008 * speedCorrection;  // O máximo que o volante vira (limite da curva)
+            double maxSteering = 20 * Math.PI / 180; // Limite máximo de rotação do volante (22.5 graus)
             double steerAccel = 0.0035 * speedCorrection; // A velocidade com que a rotação se acumula
 
-            // =======================================================
-            // 1. INPUT DO VOLANTE COM INÉRCIA (A Rotação que se acumula!)
-            // =======================================================
             if (input.isKeyHeld(KeyEvent.VK_LEFT)) {
-                currentSteering = -steerAccel; // Vira mais pra esquerda
+                currentSteering -= steerAccel; // Vira mais pra esquerda
             } else if (input.isKeyHeld(KeyEvent.VK_RIGHT)) {
-                currentSteering = steerAccel; // Vira mais pra direita
+                currentSteering += steerAccel; // Vira mais pra direita
             } else {
                 // Se soltar as teclas, o volante volta ao centro sozinho suavemente (Fricção da direção)
                 currentSteering *= 0.85; 
@@ -239,7 +239,7 @@ public class Game implements Runnable {
             currentSteering = Math.max(-maxSteering, Math.min(maxSteering, currentSteering));
 
             // Aplica a rotação do volante ao carro (multiplicado para um efeito visual mais pronunciado)
-            car.transform.rotY = -currentSteering * 15.0;
+            car.transform.rotY = -currentSteering; // O fator de multiplicação é para amplificar a rotação visual do carro
 
             // Movimento Linear do Chão (Inverso ao do Carro)
             if (input.isKeyHeld(KeyEvent.VK_UP)) {
@@ -252,6 +252,7 @@ public class Game implements Runnable {
                 isMoving = true;
             }
 
+            /*
             // Rotação do Chão (Apenas se estiver movendo)
             if (isMoving) {
                 double theta = 0;
@@ -279,6 +280,7 @@ public class Game implements Runnable {
                     floor.transform.rotY += theta;
                 }
             }
+            */
         }
 
         // Movimento da luz
