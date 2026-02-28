@@ -113,6 +113,46 @@ public class Mesh {
                 m.triangles.add(new Triangle(i + 1, i + row, i + row + 1, col));
             }
         }
+
+        // --- Extrusão para criar a caixa (Box) ---
+        double height = 1.0; // Espessura do chão
+        double min = -half * tileSize;
+        double max = half * tileSize;
+        Color sideColor = new Color(30, 30, 30); // Cor cinza escuro para as laterais
+
+        // Adiciona os 4 vértices da base
+        int baseIdx = m.vertices.size();
+        m.vertices.add(new Vertex(min, -height, min)); // 0: Trás-Esquerda (Base)
+        m.vertices.add(new Vertex(max, -height, min)); // 1: Trás-Direita (Base)
+        m.vertices.add(new Vertex(max, -height, max)); // 2: Frente-Direita (Base)
+        m.vertices.add(new Vertex(min, -height, max)); // 3: Frente-Esquerda (Base)
+
+        // Índices dos cantos da superfície superior já existentes
+        int topBL = 0;                  // Trás-Esquerda (Topo)
+        int topBR = size;               // Trás-Direita (Topo)
+        int topFL = size * row;         // Frente-Esquerda (Topo)
+        int topFR = size * row + size;  // Frente-Direita (Topo)
+
+        // Face Traseira (Z = min)
+        m.triangles.add(new Triangle(topBL, topBR, baseIdx + 0, sideColor));
+        m.triangles.add(new Triangle(baseIdx + 0, topBR, baseIdx + 1, sideColor));
+
+        // Face Frontal (Z = max)
+        m.triangles.add(new Triangle(topFL, baseIdx + 3, topFR, sideColor));
+        m.triangles.add(new Triangle(baseIdx + 3, baseIdx + 2, topFR, sideColor));
+
+        // Face Esquerda (X = min)
+        m.triangles.add(new Triangle(topBL, baseIdx + 0, topFL, sideColor));
+        m.triangles.add(new Triangle(baseIdx + 0, baseIdx + 3, topFL, sideColor));
+
+        // Face Direita (X = max)
+        m.triangles.add(new Triangle(topBR, topFR, baseIdx + 1, sideColor));
+        m.triangles.add(new Triangle(baseIdx + 1, topFR, baseIdx + 2, sideColor));
+
+        // Face Inferior (Fundo)
+        m.triangles.add(new Triangle(baseIdx + 0, baseIdx + 1, baseIdx + 2, sideColor));
+        m.triangles.add(new Triangle(baseIdx + 0, baseIdx + 2, baseIdx + 3, sideColor));
+
         return m;
     }
 }

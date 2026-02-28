@@ -38,7 +38,7 @@ public class Game implements Runnable {
     private GameObject lightGizmo;
 
     // Controle de FPS
-    private int TARGET_FPS = 120;
+    private int TARGET_FPS = 60;
     private int fps = 0;
     private int frames = 0;
     private long lastFpsTime = System.currentTimeMillis();
@@ -90,7 +90,7 @@ public class Game implements Runnable {
     private void initialSceneCameraConfiguration() {
         // Configuração inicial da câmera
         camera.transform.z = 15;
-        camera.transform.y = 1.5;
+        camera.transform.y = 2.5;
 
         // Orientação validada
         camera.yaw = 2.3;

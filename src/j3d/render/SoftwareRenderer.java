@@ -24,7 +24,7 @@ public class SoftwareRenderer implements IRenderer {
 
     @Override
     public void clear() {
-        Arrays.fill(pixels, 0); // Fundo Preto
+        Arrays.fill(pixels, 0xFF87CEEB); // Fundo Azul (Céu)
         Arrays.fill(zBuffer, Double.POSITIVE_INFINITY);
     }
 
