@@ -12,6 +12,7 @@ O projeto segue padrões de design modulares para facilitar a manutenção e exp
 * **`geometry`**: Define as formas geométricas (`Mesh`), que podem ser geradas ou carregadas de arquivos, e suas primitivas de construção (`Vertex`, `Triangle`).
 * **`lighting`**: Gerencia fontes de luz (`PointLight`) e materiais, aplicando cálculos de iluminação com base nas propriedades de superfície dos objetos (ex: cor difusa carregada de arquivos `.mtl`).
 * **`io`**: Responsável pela leitura e parsing de arquivos externos, como modelos `.obj` e seus respectivos materiais `.mtl`.
+* **`physics`**: Módulo de física responsável pela detecção de colisão entre entidades.
 
 ## 🛠️ Destaques Técnicos
 
@@ -28,6 +29,20 @@ Um buffer de profundidade armazena a distância de cada pixel, resolvendo o prob
 
 ### 4. Parser de Modelos .obj e .mtl
 O motor agora é capaz de carregar modelos 3D a partir de arquivos **Wavefront (.obj)**. O parser integrado extrai vértices, normais e faces do modelo. Além disso, há suporte para arquivos de materiais **(.mtl)**, permitindo que cada objeto tenha suas próprias propriedades de superfície, como a cor difusa (`Kd`), que são aplicadas durante a renderização.
+
+### 5. Motor de Física e Detecção de Colisão
+O J3D agora inclui um `PhysicsEngine` básico que implementa detecção de colisão. O sistema trata o jogador (câmera) como um cilindro e os objetos como caixas delimitadoras (AABB - Axis-Aligned Bounding Box), permitindo uma navegação realista que impede o jogador de atravessar paredes e outros obstáculos sólidos.
+
+### 6. Clipping de Projeção (Near Plane Clipping)
+Para corrigir artefatos visuais e evitar a renderização de geometria que está atrás da câmera, foi implementado um sistema de clipping simples no plano próximo (near plane). Triângulos que cruzam ou estão atrás deste plano são descartados antes da rasterização, melhorando a performance e a correção visual.
+
+### 7. Otimizações de Performance na CPU
+Foram aplicadas diversas otimizações de baixo nível para maximizar o FPS em um ambiente de renderização por software:
+*   **Backface Culling Otimizado**: A verificação de faces traseiras agora é feita antes do cálculo da normalização (raiz quadrada), economizando ciclos de CPU.
+*   **Pré-cálculo de Luzes**: A posição das luzes no espaço da câmera é calculada apenas uma vez por objeto, em vez de repetidamente para cada vértice.
+*   **Otimização do Rasterizador**: A interpolação de coordenadas baricêntricas agora usa multiplicação em vez de divisões repetidas, que são mais lentas.
+*   **Redução de Garbage Collection**: Otimizações no loop principal para evitar a criação de objetos desnecessários a cada quadro, reduzindo a carga sobre o coletor de lixo.
+
 
 ## 🎮 Comandos do Laboratório
 
