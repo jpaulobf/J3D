@@ -2,7 +2,6 @@ package j3d.core;
 
 import java.awt.Color;
 import java.util.List;
-
 import j3d.geometry.Mesh;
 import j3d.geometry.Triangle;
 import j3d.lighting.PointLight;
@@ -61,6 +60,15 @@ public class GameObject {
         Matrix4 proj = Matrix4.projection(90, (double) w / h, 0.1, 1000);
         Matrix4 modelView = Matrix4.multiply(view, model);
 
+        // Pré-calcular luzes no espaço da câmera (View Space)
+        // Evita multiplicar matrizes (operação pesada) para cada vértice de cada triângulo
+        java.util.ArrayList<Vertex> viewSpaceLights = new java.util.ArrayList<>();
+        if (sceneLights != null) {
+            for (PointLight light : sceneLights) {
+                viewSpaceLights.add(Matrix4.multiply(view, light.pos));
+            }
+        }
+
         for (Triangle t : mesh.triangles) {
 
             Vertex v1 = Matrix4.multiply(modelView, mesh.vertices.get(t.v1));
@@ -70,23 +78,24 @@ public class GameObject {
             double nx = (v2.y - v1.y) * (v3.z - v1.z) - (v2.z - v1.z) * (v3.y - v1.y);
             double ny = (v2.z - v1.z) * (v3.x - v1.x) - (v2.x - v1.x) * (v3.z - v1.z);
             double nz = (v2.x - v1.x) * (v3.y - v1.y) - (v2.y - v1.y) * (v3.x - v1.x);
-            double len = Math.sqrt(nx * nx + ny * ny + nz * nz);
-            if (len > 0) {
-                nx /= len;
-                ny /= len;
-                nz /= len;
-            }
 
+            // Backface Culling antes da normalização
+            // O sinal do produto escalar não muda com a normalização, então checamos antes
             if (nx * v1.x + ny * v1.y + nz * v1.z < 0) {
+                
+                // Agora sim normalizamos, pois precisamos do vetor unitário para a iluminação
+                double len = Math.sqrt(nx * nx + ny * ny + nz * nz);
+                if (len > 0) { nx /= len; ny /= len; nz /= len; }
+
                 int c1 = t.baseColor.getRGB(), c2 = t.baseColor.getRGB(), c3 = t.baseColor.getRGB();
                 if (sceneLights != null && !wire) {
                     if (gouraud) {
-                        c1 = calcLighting(v1, nx, ny, nz, sceneLights, view, t.baseColor);
-                        c2 = calcLighting(v2, nx, ny, nz, sceneLights, view, t.baseColor);
-                        c3 = calcLighting(v3, nx, ny, nz, sceneLights, view, t.baseColor);
+                        c1 = calcLighting(v1, nx, ny, nz, sceneLights, viewSpaceLights, t.baseColor);
+                        c2 = calcLighting(v2, nx, ny, nz, sceneLights, viewSpaceLights, t.baseColor);
+                        c3 = calcLighting(v3, nx, ny, nz, sceneLights, viewSpaceLights, t.baseColor);
                     } else {
                         double mx = (v1.x + v2.x + v3.x) / 3.0, my = (v1.y + v2.y + v3.y) / 3.0, mz = (v1.z + v2.z + v3.z) / 3.0;
-                        int flat = calcLighting(new Vertex(mx, my, mz), nx, ny, nz, sceneLights, view, t.baseColor);
+                        int flat = calcLighting(new Vertex(mx, my, mz), nx, ny, nz, sceneLights, viewSpaceLights, t.baseColor);
                         c1 = c2 = c3 = flat;
                     }
                 }
@@ -112,10 +121,22 @@ public class GameObject {
         }
     }
 
-    private int calcLighting(Vertex v, double nx, double ny, double nz, List<PointLight> lights, Matrix4 view, Color base) {
+    /**
+     * Calculate lighting method to compute the color of a vertex based on its normal, the scene lights, and the base color of the triangle.
+     * @param v
+     * @param nx
+     * @param ny
+     * @param nz
+     * @param lights
+     * @param viewSpaceLights
+     * @param base
+     * @return
+     */
+    private int calcLighting(Vertex v, double nx, double ny, double nz, List<PointLight> lights, List<Vertex> viewSpaceLights, Color base) {
         double rT = 0, gT = 0, bT = 0, amb = 0.15;
-        for (PointLight light : lights) {
-            Vertex lV = Matrix4.multiply(view, light.pos);
+        for (int i = 0; i < lights.size(); i++) {
+            PointLight light = lights.get(i);
+            Vertex lV = viewSpaceLights.get(i); // Usa a posição pré-calculada
             double lx = lV.x - v.x, ly = lV.y - v.y, lz = lV.z - v.z;
             double d = Math.sqrt(lx * lx + ly * ly + lz * lz);
             double dot = Math.max(0, nx * (lx / d) + ny * (ly / d) + nz * (lz / d));
@@ -147,6 +168,7 @@ public class GameObject {
         double area = (v[1].y - v[2].y) * (v[0].x - v[2].x) + (v[2].x - v[1].x) * (v[0].y - v[2].y);
         if (area == 0)
             return;
+        double invArea = 1.0 / area; // Otimização 3: Multiplicação é muito mais rápida que divisão
         
         int r1 = (c1 >> 16) & 0xFF, g1 = (c1 >> 8) & 0xFF, b1 = c1 & 0xFF;
         int r2 = (c2 >> 16) & 0xFF, g2 = (c2 >> 8) & 0xFF, b2 = c2 & 0xFF;
@@ -154,8 +176,8 @@ public class GameObject {
 
         for (int y = minY; y <= maxY; y++) {
             for (int x = minX; x <= maxX; x++) {
-                double w0 = ((v[1].y - v[2].y) * (x - v[2].x) + (v[2].x - v[1].x) * (y - v[2].y)) / area;
-                double w1 = ((v[2].y - v[0].y) * (x - v[2].x) + (v[0].x - v[2].x) * (y - v[2].y)) / area;
+                double w0 = ((v[1].y - v[2].y) * (x - v[2].x) + (v[2].x - v[1].x) * (y - v[2].y)) * invArea;
+                double w1 = ((v[2].y - v[0].y) * (x - v[2].x) + (v[0].x - v[2].x) * (y - v[2].y)) * invArea;
                 double w2 = 1.0 - w0 - w1;
                 if (w0 >= 0 && w1 >= 0 && w2 >= 0) {
                     double d = w0 * v[0].z + w1 * v[1].z + w2 * v[2].z;
@@ -171,7 +193,6 @@ public class GameObject {
             }
         }
     }
-
 
     /**
      * Draw wireframe method to draw the edges of the triangle defined by vertices v with the specified color.
