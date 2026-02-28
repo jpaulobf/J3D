@@ -38,10 +38,11 @@ public class Game implements Runnable {
     private GameObject lightGizmo;
 
     // Controle de FPS
-    private int TARGET_FPS = 60;
+    private int TARGET_FPS = 120;
     private int fps = 0;
     private int frames = 0;
     private long lastFpsTime = System.currentTimeMillis();
+    private static final double PLAYER_RADIUS = 0.5; // Tamanho da colisão do jogador
 
     /**
      * Construtor do jogo, onde inicializamos a janela, o renderer, a câmera, os
@@ -87,7 +88,7 @@ public class Game implements Runnable {
     private void initialSceneCameraConfiguration() {
         // Configuração inicial da câmera
         camera.transform.z = 15;
-        camera.transform.y = 5;
+        camera.transform.y = 3;
 
         // Orientação validada
         camera.yaw = 2.3;
@@ -110,6 +111,7 @@ public class Game implements Runnable {
 
         GameObject floor = new GameObject(Mesh.createGrid(20, 2.0));
         floor.transform.y = -1.5;
+        floor.hasCollision = false; // Desativa colisão com o chão para não travar o movimento
         objects.add(floor);
 
         // Configuração da luz
@@ -170,22 +172,39 @@ public class Game implements Runnable {
         double camSp = 0.3 * speedCorrection;
         double sY = Math.sin(camera.yaw);
         double cY = Math.cos(camera.yaw);
+        
+        double dx = 0;
+        double dz = 0;
 
         if (input.isKeyHeld(KeyEvent.VK_W)) {
-            camera.transform.x += sY * camSp;
-            camera.transform.z -= cY * camSp;
+            dx += sY * camSp;
+            dz -= cY * camSp;
         }
         if (input.isKeyHeld(KeyEvent.VK_S)) {
-            camera.transform.x -= sY * camSp;
-            camera.transform.z += cY * camSp;
+            dx -= sY * camSp;
+            dz += cY * camSp;
         }
         if (input.isKeyHeld(KeyEvent.VK_A)) {
-            camera.transform.x -= cY * camSp;
-            camera.transform.z -= sY * camSp;
+            dx -= cY * camSp;
+            dz -= sY * camSp;
         }
         if (input.isKeyHeld(KeyEvent.VK_D)) {
-            camera.transform.x += cY * camSp;
-            camera.transform.z += sY * camSp;
+            dx += cY * camSp;
+            dz += sY * camSp;
+        }
+
+        // Aplica movimento no eixo X se não houver colisão
+        if (!checkCollision(camera.transform.x + dx, camera.transform.z)) {
+            camera.transform.x += dx;
+        } else {
+            // Tenta deslizar (verifica se apenas o movimento em X causou a colisão)
+            // Se colidiu, tentamos zerar o DX para ver se conseguimos andar só em Z no próximo bloco?
+            // Na verdade, aqui aplicamos X. Se falhar, não aplicamos X.
+        }
+
+        // Aplica movimento no eixo Z se não houver colisão (permite deslizar nas paredes)
+        if (!checkCollision(camera.transform.x, camera.transform.z + dz)) {
+            camera.transform.z += dz;
         }
 
         // Movimento da luz com as setas do teclado
@@ -224,6 +243,18 @@ public class Game implements Runnable {
             lastFpsTime = System.currentTimeMillis();
             window.getFrame().setTitle("TARGET FPS: " + TARGET_FPS + " | ACTUAL FPS: " + fps);
         }
+    }
+
+    /**
+     * Verifica colisão da câmera contra todos os objetos da cena
+     */
+    private boolean checkCollision(double targetX, double targetZ) {
+        for (GameObject obj : objects) {
+            if (obj.checkCollision(targetX, targetZ, PLAYER_RADIUS)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override

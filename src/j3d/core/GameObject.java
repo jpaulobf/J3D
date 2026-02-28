@@ -19,6 +19,10 @@ public class GameObject {
     public Mesh mesh;
     public Transform transform = new Transform();
     public static boolean gouraud = false;
+    
+    // Propriedades de Colisão
+    public boolean hasCollision = true;
+    private double collisionRadius = 0;
 
     /**
      * Constructor for GameObject.
@@ -26,6 +30,11 @@ public class GameObject {
      */
     public GameObject(Mesh m) {
         mesh = m;
+        // Calcula o raio máximo do objeto no plano X/Z para colisão
+        for (Vertex v : m.vertices) {
+            double dist = Math.sqrt(v.x * v.x + v.z * v.z);
+            if (dist > collisionRadius) collisionRadius = dist;
+        }
     }
 
     /**
@@ -197,5 +206,21 @@ public class GameObject {
                 y0 += sy;
             }
         }
+    }
+
+    /**
+     * Verifica se uma posição (geralmente a câmera) colide com este objeto.
+     * @param x Posição X da entidade
+     * @param z Posição Z da entidade
+     * @param radius Raio da entidade (tamanho do jogador)
+     * @return true se houver colisão
+     */
+    public boolean checkCollision(double x, double z, double radius) {
+        if (!hasCollision) return false;
+        double dx = x - transform.x;
+        double dz = z - transform.z;
+        double dist = Math.sqrt(dx * dx + dz * dz);
+        double scaledRadius = collisionRadius * Math.max(transform.scaleX, transform.scaleZ);
+        return dist < (scaledRadius + radius);
     }
 }
