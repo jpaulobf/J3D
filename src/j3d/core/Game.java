@@ -43,6 +43,8 @@ public class Game implements Runnable {
     private int frames = 0;
     private long lastFpsTime = System.currentTimeMillis();
     private static final double PLAYER_RADIUS = 0.5; // Tamanho da colisão do jogador
+    private static final double PLAYER_HEIGHT = 1.8; // Altura total do jogador
+    private static final double PLAYER_EYE_HEIGHT = 1.6; // Altura dos olhos em relação aos pés
 
     /**
      * Construtor do jogo, onde inicializamos a janela, o renderer, a câmera, os
@@ -88,7 +90,7 @@ public class Game implements Runnable {
     private void initialSceneCameraConfiguration() {
         // Configuração inicial da câmera
         camera.transform.z = 15;
-        camera.transform.y = 3;
+        camera.transform.y = 1.5;
 
         // Orientação validada
         camera.yaw = 2.3;
@@ -194,7 +196,7 @@ public class Game implements Runnable {
         }
 
         // Aplica movimento no eixo X se não houver colisão
-        if (!checkCollision(camera.transform.x + dx, camera.transform.z)) {
+        if (!checkCollision(camera.transform.x + dx, camera.transform.y, camera.transform.z)) {
             camera.transform.x += dx;
         } else {
             // Tenta deslizar (verifica se apenas o movimento em X causou a colisão)
@@ -203,7 +205,7 @@ public class Game implements Runnable {
         }
 
         // Aplica movimento no eixo Z se não houver colisão (permite deslizar nas paredes)
-        if (!checkCollision(camera.transform.x, camera.transform.z + dz)) {
+        if (!checkCollision(camera.transform.x, camera.transform.y, camera.transform.z + dz)) {
             camera.transform.z += dz;
         }
 
@@ -248,9 +250,12 @@ public class Game implements Runnable {
     /**
      * Verifica colisão da câmera contra todos os objetos da cena
      */
-    private boolean checkCollision(double targetX, double targetZ) {
+    private boolean checkCollision(double targetX, double targetY, double targetZ) {
+        double feetY = targetY - PLAYER_EYE_HEIGHT;
+        double headY = feetY + PLAYER_HEIGHT;
+
         for (GameObject obj : objects) {
-            if (obj.checkCollision(targetX, targetZ, PLAYER_RADIUS)) {
+            if (obj.checkCollision(targetX, targetZ, feetY, headY, PLAYER_RADIUS)) {
                 return true;
             }
         }

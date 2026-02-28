@@ -23,6 +23,8 @@ public class GameObject {
     // Propriedades de Colisão
     public boolean hasCollision = true;
     private double collisionRadius = 0;
+    private double minY = 0;
+    private double maxY = 0;
 
     /**
      * Constructor for GameObject.
@@ -30,10 +32,16 @@ public class GameObject {
      */
     public GameObject(Mesh m) {
         mesh = m;
-        // Calcula o raio máximo do objeto no plano X/Z para colisão
+        minY = Double.MAX_VALUE;
+        maxY = -Double.MAX_VALUE;
+
+        // Calcula o raio máximo (X/Z) e a altura (Y) do objeto para colisão
         for (Vertex v : m.vertices) {
             double dist = Math.sqrt(v.x * v.x + v.z * v.z);
             if (dist > collisionRadius) collisionRadius = dist;
+            
+            if (v.y < minY) minY = v.y;
+            if (v.y > maxY) maxY = v.y;
         }
     }
 
@@ -212,11 +220,21 @@ public class GameObject {
      * Verifica se uma posição (geralmente a câmera) colide com este objeto.
      * @param x Posição X da entidade
      * @param z Posição Z da entidade
+     * @param entityMinY Posição Y da base da entidade (pés)
+     * @param entityMaxY Posição Y do topo da entidade (cabeça)
      * @param radius Raio da entidade (tamanho do jogador)
      * @return true se houver colisão
      */
-    public boolean checkCollision(double x, double z, double radius) {
+    public boolean checkCollision(double x, double z, double entityMinY, double entityMaxY, double radius) {
         if (!hasCollision) return false;
+        
+        // Verifica limites verticais (Intersecção de Intervalos)
+        double worldMinY = transform.y + minY * transform.scaleY;
+        double worldMaxY = transform.y + maxY * transform.scaleY;
+        
+        // Se o personagem está totalmente acima ou totalmente abaixo do objeto, não há colisão
+        if (entityMinY >= worldMaxY || entityMaxY <= worldMinY) return false;
+
         double dx = x - transform.x;
         double dz = z - transform.z;
         double dist = Math.sqrt(dx * dx + dz * dz);
