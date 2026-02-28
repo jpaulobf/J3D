@@ -7,21 +7,25 @@ import j3d.physics.PhysicsEngine;
 import j3d.geometry.Mesh;
 import j3d.input.InputManager;
 import j3d.io.ObjLoader;
-
 import java.awt.Color;
 import java.awt.Point;
 import java.awt.Robot;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+import java.util.ArrayList;
 
+/**
+ * Game class responsible for initializing the game, handling the main game
+ * loop, processing user input, updating the game state, and rendering the
+ * scene.
+ */
 public class Game implements Runnable {
 
     // Constantes para a resolução da janela
     private static final int WIDTH = 1920;
     private static final int HEIGHT = 1080;
+    
     // Variáveis de estado do jogo
     private boolean running = true;
     private boolean wireframe = false;
@@ -36,6 +40,7 @@ public class Game implements Runnable {
     private List<GameObject> objects;
     private List<PointLight> lights;
     private GameObject lightGizmo;
+    private List<GameObject> gizmoList;
     private PhysicsEngine physics;
 
     // Controle de FPS
@@ -43,7 +48,6 @@ public class Game implements Runnable {
     private int fps = 0;
     private int frames = 0;
     private long lastFpsTime = System.currentTimeMillis();
-
 
     /**
      * Construtor do jogo, onde inicializamos a janela, o renderer, a câmera, os
@@ -56,6 +60,7 @@ public class Game implements Runnable {
         camera = new Camera();
         objects = new ArrayList<>();
         lights = new ArrayList<>();
+        gizmoList = new ArrayList<>();
         renderer = new SoftwareRenderer(WIDTH, HEIGHT);
         physics = new PhysicsEngine();
 
@@ -112,9 +117,9 @@ public class Game implements Runnable {
         objects.add(car);
 
         // Setup da Cena
-        //GameObject cube = new GameObject(Mesh.createCube());
-        //cube.transform.x = -3;
-        //objects.add(cube);
+        // GameObject cube = new GameObject(Mesh.createCube());
+        // cube.transform.x = -3;
+        // objects.add(cube);
 
         GameObject floor = new GameObject(Mesh.createGrid(20, 2.0));
         floor.transform.y = -1.5;
@@ -124,6 +129,7 @@ public class Game implements Runnable {
         // Configuração da luz
         lights.add(new PointLight(0, 20, 0, Color.GREEN, 7));
         lightGizmo = new GameObject(Mesh.createSphere(0.2, 8, 8));
+        gizmoList.add(lightGizmo);
     }
 
     /**
@@ -171,7 +177,7 @@ public class Game implements Runnable {
         double camSp = 0.3 * speedCorrection;
         double sY = Math.sin(camera.yaw);
         double cY = Math.cos(camera.yaw);
-        
+
         double dx = 0;
         double dz = 0;
 
@@ -197,7 +203,8 @@ public class Game implements Runnable {
             camera.transform.x += dx;
         }
 
-        // Aplica movimento no eixo Z se não houver colisão (permite deslizar nas paredes)
+        // Aplica movimento no eixo Z se não houver colisão (permite deslizar nas
+        // paredes)
         if (!physics.checkPlayerCollision(camera.transform.x, camera.transform.y, camera.transform.z + dz, objects)) {
             camera.transform.z += dz;
         }
@@ -222,14 +229,6 @@ public class Game implements Runnable {
         lightGizmo.transform.y = spot.pos.y;
         lightGizmo.transform.z = spot.pos.z;
 
-        // Rotação dos objetos da cena (exceto o chão e o modelo importado)
-        int index = 0;
-        for (j3d.core.GameObject obj : objects) {
-            if (index < 0)
-                obj.transform.rotY += 0.03 * speedCorrection;
-            index++;
-        }
-
         // Atualização do FPS
         frames++;
         if (System.currentTimeMillis() - lastFpsTime >= 1000) {
@@ -251,7 +250,7 @@ public class Game implements Runnable {
 
             renderer.draw(camera, objects, lights, wireframe);
             if (showLightGizmo) {
-                renderer.draw(camera, Arrays.asList(lightGizmo), null, true);
+                renderer.draw(camera, gizmoList, null, true);
             }
 
             window.update(renderer.getFrameBuffer(), fps);
