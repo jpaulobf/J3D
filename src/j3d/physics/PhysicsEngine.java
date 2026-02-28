@@ -34,12 +34,13 @@ public class PhysicsEngine {
 
     /**
      * Verifica se uma posição (geralmente a câmera) colide com este objeto.
+     * A verificação é feita usando AABB (Axis-Aligned Bounding Box).
      * 
      * @param x          Posição X da entidade
      * @param z          Posição Z da entidade
      * @param entityMinY Posição Y da base da entidade (pés)
      * @param entityMaxY Posição Y do topo da entidade (cabeça)
-     * @param radius     Raio da entidade (tamanho do jogador)
+     * @param radius     Raio da entidade (usado para definir a caixa do jogador)
      * @return true se houver colisão
      */
     public boolean checkCollision(double x, double z, double entityMinY, double entityMaxY, double radius,
@@ -47,20 +48,23 @@ public class PhysicsEngine {
         if (!object.hasCollision)
             return false;
 
-        // Verifica limites verticais (Intersecção de Intervalos)
-        double worldMinY = object.transform.y + object.minY * object.transform.scaleY;
-        double worldMaxY = object.transform.y + object.maxY * object.transform.scaleY;
+        // 1. Define o AABB do jogador (entidade)
+        double playerMinX = x - radius;
+        double playerMaxX = x + radius;
+        double playerMinZ = z - radius;
+        double playerMaxZ = z + radius;
 
-        // Se o personagem está totalmente acima ou totalmente abaixo do objeto, não há
-        // colisão
-        if (entityMinY >= worldMaxY || entityMaxY <= worldMinY)
-            return false;
+        // 2. Define o AABB do objeto no espaço do mundo
+        double objMinX = object.transform.x + object.minX * object.transform.scaleX;
+        double objMaxX = object.transform.x + object.maxX * object.transform.scaleX;
+        double objMinY = object.transform.y + object.minY * object.transform.scaleY;
+        double objMaxY = object.transform.y + object.maxY * object.transform.scaleY;
+        double objMinZ = object.transform.z + object.minZ * object.transform.scaleZ;
+        double objMaxZ = object.transform.z + object.maxZ * object.transform.scaleZ;
 
-        double dx = x - object.transform.x;
-        double dz = z - object.transform.z;
-        double distSq = dx * dx + dz * dz;
-        double scaledRadius = object.collisionRadius * Math.max(object.transform.scaleX, object.transform.scaleZ);
-        double totalRadius = scaledRadius + radius;
-        return distSq < (totalRadius * totalRadius);
+        // 3. Verifica a sobreposição em todos os 3 eixos. Há colisão se todos se sobrepõem.
+        return (playerMinX <= objMaxX && playerMaxX >= objMinX) &&
+               (entityMinY <= objMaxY && entityMaxY >= objMinY) &&
+               (playerMinZ <= objMaxZ && playerMaxZ >= objMinZ);
     }
 }

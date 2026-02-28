@@ -21,9 +21,8 @@ public class GameObject {
 
     // Propriedades de Colisão
     public boolean hasCollision = true;
-    public double collisionRadius = 0;
-    public double minY = 0;
-    public double maxY = 0;
+    public double minX = 0, maxX = 0, minZ = 0, maxZ = 0;
+    public double minY = 0, maxY = 0;
 
     /**
      * Constructor for GameObject.
@@ -32,19 +31,27 @@ public class GameObject {
      */
     public GameObject(Mesh m) {
         mesh = m;
+        minX = Double.MAX_VALUE;
+        maxX = -Double.MAX_VALUE;
         minY = Double.MAX_VALUE;
         maxY = -Double.MAX_VALUE;
+        minZ = Double.MAX_VALUE;
+        maxZ = -Double.MAX_VALUE;
 
-        // Calcula o raio máximo (X/Z) e a altura (Y) do objeto para colisão
+        // Calcula os limites da caixa de colisão (AABB) do objeto
         for (Vertex v : m.vertices) {
-            double dist = Math.sqrt(v.x * v.x + v.z * v.z);
-            if (dist > collisionRadius)
-                collisionRadius = dist;
-
+            if (v.x < minX)
+                minX = v.x;
+            if (v.x > maxX)
+                maxX = v.x;
             if (v.y < minY)
                 minY = v.y;
             if (v.y > maxY)
                 maxY = v.y;
+            if (v.z < minZ)
+                minZ = v.z;
+            if (v.z > maxZ)
+                maxZ = v.z;
         }
     }
 

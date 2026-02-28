@@ -96,7 +96,7 @@ public class Game implements Runnable {
         // Configuração inicial da câmera
         camera.transform.x = -6;
         camera.transform.z = -15;
-        camera.transform.y = 3.5;
+        camera.transform.y = 3;
 
         // Orientação validada
         camera.yaw = -0.3;
@@ -110,7 +110,7 @@ public class Game implements Runnable {
     private void getSceneInitialObjets() {
         // leitura do modelo 3D da cena, com textura e cor
         GameObject car = new GameObject(ObjLoader.load("res/car3.obj", Color.RED));
-        car.transform.y = 0;
+        car.transform.y = -0.5;
         car.transform.x = -6;
         car.transform.z = -5;
         car.transform.setScale(1);
