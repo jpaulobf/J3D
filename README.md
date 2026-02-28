@@ -31,7 +31,7 @@ Um buffer de profundidade armazena a distância de cada pixel, resolvendo o prob
 O motor agora é capaz de carregar modelos 3D a partir de arquivos **Wavefront (.obj)**. O parser integrado extrai vértices, normais e faces do modelo. Além disso, há suporte para arquivos de materiais **(.mtl)**, permitindo que cada objeto tenha suas próprias propriedades de superfície, como a cor difusa (`Kd`), que são aplicadas durante a renderização.
 
 ### 5. Motor de Física e Detecção de Colisão
-O J3D agora inclui um `PhysicsEngine` básico que implementa detecção de colisão. O sistema trata o jogador (câmera) como um cilindro e os objetos como caixas delimitadoras (AABB - Axis-Aligned Bounding Box), permitindo uma navegação realista que impede o jogador de atravessar paredes e outros obstáculos sólidos.
+O J3D agora inclui um `PhysicsEngine` básico que implementa detecção de colisão. O sistema trata tanto o jogador (câmera) quanto os objetos como caixas delimitadoras (AABB - Axis-Aligned Bounding Box), permitindo uma navegação realista que impede o jogador de atravessar paredes e outros obstáculos sólidos.
 
 ### 6. Clipping de Projeção (Near Plane Clipping)
 Para corrigir artefatos visuais e evitar a renderização de geometria que está atrás da câmera, foi implementado um sistema de clipping simples no plano próximo (near plane). Triângulos que cruzam ou estão atrás deste plano são descartados antes da rasterização, melhorando a performance e a correção visual.
@@ -60,7 +60,7 @@ Foram aplicadas diversas otimizações de baixo nível para maximizar o FPS em u
 ## Como Executar
 
 1. Compile a partir da pasta `src`:
-   `javac core/*.java geometry/*.java lighting/*.java math/*.java render/*.java`
+   `javac core/*.java geometry/*.java lighting/*.java math/*.java render/*.java physics/*.java io/*.java`
 2. Execute:
    `java core.Launcher`
 
