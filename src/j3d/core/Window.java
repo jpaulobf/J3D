@@ -9,9 +9,11 @@ public class Window {
     private JFrame frame;
     private BufferedImage canvas;
     private int[] canvasPixels;
+    private int currentFps = 0;
 
     public Window(String title, int width, int height) {
         frame = new JFrame(title);
+        frame.setUndecorated(true); // Remove bordas e barra de título
         canvas = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
         canvasPixels = ((DataBufferInt) canvas.getRaster().getDataBuffer()).getData();
 
@@ -26,8 +28,16 @@ public class Window {
                 g2d.setRenderingHint(RenderingHints.KEY_DITHERING, RenderingHints.VALUE_DITHER_DISABLE);
                 System.setProperty("sun.java2d.d3d", "true");
                 
-                g2d.drawImage(canvas, 0, 0, null);
+                // Escala a imagem do buffer para o tamanho total da janela (Fullscreen)
+                g2d.drawImage(canvas, 0, 0, getWidth(), getHeight(), null);
                 
+                // Desenha o FPS no canto inferior direito
+                g2d.setColor(Color.YELLOW);
+                g2d.setFont(new Font("Arial", Font.BOLD, 18));
+                String fpsText = "FPS: " + currentFps;
+                FontMetrics fm = g2d.getFontMetrics();
+                g2d.drawString(fpsText, getWidth() - fm.stringWidth(fpsText) - 20, getHeight() - 20);
+
                 // Sincroniza com o display hardware para evitar tearing e lag visual
                 Toolkit.getDefaultToolkit().sync();
             }
@@ -36,11 +46,13 @@ public class Window {
         frame.add(panel);
         frame.pack();
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setExtendedState(JFrame.MAXIMIZED_BOTH); // Maximiza a janela
         frame.setLocationRelativeTo(null);
         frame.setVisible(true);
     }
 
-    public void update(int[] rendererPixels) {
+    public void update(int[] rendererPixels, int fps) {
+        this.currentFps = fps;
         System.arraycopy(rendererPixels, 0, canvasPixels, 0, rendererPixels.length);
         frame.repaint();
     }

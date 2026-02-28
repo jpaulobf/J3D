@@ -19,8 +19,8 @@ import java.util.List;
 public class Game implements Runnable {
 
     // Constantes para a resolução da janela
-    private static final int WIDTH = 800;
-    private static final int HEIGHT = 600;
+    private static final int WIDTH = 1920;
+    private static final int HEIGHT = 1080;
 
     // Variáveis de estado do jogo
     private boolean running = true;
@@ -38,7 +38,7 @@ public class Game implements Runnable {
     private GameObject lightGizmo;
 
     // Controle de FPS
-    private int TARGET_FPS = 120;
+    private int TARGET_FPS = 60;
     private int fps = 0;
     private int frames = 0;
     private long lastFpsTime = System.currentTimeMillis();
@@ -145,8 +145,8 @@ public class Game implements Runnable {
         // Movimento da câmera com mouse
         if (window.getFrame().isFocusOwner()) {
             java.awt.Point loc = window.getFrame().getLocationOnScreen();
-            int centerX = loc.x + WIDTH / 2;
-            int centerY = loc.y + HEIGHT / 2;
+            int centerX = loc.x + window.getFrame().getWidth() / 2;
+            int centerY = loc.y + window.getFrame().getHeight() / 2;
 
             int dx = input.getMouseX() - centerX;
             int dy = input.getMouseY() - centerY;
@@ -240,7 +240,7 @@ public class Game implements Runnable {
                 renderer.draw(camera, Arrays.asList(lightGizmo), null, true);
             }
 
-            window.update(renderer.getFrameBuffer());
+            window.update(renderer.getFrameBuffer(), fps);
 
             try {
                 double remainingTime = nextDrawTime - System.nanoTime();
