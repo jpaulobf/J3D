@@ -212,13 +212,13 @@ public class Game implements Runnable {
         // Movimento da luz com as setas do teclado
         j3d.lighting.PointLight spot = lights.get(0);
         double lSp = 0.3 * speedCorrection;
-        if (input.isKeyHeld(KeyEvent.VK_UP))
+        if (input.isKeyHeld(KeyEvent.VK_U))
             spot.pos.z -= lSp;
-        if (input.isKeyHeld(KeyEvent.VK_DOWN))
+        if (input.isKeyHeld(KeyEvent.VK_P))
             spot.pos.z += lSp;
-        if (input.isKeyHeld(KeyEvent.VK_LEFT))
+        if (input.isKeyHeld(KeyEvent.VK_J))
             spot.pos.x -= lSp;
-        if (input.isKeyHeld(KeyEvent.VK_RIGHT))
+        if (input.isKeyHeld(KeyEvent.VK_L))
             spot.pos.x += lSp;
         if (input.isKeyHeld(KeyEvent.VK_I))
             spot.pos.y += lSp;
