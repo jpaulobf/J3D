@@ -3,6 +3,7 @@ package j3d.core;
 import j3d.render.IRenderer;
 import j3d.render.SoftwareRenderer;
 import j3d.lighting.PointLight;
+import j3d.physics.PhysicsEngine;
 import j3d.geometry.Mesh;
 import j3d.input.InputManager;
 import j3d.io.ObjLoader;
@@ -19,8 +20,8 @@ import java.util.List;
 public class Game implements Runnable {
 
     // Constantes para a resolução da janela
-    private static final int WIDTH = 1366;
-    private static final int HEIGHT = 768;
+    private static final int WIDTH = 1920;
+    private static final int HEIGHT = 1080;
     // Variáveis de estado do jogo
     private boolean running = true;
     private boolean wireframe = false;
@@ -35,15 +36,14 @@ public class Game implements Runnable {
     private List<GameObject> objects;
     private List<PointLight> lights;
     private GameObject lightGizmo;
+    private PhysicsEngine physics;
 
     // Controle de FPS
     private int TARGET_FPS = 60;
     private int fps = 0;
     private int frames = 0;
     private long lastFpsTime = System.currentTimeMillis();
-    private static final double PLAYER_RADIUS = 0.5; // Tamanho da colisão do jogador
-    private static final double PLAYER_HEIGHT = 1.8; // Altura total do jogador
-    private static final double PLAYER_EYE_HEIGHT = 1.6; // Altura dos olhos em relação aos pés
+
 
     /**
      * Construtor do jogo, onde inicializamos a janela, o renderer, a câmera, os
@@ -57,6 +57,7 @@ public class Game implements Runnable {
         objects = new ArrayList<>();
         lights = new ArrayList<>();
         renderer = new SoftwareRenderer(WIDTH, HEIGHT);
+        physics = new PhysicsEngine();
 
         // Inicialização do renderer
         renderer.init();
@@ -121,7 +122,7 @@ public class Game implements Runnable {
         objects.add(floor);
 
         // Configuração da luz
-        lights.add(new PointLight(0, 20, 0, Color.WHITE, 7));
+        lights.add(new PointLight(0, 20, 0, Color.GREEN, 7));
         lightGizmo = new GameObject(Mesh.createSphere(0.2, 8, 8));
     }
 
@@ -192,16 +193,12 @@ public class Game implements Runnable {
         }
 
         // Aplica movimento no eixo X se não houver colisão
-        if (!checkCollision(camera.transform.x + dx, camera.transform.y, camera.transform.z)) {
+        if (!physics.checkPlayerCollision(camera.transform.x + dx, camera.transform.y, camera.transform.z, objects)) {
             camera.transform.x += dx;
-        } else {
-            // Tenta deslizar (verifica se apenas o movimento em X causou a colisão)
-            // Se colidiu, tentamos zerar o DX para ver se conseguimos andar só em Z no próximo bloco?
-            // Na verdade, aqui aplicamos X. Se falhar, não aplicamos X.
         }
 
         // Aplica movimento no eixo Z se não houver colisão (permite deslizar nas paredes)
-        if (!checkCollision(camera.transform.x, camera.transform.y, camera.transform.z + dz)) {
+        if (!physics.checkPlayerCollision(camera.transform.x, camera.transform.y, camera.transform.z + dz, objects)) {
             camera.transform.z += dz;
         }
 
@@ -241,21 +238,6 @@ public class Game implements Runnable {
             lastFpsTime = System.currentTimeMillis();
             window.getFrame().setTitle("TARGET FPS: " + TARGET_FPS + " | ACTUAL FPS: " + fps);
         }
-    }
-
-    /**
-     * Verifica colisão da câmera contra todos os objetos da cena
-     */
-    private boolean checkCollision(double targetX, double targetY, double targetZ) {
-        double feetY = targetY - PLAYER_EYE_HEIGHT;
-        double headY = feetY + PLAYER_HEIGHT;
-
-        for (GameObject obj : objects) {
-            if (obj.checkCollision(targetX, targetZ, feetY, headY, PLAYER_RADIUS)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     @Override

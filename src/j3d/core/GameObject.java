@@ -18,13 +18,13 @@ public class GameObject {
     // Mesh representing the geometry of the game object and its transform
     public Mesh mesh;
     public Transform transform = new Transform();
-    public static boolean gouraud = false;
+    public static boolean gouraud = true;
     
     // Propriedades de Colisão
     public boolean hasCollision = true;
-    private double collisionRadius = 0;
-    private double minY = 0;
-    private double maxY = 0;
+    public double collisionRadius = 0;
+    public double minY = 0;
+    public double maxY = 0;
 
     /**
      * Constructor for GameObject.
@@ -214,31 +214,5 @@ public class GameObject {
                 y0 += sy;
             }
         }
-    }
-
-    /**
-     * Verifica se uma posição (geralmente a câmera) colide com este objeto.
-     * @param x Posição X da entidade
-     * @param z Posição Z da entidade
-     * @param entityMinY Posição Y da base da entidade (pés)
-     * @param entityMaxY Posição Y do topo da entidade (cabeça)
-     * @param radius Raio da entidade (tamanho do jogador)
-     * @return true se houver colisão
-     */
-    public boolean checkCollision(double x, double z, double entityMinY, double entityMaxY, double radius) {
-        if (!hasCollision) return false;
-        
-        // Verifica limites verticais (Intersecção de Intervalos)
-        double worldMinY = transform.y + minY * transform.scaleY;
-        double worldMaxY = transform.y + maxY * transform.scaleY;
-        
-        // Se o personagem está totalmente acima ou totalmente abaixo do objeto, não há colisão
-        if (entityMinY >= worldMaxY || entityMaxY <= worldMinY) return false;
-
-        double dx = x - transform.x;
-        double dz = z - transform.z;
-        double dist = Math.sqrt(dx * dx + dz * dz);
-        double scaledRadius = collisionRadius * Math.max(transform.scaleX, transform.scaleZ);
-        return dist < (scaledRadius + radius);
     }
 }
