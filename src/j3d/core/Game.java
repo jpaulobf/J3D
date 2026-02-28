@@ -214,7 +214,7 @@ public class Game implements Runnable {
         double lSp = 0.3 * speedCorrection;
         if (input.isKeyHeld(KeyEvent.VK_U))
             spot.pos.z -= lSp;
-        if (input.isKeyHeld(KeyEvent.VK_P))
+        if (input.isKeyHeld(KeyEvent.VK_O))
             spot.pos.z += lSp;
         if (input.isKeyHeld(KeyEvent.VK_J))
             spot.pos.x -= lSp;
