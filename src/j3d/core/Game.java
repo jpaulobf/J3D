@@ -223,10 +223,10 @@ public class Game implements Runnable {
                 car.transform.x -= Math.sin(car.transform.rotY) * carSpeed;
                 car.transform.z += Math.cos(car.transform.rotY) * carSpeed;
             }
-            if (input.isKeyHeld(KeyEvent.VK_RIGHT)) {
+            if (input.isKeyHeld(KeyEvent.VK_RIGHT) && (input.isKeyHeld(KeyEvent.VK_UP) || input.isKeyHeld(KeyEvent.VK_DOWN))) {
                 car.transform.rotY -= carRotSpeed;
             }
-            if (input.isKeyHeld(KeyEvent.VK_LEFT)) {
+            if (input.isKeyHeld(KeyEvent.VK_LEFT) && (input.isKeyHeld(KeyEvent.VK_UP) || input.isKeyHeld(KeyEvent.VK_DOWN))) {
                 car.transform.rotY += carRotSpeed;
             }
         }
