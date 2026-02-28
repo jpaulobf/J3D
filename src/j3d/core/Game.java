@@ -221,15 +221,15 @@ public class Game implements Runnable {
             boolean movingForward = false;
 
             double maxSteering = 0.008 * speedCorrection;  // O máximo que o volante vira (limite da curva)
-            double steerAccel = 0.0015 * speedCorrection; // A velocidade com que a rotação se acumula
+            double steerAccel = 0.0035 * speedCorrection; // A velocidade com que a rotação se acumula
 
             // =======================================================
             // 1. INPUT DO VOLANTE COM INÉRCIA (A Rotação que se acumula!)
             // =======================================================
             if (input.isKeyHeld(KeyEvent.VK_LEFT)) {
-                currentSteering -= steerAccel; // Vira mais pra esquerda
+                currentSteering = -steerAccel; // Vira mais pra esquerda
             } else if (input.isKeyHeld(KeyEvent.VK_RIGHT)) {
-                currentSteering += steerAccel; // Vira mais pra direita
+                currentSteering = steerAccel; // Vira mais pra direita
             } else {
                 // Se soltar as teclas, o volante volta ao centro sozinho suavemente (Fricção da direção)
                 currentSteering *= 0.85; 
