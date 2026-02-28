@@ -96,7 +96,7 @@ public class Game implements Runnable {
         // Configuração inicial da câmera
         camera.transform.x = -6;
         camera.transform.z = -15;
-        camera.transform.y = 6;
+        camera.transform.y = 3.5;
 
         // Orientação validada
         camera.yaw = -0.3;
