@@ -88,12 +88,13 @@ public class Game implements Runnable {
      */
     private void initialSceneCameraConfiguration() {
         // Configuração inicial da câmera
-        camera.transform.z = 15;
-        camera.transform.y = 2.5;
+        camera.transform.x = -6;
+        camera.transform.z = -15;
+        camera.transform.y = 6;
 
         // Orientação validada
-        camera.yaw = 2.3;
-        camera.pitch = 1.5;
+        camera.yaw = -0.3;
+        camera.pitch = 1.8;
     }
 
     /**
@@ -101,14 +102,18 @@ public class Game implements Runnable {
      * importado e uma luz.
      */
     private void getSceneInitialObjets() {
-        // Setup da Cena
-        GameObject cube = new GameObject(Mesh.createCube());
-        cube.transform.x = -3;
-        objects.add(cube);
+        // leitura do modelo 3D da cena, com textura e cor
+        GameObject car = new GameObject(ObjLoader.load("res/car3.obj", Color.RED));
+        car.transform.y = 0;
+        car.transform.x = -6;
+        car.transform.z = -5;
+        car.transform.setScale(1);
+        objects.add(car);
 
-        GameObject pyr = new GameObject(Mesh.createPyramid());
-        pyr.transform.x = 3;
-        objects.add(pyr);
+        // Setup da Cena
+        //GameObject cube = new GameObject(Mesh.createCube());
+        //cube.transform.x = -3;
+        //objects.add(cube);
 
         GameObject floor = new GameObject(Mesh.createGrid(20, 2.0));
         floor.transform.y = -1.5;
@@ -116,16 +121,8 @@ public class Game implements Runnable {
         objects.add(floor);
 
         // Configuração da luz
-        lights.add(new PointLight(0, 5, 0, Color.WHITE, 1.5));
+        lights.add(new PointLight(0, 20, 0, Color.WHITE, 7));
         lightGizmo = new GameObject(Mesh.createSphere(0.2, 8, 8));
-
-        // leitura do modelo 3D da cena, com textura e cor
-        GameObject car = new GameObject(ObjLoader.load("res/Car.obj", Color.CYAN));
-        car.transform.y = -1;
-        car.transform.x = -6;
-        car.transform.z = -5;
-        car.transform.setScale(1.5);
-        objects.add(car);
     }
 
     /**
