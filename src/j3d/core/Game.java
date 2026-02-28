@@ -242,10 +242,14 @@ public class Game implements Runnable {
                 }
 
                 if (theta != 0) {
-                    double cx = car.transform.x, cz = car.transform.z;
-                    double fx = floor.transform.x, fz = floor.transform.z;
-                    double dx2 = fx - cx, dz2 = fz - cz;
-                    double cos = Math.cos(theta), sin = Math.sin(theta);
+                    double cx = car.transform.x;
+                    double cz = car.transform.z;
+                    double fx = floor.transform.x;
+                    double fz = floor.transform.z;
+                    double dx2 = fx - cx;
+                    double dz2 = fz - cz;
+                    double cos = Math.cos(theta);
+                    double sin = Math.sin(theta);
                     
                     floor.transform.x = cx + (dx2 * cos - dz2 * sin);
                     floor.transform.z = cz + (dx2 * sin + dz2 * cos);
