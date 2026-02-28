@@ -50,6 +50,13 @@ public class Mesh {
         m.triangles.add(new Triangle(3, 0, 4, Color.LIGHT_GRAY));
         m.triangles.add(new Triangle(0, 2, 1, Color.GRAY));
         m.triangles.add(new Triangle(0, 3, 2, Color.GRAY));
+
+        for (Triangle t : m.triangles) {
+            int temp = t.v2;
+            t.v2 = t.v3;
+            t.v3 = temp;
+        }
+
         return m;
     }
 

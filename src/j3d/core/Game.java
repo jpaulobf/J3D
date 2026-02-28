@@ -38,7 +38,7 @@ public class Game implements Runnable {
     private GameObject lightGizmo;
 
     // Controle de FPS
-    private int TARGET_FPS = 60;
+    private int TARGET_FPS = 120;
     private int fps = 0;
     private int frames = 0;
     private long lastFpsTime = System.currentTimeMillis();
@@ -211,7 +211,7 @@ public class Game implements Runnable {
         // Rotação dos objetos da cena (exceto o chão e o modelo importado)
         int index = 0;
         for (j3d.core.GameObject obj : objects) {
-            if (index < 2)
+            if (index < 0)
                 obj.transform.rotY += 0.03 * speedCorrection;
             index++;
         }
