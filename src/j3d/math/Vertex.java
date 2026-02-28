@@ -9,6 +9,7 @@ public class Vertex {
 
     /**
      * Constructor for Vertex.
+     * 
      * @param x
      * @param y
      * @param z

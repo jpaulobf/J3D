@@ -25,7 +25,7 @@ public class Game implements Runnable {
     // Constantes para a resolução da janela
     private static final int WIDTH = 1920;
     private static final int HEIGHT = 1080;
-    
+
     // Variáveis de estado do jogo
     private boolean running = true;
     private boolean wireframe = false;

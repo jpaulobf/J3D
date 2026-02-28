@@ -13,7 +13,7 @@ import java.awt.event.MouseWheelListener;
 public class InputManager implements KeyListener, MouseMotionListener, MouseWheelListener {
     private boolean[] keys = new boolean[256];
     private boolean[] justPressed = new boolean[256];
-    
+
     // Armazenamos apenas a posição bruta do mouse na tela
     private int mouseX, mouseY;
     private int scrollDelta = 0;
@@ -24,8 +24,13 @@ public class InputManager implements KeyListener, MouseMotionListener, MouseWhee
         return val;
     }
 
-    public int getMouseX() { return mouseX; }
-    public int getMouseY() { return mouseY; }
+    public int getMouseX() {
+        return mouseX;
+    }
+
+    public int getMouseY() {
+        return mouseY;
+    }
 
     public boolean isKeyHeld(int keyCode) {
         return keyCode >= 0 && keyCode < 256 && keys[keyCode];
@@ -53,7 +58,8 @@ public class InputManager implements KeyListener, MouseMotionListener, MouseWhee
 
     @Override
     public void keyPressed(KeyEvent e) {
-        if (e.getKeyCode() < 256) keys[e.getKeyCode()] = true;
+        if (e.getKeyCode() < 256)
+            keys[e.getKeyCode()] = true;
     }
 
     @Override
@@ -64,7 +70,9 @@ public class InputManager implements KeyListener, MouseMotionListener, MouseWhee
         }
     }
 
-    @Override public void keyTyped(KeyEvent e) {}
+    @Override
+    public void keyTyped(KeyEvent e) {
+    }
 
     @Override
     public void mouseWheelMoved(MouseWheelEvent e) {

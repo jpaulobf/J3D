@@ -128,10 +128,10 @@ public class Mesh {
         m.vertices.add(new Vertex(min, -height, max)); // 3: Frente-Esquerda (Base)
 
         // Índices dos cantos da superfície superior já existentes
-        int topBL = 0;                  // Trás-Esquerda (Topo)
-        int topBR = size;               // Trás-Direita (Topo)
-        int topFL = size * row;         // Frente-Esquerda (Topo)
-        int topFR = size * row + size;  // Frente-Direita (Topo)
+        int topBL = 0; // Trás-Esquerda (Topo)
+        int topBR = size; // Trás-Direita (Topo)
+        int topFL = size * row; // Frente-Esquerda (Topo)
+        int topFR = size * row + size; // Frente-Direita (Topo)
 
         // Face Traseira (Z = min)
         m.triangles.add(new Triangle(topBL, topBR, baseIdx + 0, sideColor));

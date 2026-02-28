@@ -10,14 +10,27 @@ import j3d.geometry.Mesh;
 import j3d.geometry.Triangle;
 import j3d.math.Vertex;
 
+/**
+ * ObjLoader class responsible for loading 3D models from .obj files, including
+ * support for .mtl material files to extract colors.
+ */
 public class ObjLoader {
 
+    /**
+     * Loads a 3D model from an OBJ file, applying colors from an associated MTL
+     * file if available.
+     * 
+     * @param filePath
+     * @param fallbackColor
+     * @return
+     */
     public static Mesh load(String filePath, Color fallbackColor) {
         Mesh mesh = new Mesh();
         Map<String, Color> materials = new HashMap<>();
         Color currentColor = fallbackColor;
 
-        // Tenta descobrir o diretório base para procurar o arquivo .mtl no mesmo lugar do .obj
+        // Tenta descobrir o diretório base para procurar o arquivo .mtl no mesmo lugar
+        // do .obj
         File objFile = new File(filePath);
         String parentDir = objFile.getParent() == null ? "" : objFile.getParent() + File.separator;
 
@@ -44,11 +57,11 @@ public class ObjLoader {
                     double y = Double.parseDouble(tokens[2]);
                     double z = Double.parseDouble(tokens[3]);
                     mesh.vertices.add(new Vertex(x, y, z));
-                } 
+                }
                 // 4. LER FACES (TRIÂNGULOS / QUADS)
                 else if (line.startsWith("f ")) {
                     String[] tokens = line.split("\\s+");
-                    
+
                     int v1 = Integer.parseInt(tokens[1].split("/")[0]) - 1;
                     int v2 = Integer.parseInt(tokens[2].split("/")[0]) - 1;
                     int v3 = Integer.parseInt(tokens[3].split("/")[0]) - 1;
@@ -63,7 +76,8 @@ public class ObjLoader {
                     }
                 }
             }
-            System.out.println("Modelo carregado: " + filePath + " | Materiais: " + materials.size() + " | Vértices: " + mesh.vertices.size() + " | Faces: " + mesh.triangles.size());
+            System.out.println("Modelo carregado: " + filePath + " | Materiais: " + materials.size() + " | Vértices: "
+                    + mesh.vertices.size() + " | Faces: " + mesh.triangles.size());
 
         } catch (Exception e) {
             System.err.println("Erro ao carregar o modelo OBJ: " + filePath);
@@ -86,8 +100,7 @@ public class ObjLoader {
 
                 if (line.startsWith("newmtl ")) {
                     currentMtlName = line.split("\\s+")[1];
-                } 
-                else if (line.startsWith("Kd ")) {
+                } else if (line.startsWith("Kd ")) {
                     // Kd define a cor RGB (valores de 0.0 a 1.0)
                     String[] tokens = line.split("\\s+");
                     float r = Float.parseFloat(tokens[1]);
@@ -99,7 +112,6 @@ public class ObjLoader {
             System.out.println("Materiais carregados do arquivo: " + mtlPath);
         } catch (Exception e) {
             System.err.println("Aviso: Arquivo MTL não encontrado ou erro de leitura: " + mtlPath);
-            // Não estouramos exceção para não quebrar o jogo se o MTL faltar
         }
     }
 }

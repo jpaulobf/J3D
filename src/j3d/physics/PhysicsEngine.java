@@ -4,7 +4,8 @@ import java.util.List;
 import j3d.core.GameObject;
 
 /**
- * PhysicsEngine class responsible for handling collision detection and physics-related calculations in the game.
+ * PhysicsEngine class responsible for handling collision detection and
+ * physics-related calculations in the game.
  */
 public class PhysicsEngine {
 
@@ -21,7 +22,8 @@ public class PhysicsEngine {
 
         for (GameObject obj : worldObjects) {
             // Ignoramos objetos que não têm colisão (como o seu chão)
-            if (!obj.hasCollision) continue;
+            if (!obj.hasCollision)
+                continue;
 
             if (this.checkCollision(targetX, targetZ, feetY, headY, PLAYER_RADIUS, obj)) {
                 return true;
@@ -32,22 +34,27 @@ public class PhysicsEngine {
 
     /**
      * Verifica se uma posição (geralmente a câmera) colide com este objeto.
-     * @param x Posição X da entidade
-     * @param z Posição Z da entidade
+     * 
+     * @param x          Posição X da entidade
+     * @param z          Posição Z da entidade
      * @param entityMinY Posição Y da base da entidade (pés)
      * @param entityMaxY Posição Y do topo da entidade (cabeça)
-     * @param radius Raio da entidade (tamanho do jogador)
+     * @param radius     Raio da entidade (tamanho do jogador)
      * @return true se houver colisão
      */
-    public boolean checkCollision(double x, double z, double entityMinY, double entityMaxY, double radius, GameObject object) {
-        if (!object.hasCollision) return false;
-        
+    public boolean checkCollision(double x, double z, double entityMinY, double entityMaxY, double radius,
+            GameObject object) {
+        if (!object.hasCollision)
+            return false;
+
         // Verifica limites verticais (Intersecção de Intervalos)
         double worldMinY = object.transform.y + object.minY * object.transform.scaleY;
         double worldMaxY = object.transform.y + object.maxY * object.transform.scaleY;
-        
-        // Se o personagem está totalmente acima ou totalmente abaixo do objeto, não há colisão
-        if (entityMinY >= worldMaxY || entityMaxY <= worldMinY) return false;
+
+        // Se o personagem está totalmente acima ou totalmente abaixo do objeto, não há
+        // colisão
+        if (entityMinY >= worldMaxY || entityMaxY <= worldMinY)
+            return false;
 
         double dx = x - object.transform.x;
         double dz = z - object.transform.z;

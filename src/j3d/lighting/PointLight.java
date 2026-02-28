@@ -1,7 +1,6 @@
 package j3d.lighting;
 
 import java.awt.Color;
-
 import j3d.math.Vertex;
 
 /**

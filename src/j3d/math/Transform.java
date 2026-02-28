@@ -1,18 +1,21 @@
 package j3d.math;
 
 /**
- * Transform class representing position, rotation, and scale of an object in 3D space.
+ * Transform class representing position, rotation, and scale of an object in 3D
+ * space.
  */
 public class Transform {
 
     // Position (x, y, z) and rotation (rotX, rotY, rotZ) in radians
     public double x = 0, y = 0, z = 0, rotX = 0, rotY = 0, rotZ = 0;
-    
+
     // Scale properties initialized to 1.0 (tamanho original)
     public double scaleX = 1.0, scaleY = 1.0, scaleZ = 1.0;
 
     /**
-     * Computes the model matrix for this transform, combining scale, rotation, and translation.
+     * Computes the model matrix for this transform, combining scale, rotation, and
+     * translation.
+     * 
      * @return Matrix4
      */
     public Matrix4 getModelMatrix() {
@@ -42,14 +45,17 @@ public class Transform {
         t.m[1][3] = y;
         t.m[2][3] = z;
 
-        // A ordem matemática (Scale -> Rotate -> Translate) aplicada da direita para a esquerda
+        // A ordem matemática (Scale -> Rotate -> Translate) aplicada da direita para a
+        // esquerda
         Matrix4 rs = Matrix4.multiply(r, s);
         return Matrix4.multiply(t, rs);
     }
-    
+
     /**
      * Método de conveniência para alterar a escala de todos os eixos uniformemente.
-     * @param scale O novo tamanho (ex: 2.0 para dobrar o tamanho, 0.5 para diminuir pela metade)
+     * 
+     * @param scale O novo tamanho (ex: 2.0 para dobrar o tamanho, 0.5 para diminuir
+     *              pela metade)
      */
     public void setScale(double scale) {
         this.scaleX = scale;

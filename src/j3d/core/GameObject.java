@@ -13,12 +13,12 @@ import j3d.math.Vertex;
  * GameObject class representing a game object with a mesh and a transform.
  */
 public class GameObject {
-    
+
     // Mesh representing the geometry of the game object and its transform
     public Mesh mesh;
     public Transform transform = new Transform();
     public static boolean gouraud = true;
-    
+
     // Propriedades de Colisão
     public boolean hasCollision = true;
     public double collisionRadius = 0;
@@ -27,6 +27,7 @@ public class GameObject {
 
     /**
      * Constructor for GameObject.
+     * 
      * @param m
      */
     public GameObject(Mesh m) {
@@ -37,15 +38,20 @@ public class GameObject {
         // Calcula o raio máximo (X/Z) e a altura (Y) do objeto para colisão
         for (Vertex v : m.vertices) {
             double dist = Math.sqrt(v.x * v.x + v.z * v.z);
-            if (dist > collisionRadius) collisionRadius = dist;
-            
-            if (v.y < minY) minY = v.y;
-            if (v.y > maxY) maxY = v.y;
+            if (dist > collisionRadius)
+                collisionRadius = dist;
+
+            if (v.y < minY)
+                minY = v.y;
+            if (v.y > maxY)
+                maxY = v.y;
         }
     }
 
     /**
-     * Draw method to render the game object using the provided pixels, z-buffer, camera, scene lights, and dimensions.
+     * Draw method to render the game object using the provided pixels, z-buffer,
+     * camera, scene lights, and dimensions.
+     * 
      * @param pixels
      * @param zBuf
      * @param cam
@@ -54,14 +60,16 @@ public class GameObject {
      * @param h
      * @param wire
      */
-    public void draw(int[] pixels, double[] zBuf, Camera cam, List<PointLight> sceneLights, int w, int h, boolean wire) {
+    public void draw(int[] pixels, double[] zBuf, Camera cam, List<PointLight> sceneLights, int w, int h,
+            boolean wire) {
         Matrix4 view = cam.getViewMatrix();
         Matrix4 model = transform.getModelMatrix();
         Matrix4 proj = Matrix4.projection(90, (double) w / h, 0.1, 1000);
         Matrix4 modelView = Matrix4.multiply(view, model);
 
         // Pré-calcular luzes no espaço da câmera (View Space)
-        // Evita multiplicar matrizes (operação pesada) para cada vértice de cada triângulo
+        // Evita multiplicar matrizes (operação pesada) para cada vértice de cada
+        // triângulo
         java.util.ArrayList<Vertex> viewSpaceLights = new java.util.ArrayList<>();
         if (sceneLights != null) {
             for (PointLight light : sceneLights) {
@@ -82,10 +90,14 @@ public class GameObject {
             // Backface Culling antes da normalização
             // O sinal do produto escalar não muda com a normalização, então checamos antes
             if (nx * v1.x + ny * v1.y + nz * v1.z < 0) {
-                
+
                 // Agora sim normalizamos, pois precisamos do vetor unitário para a iluminação
                 double len = Math.sqrt(nx * nx + ny * ny + nz * nz);
-                if (len > 0) { nx /= len; ny /= len; nz /= len; }
+                if (len > 0) {
+                    nx /= len;
+                    ny /= len;
+                    nz /= len;
+                }
 
                 int c1 = t.baseColor.getRGB(), c2 = t.baseColor.getRGB(), c3 = t.baseColor.getRGB();
                 if (sceneLights != null && !wire) {
@@ -94,8 +106,10 @@ public class GameObject {
                         c2 = calcLighting(v2, nx, ny, nz, sceneLights, viewSpaceLights, t.baseColor);
                         c3 = calcLighting(v3, nx, ny, nz, sceneLights, viewSpaceLights, t.baseColor);
                     } else {
-                        double mx = (v1.x + v2.x + v3.x) / 3.0, my = (v1.y + v2.y + v3.y) / 3.0, mz = (v1.z + v2.z + v3.z) / 3.0;
-                        int flat = calcLighting(new Vertex(mx, my, mz), nx, ny, nz, sceneLights, viewSpaceLights, t.baseColor);
+                        double mx = (v1.x + v2.x + v3.x) / 3.0, my = (v1.y + v2.y + v3.y) / 3.0,
+                                mz = (v1.z + v2.z + v3.z) / 3.0;
+                        int flat = calcLighting(new Vertex(mx, my, mz), nx, ny, nz, sceneLights, viewSpaceLights,
+                                t.baseColor);
                         c1 = c2 = c3 = flat;
                     }
                 }
@@ -122,7 +136,9 @@ public class GameObject {
     }
 
     /**
-     * Calculate lighting method to compute the color of a vertex based on its normal, the scene lights, and the base color of the triangle.
+     * Calculate lighting method to compute the color of a vertex based on its
+     * normal, the scene lights, and the base color of the triangle.
+     * 
      * @param v
      * @param nx
      * @param ny
@@ -132,7 +148,8 @@ public class GameObject {
      * @param base
      * @return
      */
-    private int calcLighting(Vertex v, double nx, double ny, double nz, List<PointLight> lights, List<Vertex> viewSpaceLights, Color base) {
+    private int calcLighting(Vertex v, double nx, double ny, double nz, List<PointLight> lights,
+            List<Vertex> viewSpaceLights, Color base) {
         double rT = 0, gT = 0, bT = 0, amb = 0.15;
         for (int i = 0; i < lights.size(); i++) {
             PointLight light = lights.get(i);
@@ -150,7 +167,9 @@ public class GameObject {
     }
 
     /**
-     * Rasterize method to fill the triangle defined by vertices v with the specified color, using the z-buffer for depth testing.
+     * Rasterize method to fill the triangle defined by vertices v with the
+     * specified color, using the z-buffer for depth testing.
+     * 
      * @param pixels
      * @param zBuf
      * @param v
@@ -169,7 +188,7 @@ public class GameObject {
         if (area == 0)
             return;
         double invArea = 1.0 / area; // Otimização 3: Multiplicação é muito mais rápida que divisão
-        
+
         int r1 = (c1 >> 16) & 0xFF, g1 = (c1 >> 8) & 0xFF, b1 = c1 & 0xFF;
         int r2 = (c2 >> 16) & 0xFF, g2 = (c2 >> 8) & 0xFF, b2 = c2 & 0xFF;
         int r3 = (c3 >> 16) & 0xFF, g3 = (c3 >> 8) & 0xFF, b3 = c3 & 0xFF;
@@ -195,7 +214,9 @@ public class GameObject {
     }
 
     /**
-     * Draw wireframe method to draw the edges of the triangle defined by vertices v with the specified color.
+     * Draw wireframe method to draw the edges of the triangle defined by vertices v
+     * with the specified color.
+     * 
      * @param pixels
      * @param v
      * @param color
@@ -209,7 +230,9 @@ public class GameObject {
     }
 
     /**
-     * Draw line method to draw a line between two vertices v1 and v2 with the specified color, using Bresenham's line algorithm.
+     * Draw line method to draw a line between two vertices v1 and v2 with the
+     * specified color, using Bresenham's line algorithm.
+     * 
      * @param pixels
      * @param v1
      * @param v2
