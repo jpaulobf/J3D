@@ -214,33 +214,56 @@ public class GameObject {
         double w1Row = ((v[2].y - v[0].y) * (minX - v[2].x) + (v[0].x - v[2].x) * (minY - v[2].y)) * invArea;
         double w2Row = ((v[0].y - v[1].y) * (minX - v[0].x) + (v[1].x - v[0].x) * (minY - v[0].y)) * invArea;
 
+        // Pré-cálculo das derivadas de Profundidade (1/Z) e Cor
+        // Isso permite interpolar Z, R, G e B usando apenas somas
+        double dDepthDx = dw0dx * v[0].z + dw1dx * v[1].z + dw2dx * v[2].z;
+        double dDepthDy = dw0dy * v[0].z + dw1dy * v[1].z + dw2dy * v[2].z;
+
+        double dRDx = dw0dx * r1 + dw1dx * r2 + dw2dx * r3;
+        double dRDy = dw0dy * r1 + dw1dy * r2 + dw2dy * r3;
+        double dGDx = dw0dx * g1 + dw1dx * g2 + dw2dx * g3;
+        double dGDy = dw0dy * g1 + dw1dy * g2 + dw2dy * g3;
+        double dBDx = dw0dx * b1 + dw1dx * b2 + dw2dx * b3;
+        double dBDy = dw0dy * b1 + dw1dy * b2 + dw2dy * b3;
+
+        // Valores iniciais no canto superior esquerdo
+        double depthRow = w0Row * v[0].z + w1Row * v[1].z + w2Row * v[2].z;
+        double rRow = w0Row * r1 + w1Row * r2 + w2Row * r3;
+        double gRow = w0Row * g1 + w1Row * g2 + w2Row * g3;
+        double bRow = w0Row * b1 + w1Row * b2 + w2Row * b3;
+
         for (int y = minY; y <= maxY; y++) {
             // Inicializa os pesos para o começo desta linha
             double w0 = w0Row;
             double w1 = w1Row;
             double w2 = w2Row;
+            
+            double depth = depthRow;
+            double r = rRow, g = gRow, b = bRow;
 
             for (int x = minX; x <= maxX; x++) {
                 if (w0 >= 0 && w1 >= 0 && w2 >= 0) {
-                    double d = w0 * v[0].z + w1 * v[1].z + w2 * v[2].z;
                     int idx = y * w + x;
-                    if (d > (1.0 / zBuf[idx])) {
-                        zBuf[idx] = 1.0 / d;
-                        int r = (int) (w0 * r1 + w1 * r2 + w2 * r3);
-                        int g = (int) (w0 * g1 + w1 * g2 + w2 * g3);
-                        int b = (int) (w0 * b1 + w1 * b2 + w2 * b3);
-                        pixels[idx] = (r << 16) | (g << 8) | b;
+                    // Otimização Z-Buffer: Armazenamos 1/Z diretamente.
+                    // Maior valor = Mais perto da câmera. Sem divisões!
+                    if (depth > zBuf[idx]) {
+                        zBuf[idx] = depth;
+                        pixels[idx] = ((int)r << 16) | ((int)g << 8) | (int)b;
                     }
                 }
                 // Incrementa X: apenas somas, sem multiplicações!
                 w0 += dw0dx;
                 w1 += dw1dx;
                 w2 += dw2dx;
+                depth += dDepthDx;
+                r += dRDx; g += dGDx; b += dBDx;
             }
             // Incrementa Y para a próxima linha
             w0Row += dw0dy;
             w1Row += dw1dy;
             w2Row += dw2dy;
+            depthRow += dDepthDy;
+            rRow += dRDy; gRow += dGDy; bRow += dBDy;
         }
     }
 

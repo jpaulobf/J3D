@@ -57,10 +57,10 @@ public class SoftwareRenderer implements IRenderer {
     public void clear() {
         if (ssaaEnabled) {
             Arrays.fill(hrPixels, 0xFF87CEEB);
-            Arrays.fill(hrZBuffer, Double.POSITIVE_INFINITY);
+            Arrays.fill(hrZBuffer, 0.0);
         } else {
             Arrays.fill(pixels, 0xFF87CEEB);
-            Arrays.fill(zBuffer, Double.POSITIVE_INFINITY);
+            Arrays.fill(zBuffer, 0.0);
         }
     }
 
