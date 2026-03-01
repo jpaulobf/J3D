@@ -84,6 +84,102 @@ public class SoftwareRenderer implements IRenderer {
     }
 
     /**
+     * Desenha um sprite 2D sobre a cena.
+     * Suporta transparência (Alpha Channel) e ajusta escala para SSAA.
+     */
+    @Override
+    public void drawSprite(int[] spritePixels, int spriteW, int spriteH, int x, int y) {
+        if (ssaaEnabled) {
+            drawSpriteSSAA(spritePixels, spriteW, spriteH, x, y);
+        } else {
+            drawSpriteNormal(spritePixels, spriteW, spriteH, x, y);
+        }
+    }
+
+    /**
+     * Desenha um sprite 2D diretamente no buffer de pixels, ignorando o Z-Buffer.
+     * Útil para HUD, miras e interfaces.
+     * 
+     * @param spritePixels
+     * @param spriteW
+     * @param spriteH
+     * @param x
+     * @param y
+     */
+    private void drawSpriteNormal(int[] spritePixels, int spriteW, int spriteH, int x, int y) {
+        for (int j = 0; j < spriteH; j++) {
+            int py = y + j;
+            if (py < 0 || py >= height)
+                continue;
+
+            int rowOffset = py * width;
+            int spriteRowOffset = j * spriteW;
+
+            for (int i = 0; i < spriteW; i++) {
+                int px = x + i;
+                if (px < 0 || px >= width)
+                    continue;
+
+                int color = spritePixels[spriteRowOffset + i];
+                // Verifica canal Alpha (ARGB). Se for 0, é totalmente transparente.
+                if ((color >>> 24) != 0) {
+                    pixels[rowOffset + px] = color;
+                }
+            }
+        }
+    }
+
+    /**
+     * Desenha um sprite 2D diretamente no buffer de pixels de alta resolução,
+     * ignorando o Z-Buffer.
+     * Útil para HUD, miras e interfaces, mantendo o tamanho visual do sprite mesmo
+     * com SSAA.
+     * 
+     * @param spritePixels
+     * @param spriteW
+     * @param spriteH
+     * @param x
+     * @param y
+     */
+    private void drawSpriteSSAA(int[] spritePixels, int spriteW, int spriteH, int x, int y) {
+        int hrW = width * 2;
+        int hrH = height * 2;
+
+        // Escala a posição para o buffer 2x
+        int startX = x * 2;
+        int startY = y * 2;
+
+        for (int j = 0; j < spriteH; j++) {
+            int py = startY + j * 2;
+            if (py >= hrH)
+                break; // Passou do limite inferior
+
+            int spriteRowOffset = j * spriteW;
+
+            for (int i = 0; i < spriteW; i++) {
+                int px = startX + i * 2;
+                if (px >= hrW)
+                    break; // Passou do limite direito
+
+                int color = spritePixels[spriteRowOffset + i];
+
+                if ((color >>> 24) != 0) {
+                    // Desenha um bloco 2x2 no buffer de alta resolução
+                    // para manter o tamanho visual do sprite na tela
+                    if (py >= 0 && px >= 0)
+                        hrPixels[py * hrW + px] = color;
+                    if (py >= 0 && px + 1 < hrW && px + 1 >= 0)
+                        hrPixels[py * hrW + (px + 1)] = color;
+                    if (py + 1 < hrH && py + 1 >= 0 && px >= 0)
+                        hrPixels[(py + 1) * hrW + px] = color;
+                    if (py + 1 < hrH && py + 1 >= 0 && px + 1 < hrW && px + 1 >= 0)
+                        hrPixels[(py + 1) * hrW + (px + 1)] = color;
+                }
+            }
+        }
+    }
+
+    /**
      * Resolves the SSAA by averaging the colors of the 4 corresponding pixels in
      * the high-resolution buffer to produce the final color for each pixel in the
      * normal frame buffer.

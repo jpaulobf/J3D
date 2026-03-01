@@ -25,6 +25,9 @@ public class GameObject {
     public double minX = 0, maxX = 0, minZ = 0, maxZ = 0;
     public double minY = 0, maxY = 0;
 
+    // Propriedades para Culling (Otimização)
+    private double cX, cY, cZ, radius;
+
     /**
      * Constructor for GameObject.
      * 
@@ -54,6 +57,12 @@ public class GameObject {
             if (v.z > maxZ)
                 maxZ = v.z;
         }
+
+        // Calcula o centro e o raio da esfera envolvente para Culling rápido
+        cX = (minX + maxX) / 2.0;
+        cY = (minY + maxY) / 2.0;
+        cZ = (minZ + maxZ) / 2.0;
+        radius = Math.sqrt(Math.pow(maxX - cX, 2) + Math.pow(maxY - cY, 2) + Math.pow(maxZ - cZ, 2));
     }
 
     /**
@@ -74,6 +83,21 @@ public class GameObject {
         Matrix4 model = transform.getModelMatrix();
         Matrix4 proj = Matrix4.projection(90, (double) w / h, 0.1, 1000);
         Matrix4 modelView = Matrix4.multiply(view, model);
+
+        // --- FRUSTUM CULLING (Otimização) ---
+        // Transforma o centro do objeto para o espaço da câmera (View Space)
+        Vertex center = new Vertex(cX, cY, cZ);
+        Vertex viewCenter = Matrix4.multiply(modelView, center);
+
+        // Ajusta o raio com base na escala do objeto
+        double maxScale = Math.max(transform.scaleX, Math.max(transform.scaleY, transform.scaleZ));
+        double r = radius * maxScale;
+
+        // Verifica se a esfera está totalmente atrás da câmera (Z > -Near) ou muito longe (Z < -Far)
+        // Nota: No View Space, a câmera olha para -Z. Objetos na frente têm Z negativo.
+        if (viewCenter.z - r > -0.1 || viewCenter.z + r < -1000) {
+            return; // Objeto invisível, não desenha nada!
+        }
 
         // Pré-calcular luzes no espaço da câmera (View Space)
         // Evita multiplicar matrizes (operação pesada) para cada vértice de cada

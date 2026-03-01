@@ -23,6 +23,12 @@ public interface IRenderer {
     void draw(Camera cam, List<GameObject> objects, List<PointLight> lights, boolean wireframe);
 
     /**
+     * Desenha um sprite 2D diretamente no buffer de pixels, ignorando o Z-Buffer.
+     * Útil para HUD, miras e interfaces.
+     */
+    void drawSprite(int[] spritePixels, int spriteW, int spriteH, int x, int y);
+
+    /**
      * Returns the current frame buffer as an array of integers representing pixel colors.
      * @return
      */
