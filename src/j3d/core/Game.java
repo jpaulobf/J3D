@@ -23,8 +23,8 @@ import java.util.ArrayList;
 public class Game implements Runnable {
 
     // Constantes para a resolução da janela
-    private static final int WIDTH = 1920;
-    private static final int HEIGHT = 1080;
+    private static final int WIDTH = 1024;
+    private static final int HEIGHT = 576;
 
     // Variáveis de estado do jogo
     private boolean running = true;
@@ -46,7 +46,7 @@ public class Game implements Runnable {
     private double currentSteering = 0;
 
     // Controle de FPS
-    private int TARGET_FPS = 120;
+    private int TARGET_FPS = 60;
     private int fps = 0;
     private int frames = 0;
     private long lastFpsTime = System.currentTimeMillis();
@@ -139,9 +139,9 @@ public class Game implements Runnable {
      * câmera e a luz, e atualizando a rotação dos objetos. Também calcula o FPS
      * atual e atualiza o título da janela com essa informação.
      */
-    private void update() {
+    private void update(double deltaTime) {
         // Correção de velocidade baseada no FPS para garantir movimento consistente
-        double speedCorrection = 60.0 / TARGET_FPS;
+        double speedCorrection = deltaTime * 60.0;
 
         // Toggle de modos de renderização e visualização
         if (input.isKeyPressed(KeyEvent.VK_F2))
@@ -326,9 +326,15 @@ public class Game implements Runnable {
     public void run() {
         double drawInterval = 1000000000.0 / TARGET_FPS;
         double nextDrawTime = System.nanoTime() + drawInterval;
+        long lastTime = System.nanoTime();
 
         while (running) {
-            update();
+            long now = System.nanoTime();
+            // Calcula o tempo decorrido desde o último frame em segundos
+            double deltaTime = (now - lastTime) / 1_000_000_000.0;
+            lastTime = now;
+
+            update(deltaTime);
             renderer.clear();
 
             renderer.draw(camera, objects, lights, wireframe);
