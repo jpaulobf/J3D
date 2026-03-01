@@ -23,8 +23,8 @@ import java.util.ArrayList;
 public class Game implements Runnable {
 
     // Constantes para a resolução da janela
-    private static final int WIDTH = 1366;
-    private static final int HEIGHT = 768;
+    private static final int WIDTH = 1920;
+    private static final int HEIGHT = 1080;
 
     // Variáveis de estado do jogo
     private boolean running = true;
@@ -127,7 +127,7 @@ public class Game implements Runnable {
         //Setup da Cena
         GameObject cube = new GameObject(Mesh.createCube());
         cube.transform.x = -5;
-        objects.add(cube);
+        //objects.add(cube);
 
         // Configuração da luz
         lights.add(new PointLight(0, 20, 0, Color.GREEN, 7));
@@ -226,7 +226,7 @@ public class Game implements Runnable {
 
             GameObject floor = objects.get(0);
             GameObject car = objects.get(1);
-            GameObject cube = objects.get(2);
+            //GameObject cube = objects.get(2);
             
             double speed = 0.1 * speedCorrection;
             double rotSpeed = 0.007 * speedCorrection;
@@ -266,14 +266,14 @@ public class Game implements Runnable {
 
             if (moveZ != 0) {
                 floor.transform.z += moveZ;
-                cube.transform.z += moveZ;
+                //cube.transform.z += moveZ;
 
                 // Verifica colisão do carro (index 1) com outros objetos (index 2 em diante)
                 for (int i = 2; i < objects.size(); i++) {
                     if (physics.checkObjectCollision(car, objects.get(i))) {
                         // Se colidiu, desfaz o movimento
                         floor.transform.z -= moveZ;
-                        cube.transform.z -= moveZ;
+                        //cube.transform.z -= moveZ;
                         break;
                     }
                 }

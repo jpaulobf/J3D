@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.util.List;
 import j3d.geometry.Mesh;
 import j3d.geometry.Triangle;
+import java.util.ArrayList;
 import j3d.lighting.PointLight;
 import j3d.math.Matrix4;
 import j3d.math.Transform;
@@ -121,25 +122,109 @@ public class GameObject {
                     }
                 }
 
-                Vertex[] p = new Vertex[3];
-                Vertex[] orig = { v1, v2, v3 };
-                boolean clip = false;
-                for (int i = 0; i < 3; i++) {
-                    Vertex pr = Matrix4.multiply(proj, orig[i]);
-                    if (pr.w <= 0.1) {
-                        clip = true;
-                        break;
+                // 1. Projeção para Clip Space (ainda sem dividir por W)
+                Vertex p1 = Matrix4.multiply(proj, v1);
+                Vertex p2 = Matrix4.multiply(proj, v2);
+                Vertex p3 = Matrix4.multiply(proj, v3);
+
+                // 2. Monta o polígono inicial
+                List<ClippedVertex> polygon = new ArrayList<>();
+                polygon.add(new ClippedVertex(p1, c1));
+                polygon.add(new ClippedVertex(p2, c2));
+                polygon.add(new ClippedVertex(p3, c3));
+
+                // 3. Aplica Clipping (Sutherland-Hodgman no Near Plane)
+                polygon = clipPolygon(polygon);
+
+                // 4. Triangulação (Triangle Fan) e Rasterização
+                // Se o clipping gerou um Quad (4 vértices), isso vai desenhar 2 triângulos.
+                for (int i = 1; i < polygon.size() - 1; i++) {
+                    ClippedVertex cp0 = polygon.get(0);
+                    ClippedVertex cp1 = polygon.get(i);
+                    ClippedVertex cp2 = polygon.get(i + 1);
+
+                    // Perspectiva e Viewport (Screen Space)
+                    Vertex s0 = toScreen(cp0.v, w, h);
+                    Vertex s1 = toScreen(cp1.v, w, h);
+                    Vertex s2 = toScreen(cp2.v, w, h);
+
+                    if (wire) {
+                        drawWireframe(pixels, new Vertex[]{s0, s1, s2}, t.baseColor.getRGB(), w, h);
+                    } else {
+                        rasterize(pixels, zBuf, new Vertex[]{s0, s1, s2}, cp0.color, cp1.color, cp2.color, w, h);
                     }
-                    p[i] = new Vertex((pr.x / pr.w + 1) * w / 2, (1 - pr.y / pr.w) * h / 2, 1.0 / pr.w);
-                }
-                if (!clip) {
-                    if (wire)
-                        drawWireframe(pixels, p, t.baseColor.getRGB(), w, h);
-                    else
-                        rasterize(pixels, zBuf, p, c1, c2, c3, w, h);
                 }
             }
         }
+    }
+
+    // Classe auxiliar para manter Vértice e Cor juntos durante o clipping
+    private static class ClippedVertex {
+        Vertex v;
+        int color;
+        ClippedVertex(Vertex v, int color) { this.v = v; this.color = color; }
+    }
+
+    // Algoritmo Sutherland-Hodgman para o Near Plane (W = 0.1)
+    private List<ClippedVertex> clipPolygon(List<ClippedVertex> vertices) {
+        List<ClippedVertex> output = new ArrayList<>();
+        double wMin = 0.1; // Near Plane threshold
+
+        for (int i = 0; i < vertices.size(); i++) {
+            ClippedVertex current = vertices.get(i);
+            ClippedVertex next = vertices.get((i + 1) % vertices.size());
+
+            boolean insideCurrent = current.v.w > wMin;
+            boolean insideNext = next.v.w > wMin;
+
+            if (insideCurrent && insideNext) {
+                output.add(next);
+            } else if (insideCurrent && !insideNext) {
+                output.add(intersect(current, next, wMin));
+            } else if (!insideCurrent && insideNext) {
+                output.add(intersect(current, next, wMin));
+                output.add(next);
+            }
+        }
+        return output;
+    }
+
+    // Calcula a interseção e interpola a cor
+    private ClippedVertex intersect(ClippedVertex v1, ClippedVertex v2, double wPlane) {
+        double t = (wPlane - v1.v.w) / (v2.v.w - v1.v.w);
+
+        // Interpolação Linear do Vértice (X, Y, Z, W)
+        Vertex nv = new Vertex(
+            v1.v.x + (v2.v.x - v1.v.x) * t,
+            v1.v.y + (v2.v.y - v1.v.y) * t,
+            v1.v.z + (v2.v.z - v1.v.z) * t
+        );
+        nv.w = v1.v.w + (v2.v.w - v1.v.w) * t; // Importante interpolar W também
+
+        // Interpolação Linear da Cor (R, G, B)
+        int c1 = v1.color;
+        int c2 = v2.color;
+        int r = (int) (((c1 >> 16) & 0xFF) + t * (((c2 >> 16) & 0xFF) - ((c1 >> 16) & 0xFF)));
+        int g = (int) (((c1 >> 8) & 0xFF) + t * (((c2 >> 8) & 0xFF) - ((c1 >> 8) & 0xFF)));
+        int b = (int) ((c1 & 0xFF) + t * ((c2 & 0xFF) - (c1 & 0xFF)));
+        
+        // Clamp para evitar overflow de cor
+        r = Math.max(0, Math.min(255, r));
+        g = Math.max(0, Math.min(255, g));
+        b = Math.max(0, Math.min(255, b));
+
+        return new ClippedVertex(nv, (r << 16) | (g << 8) | b);
+    }
+
+    // Converte de Clip Space para Screen Space
+    private Vertex toScreen(Vertex v, int w, int h) {
+        // Perspectiva Divide
+        double invW = 1.0 / v.w;
+        return new Vertex(
+            (v.x * invW + 1) * w * 0.5, 
+            (1 - v.y * invW) * h * 0.5, 
+            invW // Armazenamos 1/Z (ou 1/W) para o Z-Buffer
+        );
     }
 
     /**
