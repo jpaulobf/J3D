@@ -53,6 +53,12 @@ Foram aplicadas diversas otimizações de baixo nível para maximizar o FPS em u
 ### 10. Anti-Aliasing (SSAA 2x)
 Implementação de **Super Sampling Anti-Aliasing (SSAA)**. O renderizador desenha a cena em uma resolução 4x maior (2x largura, 2x altura) e faz uma amostragem (downsampling) para a resolução da tela, suavizando as bordas serrilhadas.
 
+### 11. Geração Procedural de Cenário (Maze)
+O motor inclui um exemplo de geração procedural de labirintos baseada em grid. O cenário atual cria paredes, chão e teto dinamicamente, otimizando o uso de memória através do reuso de malhas (Instancing) para desenhar centenas de blocos com baixo custo de CPU.
+
+### 12. Interface Escalável (Responsive HUD)
+O sistema de HUD foi atualizado para ser independente de resolução. A mira e os textos se adaptam automaticamente ao tamanho da janela (ex: Full HD), mantendo a proporção visual correta e legibilidade em qualquer display.
+
 ## Comandos do Laboratório
 
 | Categoria | Teclas | Função |
