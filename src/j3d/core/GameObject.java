@@ -456,6 +456,16 @@ public class GameObject {
         float r2 = (cMid >> 16) & 0xFF, g2 = (cMid >> 8) & 0xFF, b2 = cMid & 0xFF;
         float r3 = (cMax >> 16) & 0xFF, g3 = (cMax >> 8) & 0xFF, b3 = cMax & 0xFF;
 
+        // OTIMIZAÇÃO: Calcula os gradientes (d/dx) do plano do triângulo UMA VEZ.
+        // Isso evita recalcular (zEnd - zStart) / width a cada linha desenhada.
+        double den = (vMid.x - vMin.x) * (vMax.y - vMin.y) - (vMax.x - vMin.x) * (vMid.y - vMin.y);
+        double invDen = Math.abs(den) < 1e-9 ? 0 : 1.0 / den;
+
+        double dZdx = ((vMid.z - vMin.z) * (vMax.y - vMin.y) - (vMax.z - vMin.z) * (vMid.y - vMin.y)) * invDen;
+        double dRdx = ((r2 - r1) * (vMax.y - vMin.y) - (r3 - r1) * (vMid.y - vMin.y)) * invDen;
+        double dGdx = ((g2 - g1) * (vMax.y - vMin.y) - (g3 - g1) * (vMid.y - vMin.y)) * invDen;
+        double dBdx = ((b2 - b1) * (vMax.y - vMin.y) - (b3 - b1) * (vMid.y - vMin.y)) * invDen;
+
         // --- Aresta Longa (vMin -> vMax) ---
         double invHeightLong = 1.0 / (vMax.y - vMin.y);
         double dxLong = (vMax.x - vMin.x) * invHeightLong;
@@ -481,7 +491,7 @@ public class GameObject {
 
             for (int y = y1; y < y2; y++) {
                 if (y >= 0 && y < h) {
-                    drawScanline(pixels, zBuf, y, w, (int)xLong, (int)x1_val, zLong, z1_val, rLong, r1_val, gLong, g1_val, bLong, b1_val);
+                    drawScanline(pixels, zBuf, y, w, (int)xLong, (int)x1_val, zLong, rLong, gLong, bLong, dZdx, dRdx, dGdx, dBdx);
                 }
                 xLong += dxLong; zLong += dzLong; rLong += drLong; gLong += dgLong; bLong += dbLong;
                 x1_val += dx1; z1_val += dz1; r1_val += dr1; g1_val += dg1; b1_val += db1;
@@ -502,7 +512,7 @@ public class GameObject {
 
             for (int y = y2; y < y3; y++) {
                 if (y >= 0 && y < h) {
-                    drawScanline(pixels, zBuf, y, w, (int)xLong, (int)x2_val, zLong, z2_val, rLong, r2_val, gLong, g2_val, bLong, b2_val);
+                    drawScanline(pixels, zBuf, y, w, (int)xLong, (int)x2_val, zLong, rLong, gLong, bLong, dZdx, dRdx, dGdx, dBdx);
                 }
                 xLong += dxLong; zLong += dzLong; rLong += drLong; gLong += dgLong; bLong += dbLong;
                 x2_val += dx2; z2_val += dz2; r2_val += dr2; g2_val += dg2; b2_val += db2;
@@ -513,16 +523,24 @@ public class GameObject {
     // Desenha uma linha horizontal interpolando Z e Cor
     private void drawScanline(int[] pixels, double[] zBuf, int y, int w, 
                               int xStart, int xEnd, 
-                              double zStart, double zEnd, 
-                              double rStart, double rEnd, 
-                              double gStart, double gEnd, 
-                              double bStart, double bEnd) {
+                              double zStart, 
+                              double rStart, double gStart, double bStart,
+                              double dZdx, double dRdx, double dGdx, double dBdx) {
+        
+        // Garante que desenhamos da esquerda para a direita
         if (xStart > xEnd) {
-            int ti = xStart; xStart = xEnd; xEnd = ti;
-            double td = zStart; zStart = zEnd; zEnd = td;
-            td = rStart; rStart = rEnd; rEnd = td;
-            td = gStart; gStart = gEnd; gEnd = td;
-            td = bStart; bStart = bEnd; bEnd = td;
+            // Os atributos (zStart, rStart, etc) correspondem ao xStart original.
+            // Se vamos começar a desenhar em xEnd, precisamos calcular os atributos nesse ponto.
+            double dist = xEnd - xStart; // dist é negativo
+            zStart += dist * dZdx;
+            rStart += dist * dRdx;
+            gStart += dist * dGdx;
+            bStart += dist * dBdx;
+            
+            // Troca os limites
+            int temp = xStart;
+            xStart = xEnd;
+            xEnd = temp;
         }
 
         if (xEnd < 0 || xStart >= w) return;
@@ -530,26 +548,25 @@ public class GameObject {
         int x0 = Math.max(0, xStart);
         int x1 = Math.min(w - 1, xEnd);
 
-        double dx = 1.0 / (xEnd - xStart + 1e-9);
-        double dz = (zEnd - zStart) * dx;
-        double dr = (rEnd - rStart) * dx;
-        double dg = (gEnd - gStart) * dx;
-        double db = (bEnd - bStart) * dx;
-
-        // Ajusta valores iniciais se houve clamp no X
-        double diff = x0 - xStart;
-        double z = zStart + dz * diff;
-        double r = rStart + dr * diff;
-        double g = gStart + dg * diff;
-        double b = bStart + db * diff;
+        // Ajusta valores iniciais para o caso de a linha começar fora da tela (clipping)
+        if (x0 > xStart) {
+            double diff = x0 - xStart;
+            zStart += dZdx * diff;
+            rStart += dRdx * diff;
+            gStart += dGdx * diff;
+            bStart += dBdx * diff;
+        }
 
         int rowOffset = y * w;
         for (int x = x0; x <= x1; x++) {
-            if (z > zBuf[rowOffset + x]) {
-                zBuf[rowOffset + x] = z;
-                pixels[rowOffset + x] = ((int)r << 16) | ((int)g << 8) | (int)b;
+            if (zStart > zBuf[rowOffset + x]) {
+                zBuf[rowOffset + x] = zStart;
+                pixels[rowOffset + x] = ((int)rStart << 16) | ((int)gStart << 8) | (int)bStart;
             }
-            z += dz; r += dr; g += dg; b += db;
+            zStart += dZdx; 
+            rStart += dRdx; 
+            gStart += dGdx; 
+            bStart += dBdx;
         }
     }
 }
