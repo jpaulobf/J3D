@@ -59,19 +59,24 @@ O motor inclui um exemplo de geração procedural de labirintos baseada em grid.
 ### 12. Interface Escalável (Responsive HUD)
 O sistema de HUD foi atualizado para ser independente de resolução. A mira e os textos se adaptam automaticamente ao tamanho da janela (ex: Full HD), mantendo a proporção visual correta e legibilidade em qualquer display.
 
+### 13. Rasterização Híbrida (Scanline vs. Baricêntrica)
+O motor agora suporta dois algoritmos de rasterização que podem ser alternados em tempo real: o método padrão baseado em coordenadas baricêntricas e um rasterizador clássico por **Scanline**. Isso permite a comparação de performance e o estudo de diferentes técnicas de preenchimento de polígonos, com indicadores visuais no HUD para cada modo.
+
 ## Comandos do Laboratório
 
 | Categoria | Teclas | Função |
 | :--- | :--- | :--- |
 | **Movimento** | `W`, `S`, `A`, `D` | Navegação FPS (Frente, Trás, Strafe) |
+| **Movimento** | `Caps Lock` | Alterna entre andar e **correr** |
 | **Movimento** | `Scroll do Mouse` | Sobe e desce a câmera verticalmente |
 | **Visão** | `Mouse` | Olhar ao redor (Yaw e Pitch) |
-| **Luz (X, Z)** | `Setas Direcionais` | Move o spot de luz pelo plano horizontal |
+| **Luz (Debug)** | `J`, `L`, `U`, `O` | Move o spot de luz pelo plano horizontal |
 | **Luz (Y)** | `I` / `K` | Sobe ou desce o spot de luz |
 | **Modos** | `F2` | Alterna entre Preenchimento Sólido e **Wireframe** |
 | **Modos** | `F3` | Mostra/Esconde a esfera da luz |
 | **Modos** | `F4` | Alterna entre Flat Shading e **Gouraud Shading** |
 | **Modos** | `F5` | Alterna o **SSAA 2x** (Anti-Aliasing) |
+| **Modos** | `F10` | Alterna entre rasterização padrão e **Scanline** |
 | **Interface** | `F6` | Mostra/Esconde o **HUD** (Mira e FPS) |
 | **Sistema** | `ESC` | Fecha a aplicação |
 
