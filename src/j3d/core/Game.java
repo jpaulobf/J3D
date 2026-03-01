@@ -213,6 +213,11 @@ public class Game implements Runnable {
         if (input.isKeyPressed(KeyEvent.VK_F6))
             hud.setVisible(!hud.isVisible());
 
+        if (input.isKeyPressed(KeyEvent.VK_F10)) {
+            GameObject.scanline = !GameObject.scanline;
+            System.out.println("Rasterização Scanline: " + (GameObject.scanline ? "LIGADO" : "DESLIGADO"));
+        }
+
         if (input.isKeyPressed(KeyEvent.VK_ESCAPE))
             System.exit(0);
 

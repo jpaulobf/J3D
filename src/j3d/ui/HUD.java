@@ -1,5 +1,6 @@
 package j3d.ui;
 
+import j3d.core.GameObject;
 import j3d.render.IRenderer;
 
 /**
@@ -20,6 +21,10 @@ public class HUD {
     private int spacing;
     private int margin;
 
+    // Ícone de Scanline (Quadrado Amarelo)
+    private int[] scanlineIconPixels;
+    private int scanlineIconSize;
+
     /**
      * Construtor do HUD, que gera a textura da mira proceduralmente.
      * @param width Largura da tela para cálculo de escala
@@ -34,9 +39,11 @@ public class HUD {
         this.digitH = 10 * scale;  // Base 10 (5x2), escala proporcional
         this.spacing = 2 * scale;
         this.margin = 10 * scale;
+        this.scanlineIconSize = 10 * scale; // Base 10x10, escalado
 
         createCrosshair(scale);
         createDigits(2 * scale); // A fonte base é muito pequena (3x5), então multiplicamos por 2*scale
+        createScanlineIcon();
     }
 
     /**
@@ -104,6 +111,17 @@ public class HUD {
     }
 
     /**
+     * Gera o ícone de Scanline (Quadrado amarelo sólido).
+     */
+    private void createScanlineIcon() {
+        scanlineIconPixels = new int[scanlineIconSize * scanlineIconSize];
+        int color = 0xFFFFFF00; // Amarelo Sólido
+        for (int i = 0; i < scanlineIconPixels.length; i++) {
+            scanlineIconPixels[i] = color;
+        }
+    }
+
+    /**
      * Desenha o HUD na tela usando o renderer fornecido.
      */
     public void draw(IRenderer renderer, int screenWidth, int screenHeight, int fps) {
@@ -118,6 +136,13 @@ public class HUD {
 
         // Desenha o FPS no canto superior esquerdo (com espaçamento de 10px)
         drawNumber(renderer, fps, margin, margin);
+
+        // Desenha o indicador de Scanline no canto superior direito se estiver ativo
+        if (GameObject.scanline) {
+            int iconX = screenWidth - margin - scanlineIconSize;
+            int iconY = margin;
+            renderer.drawSprite(scanlineIconPixels, scanlineIconSize, scanlineIconSize, iconX, iconY);
+        }
     }
 
     private void drawNumber(IRenderer renderer, int number, int x, int y) {

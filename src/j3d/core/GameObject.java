@@ -19,6 +19,7 @@ public class GameObject {
     public Mesh mesh;
     public Transform transform = new Transform();
     public static boolean gouraud = true;
+    public static boolean scanline = false;
 
     // Propriedades de Colisão
     public boolean hasCollision = true;
@@ -175,7 +176,11 @@ public class GameObject {
                     if (wire) {
                         drawWireframe(pixels, new Vertex[]{s0, s1, s2}, t.baseColor.getRGB(), w, h);
                     } else {
-                        rasterize(pixels, zBuf, new Vertex[]{s0, s1, s2}, cp0.color, cp1.color, cp2.color, w, h);
+                        if (scanline) {
+                            rasterizeScanline(pixels, zBuf, new Vertex[]{s0, s1, s2}, cp0.color, cp1.color, cp2.color, w, h);
+                        } else {
+                            rasterize(pixels, zBuf, new Vertex[]{s0, s1, s2}, cp0.color, cp1.color, cp2.color, w, h);
+                        }
                     }
                 }
             }
@@ -423,6 +428,128 @@ public class GameObject {
                 err += dx;
                 y0 += sy;
             }
+        }
+    }
+
+    /**
+     * Rasterização alternativa usando algoritmo Scanline (Linha de Varredura).
+     * Útil para comparação de performance e estudo.
+     */
+    void rasterizeScanline(int[] pixels, double[] zBuf, Vertex[] v, int c1, int c2, int c3, int w, int h) {
+        // 1. Ordena vértices por Y (Bubble sort simples para 3 elementos)
+        Vertex vMin = v[0], vMid = v[1], vMax = v[2];
+        int cMin = c1, cMid = c2, cMax = c3;
+
+        if (vMin.y > vMid.y) { Vertex t = vMin; vMin = vMid; vMid = t; int tc = cMin; cMin = cMid; cMid = tc; }
+        if (vMin.y > vMax.y) { Vertex t = vMin; vMin = vMax; vMax = t; int tc = cMin; cMin = cMax; cMax = tc; }
+        if (vMid.y > vMax.y) { Vertex t = vMid; vMid = vMax; vMax = t; int tc = cMid; cMid = cMax; cMax = tc; }
+
+        int y1 = (int) vMin.y;
+        int y2 = (int) vMid.y;
+        int y3 = (int) vMax.y;
+
+        // Se o triângulo não tem altura ou está fora da tela verticalmente, ignora
+        if (y1 >= h || y3 < 0 || y1 == y3) return;
+
+        // Extrai componentes de cor
+        float r1 = (cMin >> 16) & 0xFF, g1 = (cMin >> 8) & 0xFF, b1 = cMin & 0xFF;
+        float r2 = (cMid >> 16) & 0xFF, g2 = (cMid >> 8) & 0xFF, b2 = cMid & 0xFF;
+        float r3 = (cMax >> 16) & 0xFF, g3 = (cMax >> 8) & 0xFF, b3 = cMax & 0xFF;
+
+        // --- Aresta Longa (vMin -> vMax) ---
+        double invHeightLong = 1.0 / (vMax.y - vMin.y);
+        double dxLong = (vMax.x - vMin.x) * invHeightLong;
+        double dzLong = (vMax.z - vMin.z) * invHeightLong;
+        double drLong = (r3 - r1) * invHeightLong;
+        double dgLong = (g3 - g1) * invHeightLong;
+        double dbLong = (b3 - b1) * invHeightLong;
+
+        double xLong = vMin.x, zLong = vMin.z;
+        double rLong = r1, gLong = g1, bLong = b1;
+
+        // --- Parte Superior (vMin -> vMid) ---
+        if (y2 > y1) {
+            double invHeight1 = 1.0 / (vMid.y - vMin.y);
+            double dx1 = (vMid.x - vMin.x) * invHeight1;
+            double dz1 = (vMid.z - vMin.z) * invHeight1;
+            double dr1 = (r2 - r1) * invHeight1;
+            double dg1 = (g2 - g1) * invHeight1;
+            double db1 = (b2 - b1) * invHeight1;
+
+            double x1_val = vMin.x, z1_val = vMin.z;
+            double r1_val = r1, g1_val = g1, b1_val = b1;
+
+            for (int y = y1; y < y2; y++) {
+                if (y >= 0 && y < h) {
+                    drawScanline(pixels, zBuf, y, w, (int)xLong, (int)x1_val, zLong, z1_val, rLong, r1_val, gLong, g1_val, bLong, b1_val);
+                }
+                xLong += dxLong; zLong += dzLong; rLong += drLong; gLong += dgLong; bLong += dbLong;
+                x1_val += dx1; z1_val += dz1; r1_val += dr1; g1_val += dg1; b1_val += db1;
+            }
+        }
+
+        // --- Parte Inferior (vMid -> vMax) ---
+        if (y3 > y2) {
+            double invHeight2 = 1.0 / (vMax.y - vMid.y);
+            double dx2 = (vMax.x - vMid.x) * invHeight2;
+            double dz2 = (vMax.z - vMid.z) * invHeight2;
+            double dr2 = (r3 - r2) * invHeight2;
+            double dg2 = (g3 - g2) * invHeight2;
+            double db2 = (b3 - b2) * invHeight2;
+
+            double x2_val = vMid.x, z2_val = vMid.z;
+            double r2_val = r2, g2_val = g2, b2_val = b2;
+
+            for (int y = y2; y < y3; y++) {
+                if (y >= 0 && y < h) {
+                    drawScanline(pixels, zBuf, y, w, (int)xLong, (int)x2_val, zLong, z2_val, rLong, r2_val, gLong, g2_val, bLong, b2_val);
+                }
+                xLong += dxLong; zLong += dzLong; rLong += drLong; gLong += dgLong; bLong += dbLong;
+                x2_val += dx2; z2_val += dz2; r2_val += dr2; g2_val += dg2; b2_val += db2;
+            }
+        }
+    }
+
+    // Desenha uma linha horizontal interpolando Z e Cor
+    private void drawScanline(int[] pixels, double[] zBuf, int y, int w, 
+                              int xStart, int xEnd, 
+                              double zStart, double zEnd, 
+                              double rStart, double rEnd, 
+                              double gStart, double gEnd, 
+                              double bStart, double bEnd) {
+        if (xStart > xEnd) {
+            int ti = xStart; xStart = xEnd; xEnd = ti;
+            double td = zStart; zStart = zEnd; zEnd = td;
+            td = rStart; rStart = rEnd; rEnd = td;
+            td = gStart; gStart = gEnd; gEnd = td;
+            td = bStart; bStart = bEnd; bEnd = td;
+        }
+
+        if (xEnd < 0 || xStart >= w) return;
+
+        int x0 = Math.max(0, xStart);
+        int x1 = Math.min(w - 1, xEnd);
+
+        double dx = 1.0 / (xEnd - xStart + 1e-9);
+        double dz = (zEnd - zStart) * dx;
+        double dr = (rEnd - rStart) * dx;
+        double dg = (gEnd - gStart) * dx;
+        double db = (bEnd - bStart) * dx;
+
+        // Ajusta valores iniciais se houve clamp no X
+        double diff = x0 - xStart;
+        double z = zStart + dz * diff;
+        double r = rStart + dr * diff;
+        double g = gStart + dg * diff;
+        double b = bStart + db * diff;
+
+        int rowOffset = y * w;
+        for (int x = x0; x <= x1; x++) {
+            if (z > zBuf[rowOffset + x]) {
+                zBuf[rowOffset + x] = z;
+                pixels[rowOffset + x] = ((int)r << 16) | ((int)g << 8) | (int)b;
+            }
+            z += dz; r += dr; g += dg; b += db;
         }
     }
 }
