@@ -241,9 +241,11 @@ public class GameObject {
             double depth = depthRow;
             double r = rRow, g = gRow, b = bRow;
 
+            // Otimização: Calcula o índice inicial da linha fora do loop X
+            int idx = y * w + minX;
+
             for (int x = minX; x <= maxX; x++) {
                 if (w0 >= 0 && w1 >= 0 && w2 >= 0) {
-                    int idx = y * w + x;
                     // Otimização Z-Buffer: Armazenamos 1/Z diretamente.
                     // Maior valor = Mais perto da câmera. Sem divisões!
                     if (depth > zBuf[idx]) {
@@ -257,6 +259,7 @@ public class GameObject {
                 w2 += dw2dx;
                 depth += dDepthDx;
                 r += dRDx; g += dGDx; b += dBDx;
+                idx++; // Avança para o próximo pixel no array linearmente
             }
             // Incrementa Y para a próxima linha
             w0Row += dw0dy;

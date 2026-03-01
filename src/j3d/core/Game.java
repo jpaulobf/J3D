@@ -46,7 +46,7 @@ public class Game implements Runnable {
     private double currentSteering = 0;
 
     // Controle de FPS
-    private int TARGET_FPS = 60;
+    private int TARGET_FPS = 120;
     private int fps = 0;
     private int frames = 0;
     private long lastFpsTime = System.currentTimeMillis();
