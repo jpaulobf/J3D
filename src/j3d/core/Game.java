@@ -14,6 +14,7 @@ import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.util.List;
 import java.util.ArrayList;
+import j3d.ui.HUD;
 
 /**
  * Game class responsible for initializing the game, handling the main game
@@ -44,8 +45,7 @@ public class Game implements Runnable {
     private PhysicsEngine physics;
 
     // UI / HUD
-    private int[] crosshairPixels;
-    private int crosshairSize = 32;
+    private HUD hud;
 
     private double currentSteering = 0;
 
@@ -69,6 +69,7 @@ public class Game implements Runnable {
         gizmoList = new ArrayList<>();
         renderer = new SoftwareRenderer(WIDTH, HEIGHT);
         physics = new PhysicsEngine();
+        hud = new HUD();
 
         // Inicialização do renderer
         renderer.init();
@@ -92,9 +93,6 @@ public class Game implements Runnable {
         window.getFrame().addKeyListener(input);
         window.getFrame().addMouseMotionListener(input);
         window.getFrame().addMouseWheelListener(input);
-
-        // Cria a textura da mira proceduralmente
-        createCrosshair();
     }
 
     /**
@@ -143,27 +141,6 @@ public class Game implements Runnable {
     }
 
     /**
-     * Gera uma mira simples (retícula) em memória para teste.
-     */
-    private void createCrosshair() {
-        crosshairPixels = new int[crosshairSize * crosshairSize];
-        int color = 0xFF00FF00; // Verde Sólido (Alpha 255)
-        int center = crosshairSize / 2;
-        
-        for (int y = 0; y < crosshairSize; y++) {
-            for (int x = 0; x < crosshairSize; x++) {
-                // Lógica simples para desenhar uma cruz com um buraco no meio
-                boolean vertical = Math.abs(x - center) < 2 && Math.abs(y - center) > 4;
-                boolean horizontal = Math.abs(y - center) < 2 && Math.abs(x - center) > 4;
-                
-                if (vertical || horizontal) {
-                    crosshairPixels[y * crosshairSize + x] = color;
-                }
-            }
-        }
-    }
-
-    /**
      * Atualiza o estado do jogo, processando o input do usuário para movimentar a
      * câmera e a luz, e atualizando a rotação dos objetos. Também calcula o FPS
      * atual e atualiza o título da janela com essa informação.
@@ -188,6 +165,9 @@ public class Game implements Runnable {
                 System.out.println("SSAA 2x: " + (sr.ssaaEnabled ? "LIGADO" : "DESLIGADO"));
             }
         }
+        
+        if (input.isKeyPressed(KeyEvent.VK_F6))
+            hud.setVisible(!hud.isVisible());
 
         // Movimento da câmera com mouse
         if (window.getFrame().isFocusOwner()) {
@@ -388,12 +368,10 @@ public class Game implements Runnable {
                 renderer.draw(camera, gizmoList, null, true);
             }
             
-            // Desenha a mira no centro da tela (UI Layer)
-            renderer.drawSprite(crosshairPixels, crosshairSize, crosshairSize, 
-                (WIDTH / 2) - (crosshairSize / 2), 
-                (HEIGHT / 2) - (crosshairSize / 2));
+            // Desenha o HUD (UI Layer)
+            hud.draw(renderer, WIDTH, HEIGHT, fps);
 
-            window.update(renderer.getFrameBuffer(), fps);
+            window.update(renderer.getFrameBuffer());
 
             try {
                 double remainingTime = nextDrawTime - System.nanoTime();

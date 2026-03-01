@@ -13,7 +13,6 @@ public class Window {
     private JFrame frame;
     private BufferedImage canvas;
     private int[] canvasPixels;
-    private int currentFps = 0;
 
     /**
      * Constructor for the Window class, where we initialize the JFrame, set it to
@@ -44,13 +43,6 @@ public class Window {
                 // Escala a imagem do buffer para o tamanho total da janela (Fullscreen)
                 g2d.drawImage(canvas, 0, 0, getWidth(), getHeight(), null);
 
-                // Desenha o FPS no canto inferior direito
-                g2d.setColor(Color.YELLOW);
-                g2d.setFont(new Font("Arial", Font.BOLD, 18));
-                String fpsText = "FPS: " + currentFps;
-                FontMetrics fm = g2d.getFontMetrics();
-                g2d.drawString(fpsText, getWidth() - fm.stringWidth(fpsText) - 20, getHeight() - 20);
-
                 // Sincroniza com o display hardware para evitar tearing e lag visual
                 Toolkit.getDefaultToolkit().sync();
             }
@@ -67,10 +59,8 @@ public class Window {
     /**
      * Atualiza os pixels do canvas com os dados do renderer e o FPS atual, e solicita a repintura da tela.
      * @param rendererPixels
-     * @param fps
      */
-    public void update(int[] rendererPixels, int fps) {
-        this.currentFps = fps;
+    public void update(int[] rendererPixels) {
         System.arraycopy(rendererPixels, 0, canvasPixels, 0, rendererPixels.length);
         frame.repaint();
     }
