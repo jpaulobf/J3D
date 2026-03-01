@@ -46,7 +46,7 @@ public class Game implements Runnable {
     private double currentSteering = 0;
 
     // Controle de FPS
-    private int TARGET_FPS = 60;
+    private int TARGET_FPS = 30;
     private int fps = 0;
     private int frames = 0;
     private long lastFpsTime = System.currentTimeMillis();
@@ -150,6 +150,15 @@ public class Game implements Runnable {
             showLightGizmo = !showLightGizmo;
         if (input.isKeyPressed(KeyEvent.VK_F4))
             GameObject.gouraud = !GameObject.gouraud;
+
+        if (input.isKeyPressed(KeyEvent.VK_F5)) {
+            // Supondo que você faça um cast se a sua variável renderer for uma interface
+            if (renderer instanceof SoftwareRenderer) {
+                SoftwareRenderer sr = (SoftwareRenderer) renderer;
+                sr.ssaaEnabled = !sr.ssaaEnabled;
+                System.out.println("SSAA 2x: " + (sr.ssaaEnabled ? "LIGADO" : "DESLIGADO"));
+            }
+        }
 
         // Movimento da câmera com mouse
         if (window.getFrame().isFocusOwner()) {
