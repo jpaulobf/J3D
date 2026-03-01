@@ -36,7 +36,13 @@ O J3D inclui um `PhysicsEngine` que implementa detecção de colisão AABB (Axis
 ### 6. Clipping de Projeção (Near Plane Clipping)
 Para corrigir artefatos visuais e evitar a renderização de geometria que está atrás da câmera, foi implementado um sistema de clipping simples no plano próximo (near plane). Triângulos que cruzam ou estão atrás deste plano são descartados antes da rasterização, melhorando a performance e a correção visual.
 
-### 7. Otimizações de Performance na CPU
+### 7. Frustum Culling (Descarte de Objetos)
+Para permitir cenários vastos com muitos elementos, o motor implementa um teste de visibilidade baseado em esferas. Antes de processar a geometria de um objeto, verifica-se se sua esfera envolvente está dentro do campo de visão da câmera. Objetos atrás ou muito distantes são ignorados antes mesmo de entrarem no pipeline de renderização, economizando processamento.
+
+### 8. Sistema de HUD (Interface 2D)
+Foi introduzido um sistema de renderização de sprites 2D (bitmaps) que opera sobre a camada 3D final. Isso permite desenhar elementos de interface como miras (crosshair) e textos (fontes bitmap) com transparência, essenciais para feedback visual ao jogador (ex: FPS, Mira).
+
+### 9. Otimizações de Performance na CPU
 Foram aplicadas diversas otimizações de baixo nível para maximizar o FPS em um ambiente de renderização por software:
 *   **Rasterização Incremental**: O loop de desenho de pixels foi reescrito para usar apenas somas (algoritmo incremental), removendo todas as multiplicações e divisões por pixel.
 *   **1/Z Buffering**: O buffer de profundidade armazena o inverso de Z (`1/Z`), permitindo interpolação linear sem divisões custosas.
@@ -44,7 +50,7 @@ Foram aplicadas diversas otimizações de baixo nível para maximizar o FPS em u
 *   **Backface Culling Otimizado**: A verificação de faces traseiras agora é feita antes do cálculo da normalização (raiz quadrada), economizando ciclos de CPU.
 *   **Pré-cálculo de Luzes**: A posição das luzes no espaço da câmera é calculada apenas uma vez por objeto, em vez de repetidamente para cada vértice.
 
-### 8. Anti-Aliasing (SSAA 2x)
+### 10. Anti-Aliasing (SSAA 2x)
 Implementação de **Super Sampling Anti-Aliasing (SSAA)**. O renderizador desenha a cena em uma resolução 4x maior (2x largura, 2x altura) e faz uma amostragem (downsampling) para a resolução da tela, suavizando as bordas serrilhadas.
 
 ## Comandos do Laboratório
@@ -60,6 +66,7 @@ Implementação de **Super Sampling Anti-Aliasing (SSAA)**. O renderizador desen
 | **Modos** | `F3` | Mostra/Esconde a esfera da luz |
 | **Modos** | `F4` | Alterna entre Flat Shading e **Gouraud Shading** |
 | **Modos** | `F5` | Alterna o **SSAA 2x** (Anti-Aliasing) |
+| **Interface** | `F6` | Mostra/Esconde o **HUD** (Mira e FPS) |
 
 ## Como Executar
 
