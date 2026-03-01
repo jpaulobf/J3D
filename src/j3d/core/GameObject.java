@@ -200,11 +200,27 @@ public class GameObject {
         int r2 = (c2 >> 16) & 0xFF, g2 = (c2 >> 8) & 0xFF, b2 = c2 & 0xFF;
         int r3 = (c3 >> 16) & 0xFF, g3 = (c3 >> 8) & 0xFF, b3 = c3 & 0xFF;
 
+        // Pré-cálculo dos passos incrementais (derivadas parciais)
+        // Quanto w0, w1 e w2 mudam ao andar 1 pixel em X ou Y
+        double dw0dx = (v[1].y - v[2].y) * invArea;
+        double dw0dy = (v[2].x - v[1].x) * invArea;
+        double dw1dx = (v[2].y - v[0].y) * invArea;
+        double dw1dy = (v[0].x - v[2].x) * invArea;
+        double dw2dx = (v[0].y - v[1].y) * invArea;
+        double dw2dy = (v[1].x - v[0].x) * invArea;
+
+        // Valores iniciais de w0, w1, w2 no canto superior esquerdo do Bounding Box (minX, minY)
+        double w0Row = ((v[1].y - v[2].y) * (minX - v[2].x) + (v[2].x - v[1].x) * (minY - v[2].y)) * invArea;
+        double w1Row = ((v[2].y - v[0].y) * (minX - v[2].x) + (v[0].x - v[2].x) * (minY - v[2].y)) * invArea;
+        double w2Row = ((v[0].y - v[1].y) * (minX - v[0].x) + (v[1].x - v[0].x) * (minY - v[0].y)) * invArea;
+
         for (int y = minY; y <= maxY; y++) {
+            // Inicializa os pesos para o começo desta linha
+            double w0 = w0Row;
+            double w1 = w1Row;
+            double w2 = w2Row;
+
             for (int x = minX; x <= maxX; x++) {
-                double w0 = ((v[1].y - v[2].y) * (x - v[2].x) + (v[2].x - v[1].x) * (y - v[2].y)) * invArea;
-                double w1 = ((v[2].y - v[0].y) * (x - v[2].x) + (v[0].x - v[2].x) * (y - v[2].y)) * invArea;
-                double w2 = 1.0 - w0 - w1;
                 if (w0 >= 0 && w1 >= 0 && w2 >= 0) {
                     double d = w0 * v[0].z + w1 * v[1].z + w2 * v[2].z;
                     int idx = y * w + x;
@@ -216,7 +232,15 @@ public class GameObject {
                         pixels[idx] = (r << 16) | (g << 8) | b;
                     }
                 }
+                // Incrementa X: apenas somas, sem multiplicações!
+                w0 += dw0dx;
+                w1 += dw1dx;
+                w2 += dw2dx;
             }
+            // Incrementa Y para a próxima linha
+            w0Row += dw0dy;
+            w1Row += dw1dy;
+            w2Row += dw2dy;
         }
     }
 
