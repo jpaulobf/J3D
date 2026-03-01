@@ -9,6 +9,7 @@ import j3d.input.InputManager;
 import java.awt.Color;
 import java.awt.Point;
 import java.awt.Robot;
+import java.awt.Toolkit;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.util.List;
@@ -120,15 +121,24 @@ public class Game implements Runnable {
      */
     private void getSceneInitialObjets() {
         double blockSize = 10.0; // Ampliado de 4.0 para 10.0 (Salas muito maiores)
-        double wallHeight = 10.0;
+        double wallHeight = 20.0; // Altura dobrada (era 10.0)
 
         // Mapa do Labirinto (1 = Parede, 0 = Vazio)
         // Layout Simplificado: 2 Salas Grandes divididas por uma parede com passagem
         int[][] map = {
                 { 1, 1, 1, 1, 1, 1, 1 },
-                { 1, 0, 0, 1, 0, 0, 1 }, // Sala 1 (Esq) | Parede | Sala 2 (Dir)
+                { 1, 0, 0, 0, 0, 0, 1 }, // Sala 1 (Esq) | Parede | Sala 2 (Dir)
                 { 1, 0, 0, 0, 0, 0, 1 }, // Passagem no meio (x=3 é vazio)
-                { 1, 0, 0, 1, 0, 0, 1 },
+                { 1, 0, 0, 0, 0, 0, 1 },
+                { 1, 1, 1, 0, 1, 1, 1 },
+                { 1, 0, 1, 0, 1, 0, 1 },
+                { 1, 0, 0, 0, 0, 0, 1 },
+                { 1, 0, 0, 0, 0, 0, 1 },
+                { 1, 0, 0, 0, 0, 0, 1 },
+                { 1, 0, 0, 0, 0, 0, 1 },
+                { 1, 0, 1, 0, 1, 1, 1 },
+                { 1, 0, 1, 0, 1, 0, 1 },
+                { 1, 0, 1, 0, 1, 1, 1 },
                 { 1, 1, 1, 1, 1, 1, 1 }
         };
 
@@ -141,9 +151,9 @@ public class Game implements Runnable {
             for (int x = 0; x < map[0].length; x++) {
                 if (map[z][x] == 1) {
                     GameObject wall = new GameObject(cubeMesh);
-                    // CORREÇÃO CRÍTICA: Se o cubo base tem tamanho 2 (-1 a 1),
-                    // a escala deve ser metade do blockSize para ter o tamanho final correto.
+                    // Ajusta a escala para o tamanho do bloco e a altura da parede
                     wall.transform.setScale(blockSize / 2.0);
+                    wall.transform.scaleY = wallHeight / 2.0; // Aplica a escala específica para a nova altura
                     wall.transform.x = x * blockSize;
                     wall.transform.z = z * blockSize;
                     wall.transform.y = wallHeight / 2; // Centraliza verticalmente
@@ -203,6 +213,9 @@ public class Game implements Runnable {
         if (input.isKeyPressed(KeyEvent.VK_F6))
             hud.setVisible(!hud.isVisible());
 
+        if (input.isKeyPressed(KeyEvent.VK_ESCAPE))
+            System.exit(0);
+
         // Movimento da câmera com mouse
         if (window.getFrame().isFocusOwner()) {
             
@@ -226,7 +239,15 @@ public class Game implements Runnable {
         }
 
         // Movimento da câmera com teclado (WASD)
-        double camSp = 0.3 * speedCorrection;
+        double baseSpeed = 0.3;
+        try {
+            // Dobra a velocidade se Caps Lock estiver ativado (modo "sprint")
+            if (Toolkit.getDefaultToolkit().getLockingKeyState(KeyEvent.VK_CAPS_LOCK)) {
+                baseSpeed *= 2; // Dobra a velocidade
+            }
+        } catch (Exception e) { }
+
+        double camSp = baseSpeed * speedCorrection;
         double sY = Math.sin(camera.yaw);
         double cY = Math.cos(camera.yaw);
 

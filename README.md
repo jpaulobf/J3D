@@ -73,6 +73,7 @@ O sistema de HUD foi atualizado para ser independente de resolução. A mira e o
 | **Modos** | `F4` | Alterna entre Flat Shading e **Gouraud Shading** |
 | **Modos** | `F5` | Alterna o **SSAA 2x** (Anti-Aliasing) |
 | **Interface** | `F6` | Mostra/Esconde o **HUD** (Mira e FPS) |
+| **Sistema** | `ESC` | Fecha a aplicação |
 
 ## Como Executar
 
