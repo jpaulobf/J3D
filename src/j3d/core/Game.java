@@ -24,8 +24,8 @@ import j3d.ui.HUD;
 public class Game implements Runnable {
 
     // Constantes para a resolução da janela
-    private static final int WIDTH = 1920;
-    private static final int HEIGHT = 1080;
+    private static final int WIDTH = 1024;
+    private static final int HEIGHT = 576;
 
     // Variáveis de estado do jogo
     private boolean running = true;
@@ -48,7 +48,7 @@ public class Game implements Runnable {
     private HUD hud;
 
     // Controle de FPS
-    private int TARGET_FPS = 60;
+    private int TARGET_FPS = 120;
     private int fps = 0;
     private int frames = 0;
     private long lastFpsTime = System.currentTimeMillis();
@@ -354,7 +354,6 @@ public class Game implements Runnable {
                 renderer.draw(camera, gizmoList, null, true);
             }
 
-            // Desenha o HUD (UI Layer)
             hud.draw(renderer, WIDTH, HEIGHT, fps);
 
             window.update(renderer.getFrameBuffer());

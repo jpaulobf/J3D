@@ -224,4 +224,9 @@ public class SoftwareRenderer implements IRenderer {
         }
         return pixels;
     }
+
+    @Override
+    public boolean isSsaaEnabled() {
+        return ssaaEnabled;
+    }
 }

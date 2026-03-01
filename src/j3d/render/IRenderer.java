@@ -33,4 +33,6 @@ public interface IRenderer {
      * @return
      */
     int[] getFrameBuffer();
+
+    boolean isSsaaEnabled();
 }

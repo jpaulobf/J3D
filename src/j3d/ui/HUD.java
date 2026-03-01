@@ -2,6 +2,7 @@ package j3d.ui;
 
 import j3d.core.GameObject;
 import j3d.render.IRenderer;
+import j3d.render.SoftwareRenderer;
 
 /**
  * Classe responsável por gerenciar e desenhar elementos da interface do usuário
@@ -25,6 +26,10 @@ public class HUD {
     private int[] scanlineIconPixels;
     private int scanlineIconSize;
 
+    // Ícone de SSAA (Quadrado Verde)
+    private int[] ssaaIconPixels;
+    private int ssaaIconSize;
+
     /**
      * Construtor do HUD, que gera a textura da mira proceduralmente.
      * @param width Largura da tela para cálculo de escala
@@ -40,10 +45,12 @@ public class HUD {
         this.spacing = 2 * scale;
         this.margin = 10 * scale;
         this.scanlineIconSize = 10 * scale; // Base 10x10, escalado
+        this.ssaaIconSize = 10 * scale; // Base 10x10, escalado
 
         createCrosshair(scale);
         createDigits(2 * scale); // A fonte base é muito pequena (3x5), então multiplicamos por 2*scale
         createScanlineIcon();
+        createSSAAIcon();
     }
 
     /**
@@ -122,6 +129,17 @@ public class HUD {
     }
 
     /**
+     * Gera o ícone de SSAA (Quadrado verde sólido).
+     */
+    private void createSSAAIcon() {
+        ssaaIconPixels = new int[ssaaIconSize * ssaaIconSize];
+        int color = 0xFF00FF00; // Verde Sólido
+        for (int i = 0; i < ssaaIconPixels.length; i++) {
+            ssaaIconPixels[i] = color;
+        }
+    }
+
+    /**
      * Desenha o HUD na tela usando o renderer fornecido.
      */
     public void draw(IRenderer renderer, int screenWidth, int screenHeight, int fps) {
@@ -137,11 +155,19 @@ public class HUD {
         // Desenha o FPS no canto superior esquerdo (com espaçamento de 10px)
         drawNumber(renderer, fps, margin, margin);
 
+        // Posição inicial para os ícones da direita
+        int iconX = screenWidth - margin;
+
         // Desenha o indicador de Scanline no canto superior direito se estiver ativo
         if (GameObject.scanline) {
-            int iconX = screenWidth - margin - scanlineIconSize;
-            int iconY = margin;
-            renderer.drawSprite(scanlineIconPixels, scanlineIconSize, scanlineIconSize, iconX, iconY);
+            iconX -= scanlineIconSize;
+            renderer.drawSprite(scanlineIconPixels, scanlineIconSize, scanlineIconSize, iconX, margin);
+        }
+
+        // Desenha o indicador de SSAA ao lado do de Scanline
+        if (renderer.isSsaaEnabled()) {
+            iconX -= (ssaaIconSize + spacing);
+            renderer.drawSprite(ssaaIconPixels, ssaaIconSize, ssaaIconSize, iconX, margin);
         }
     }
 
