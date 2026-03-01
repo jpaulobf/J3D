@@ -6,7 +6,6 @@ import j3d.lighting.PointLight;
 import j3d.physics.PhysicsEngine;
 import j3d.geometry.Mesh;
 import j3d.input.InputManager;
-import j3d.io.ObjLoader;
 import java.awt.Color;
 import java.awt.Point;
 import java.awt.Robot;
@@ -30,7 +29,7 @@ public class Game implements Runnable {
     // Variáveis de estado do jogo
     private boolean running = true;
     private boolean wireframe = false;
-    private boolean showLightGizmo = true;
+    private boolean showLightGizmo = false;
 
     // Componentes do jogo
     private Window window;
@@ -46,8 +45,6 @@ public class Game implements Runnable {
 
     // UI / HUD
     private HUD hud;
-
-    private double currentSteering = 0;
 
     // Controle de FPS
     private int TARGET_FPS = 60;
@@ -93,6 +90,9 @@ public class Game implements Runnable {
         window.getFrame().addKeyListener(input);
         window.getFrame().addMouseMotionListener(input);
         window.getFrame().addMouseWheelListener(input);
+
+        // Garante que a janela receba o foco do teclado imediatamente ao iniciar
+        window.getFrame().requestFocus();
     }
 
     /**
@@ -101,13 +101,15 @@ public class Game implements Runnable {
      */
     private void initialSceneCameraConfiguration() {
         // Configuração inicial da câmera
-        camera.transform.x = -6;
-        camera.transform.z = -20;
-        camera.transform.y = 14;
+        // Posiciona o jogador no CENTRO da primeira sala (Sala Esquerda)
+        // Indices (1.5, 2.0) * blockSize (10.0)
+        camera.transform.x = 15.0; 
+        camera.transform.z = 20.0;
+        camera.transform.y = 7.5;      // Altura dos olhos ajustada para o novo pé direito
 
         // Orientação validada
-        camera.yaw = -0.3;
-        camera.pitch = 1.8;
+        camera.yaw = 0;
+        camera.pitch = 0;
     }
 
     /**
@@ -115,27 +117,53 @@ public class Game implements Runnable {
      * importado e uma luz.
      */
     private void getSceneInitialObjets() {
-        
-        GameObject floor = new GameObject(Mesh.createGrid(100, 2.0));
-        floor.transform.y = -1.5;
-        floor.hasCollision = false; // Desativa colisão com o chão para não travar o movimento
+        double blockSize = 10.0; // Ampliado de 4.0 para 10.0 (Salas muito maiores)
+        double wallHeight = 10.0;
+
+        // Mapa do Labirinto (1 = Parede, 0 = Vazio)
+        // Layout Simplificado: 2 Salas Grandes divididas por uma parede com passagem
+        int[][] map = {
+            {1, 1, 1, 1, 1, 1, 1},
+            {1, 0, 0, 1, 0, 0, 1}, // Sala 1 (Esq) | Parede | Sala 2 (Dir)
+            {1, 0, 0, 0, 0, 0, 1}, // Passagem no meio (x=3 é vazio)
+            {1, 0, 0, 1, 0, 0, 1},
+            {1, 1, 1, 1, 1, 1, 1}
+        };
+
+        // Gera o labirinto
+        for (int z = 0; z < map.length; z++) {
+            for (int x = 0; x < map[0].length; x++) {
+                if (map[z][x] == 1) {
+                    GameObject wall = new GameObject(Mesh.createCube());
+                    // CORREÇÃO CRÍTICA: Se o cubo base tem tamanho 2 (-1 a 1), 
+                    // a escala deve ser metade do blockSize para ter o tamanho final correto.
+                    wall.transform.setScale(blockSize / 2.0); 
+                    wall.transform.x = x * blockSize;
+                    wall.transform.z = z * blockSize;
+                    wall.transform.y = wallHeight / 2; // Centraliza verticalmente
+                    objects.add(wall);
+                }
+            }
+        }
+
+        // Chão (Grid grande)
+        GameObject floor = new GameObject(Mesh.createGrid(100, blockSize));
+        floor.transform.y = 0; // Chão agora está no nível 0 (base das paredes)
+        floor.transform.x = 35; // Centraliza no novo mapa (7 blocos * 10 / 2)
+        floor.transform.z = 25; // (5 blocos * 10 / 2)
+        floor.hasCollision = false;
         objects.add(floor);
 
-        // leitura do modelo 3D da cena, com textura e cor
-        GameObject car = new GameObject(ObjLoader.load("res/car3.obj", Color.RED));
-        car.transform.y = -0.5;
-        car.transform.x = -6;
-        car.transform.z = -5;
-        car.transform.setScale(1);
-        objects.add(car);
-
-        //Setup da Cena
-        GameObject cube = new GameObject(Mesh.createCube());
-        cube.transform.x = -5;
-        //objects.add(cube);
+        // Teto (Grid grande invertido ou apenas elevado)
+        GameObject ceiling = new GameObject(Mesh.createGrid(100, blockSize));
+        ceiling.transform.y = wallHeight + 5.0; // Elevado para garantir que não toque na cabeça
+        ceiling.transform.x = 35;
+        ceiling.transform.z = 25;
+        ceiling.hasCollision = false;
+        objects.add(ceiling);
 
         // Configuração da luz
-        lights.add(new PointLight(0, 20, 0, Color.GREEN, 7));
+        lights.add(new PointLight(0, 0, 0, Color.ORANGE, 2)); // Luz "Lanterna"
         lightGizmo = new GameObject(Mesh.createSphere(0.2, 8, 8));
         gizmoList.add(lightGizmo);
     }
@@ -229,97 +257,14 @@ public class Game implements Runnable {
             camera.transform.z += dz;
         }
 
-        // Controle do Carro (Objeto 0) e Chão (Objeto 1)
-        if (objects.size() >= 2) {
-
-            GameObject floor = objects.get(0);
-            GameObject car = objects.get(1);
-            //GameObject cube = objects.get(2);
-            
-            double speed = 0.1 * speedCorrection;
-            double rotSpeed = 0.007 * speedCorrection;
-            
-            boolean isMoving = false;
-            boolean movingForward = false;
-
-            double maxSteering = 20 * Math.PI / 180; // Limite máximo de rotação do volante (22.5 graus)
-            double steerAccel = 0.0035 * speedCorrection; // A velocidade com que a rotação se acumula
-
-            if (input.isKeyHeld(KeyEvent.VK_LEFT)) {
-                currentSteering -= steerAccel; // Vira mais pra esquerda
-            } else if (input.isKeyHeld(KeyEvent.VK_RIGHT)) {
-                currentSteering += steerAccel; // Vira mais pra direita
-            } else {
-                // Se soltar as teclas, o volante volta ao centro sozinho suavemente (Fricção da direção)
-                currentSteering *= 0.85; 
-            }
-
-            // Trava o volante para o carro não ficar a girar infinitamente
-            currentSteering = Math.max(-maxSteering, Math.min(maxSteering, currentSteering));
-
-            // Aplica a rotação do volante ao carro (multiplicado para um efeito visual mais pronunciado)
-            car.transform.rotY = -currentSteering; // O fator de multiplicação é para amplificar a rotação visual do carro
-
-            // Movimento Linear do Chão (Inverso ao do Carro)
-            double moveZ = 0;
-            if (input.isKeyHeld(KeyEvent.VK_UP)) {
-                moveZ = -speed;
-                isMoving = true;
-                movingForward = true;
-            }
-            if (input.isKeyHeld(KeyEvent.VK_DOWN)) {
-                moveZ = speed;
-                isMoving = true;
-            }
-
-            if (moveZ != 0) {
-                floor.transform.z += moveZ;
-                //cube.transform.z += moveZ;
-
-                // Verifica colisão do carro (index 1) com outros objetos (index 2 em diante)
-                for (int i = 2; i < objects.size(); i++) {
-                    if (physics.checkObjectCollision(car, objects.get(i))) {
-                        // Se colidiu, desfaz o movimento
-                        floor.transform.z -= moveZ;
-                        //cube.transform.z -= moveZ;
-                        break;
-                    }
-                }
-            }
-
-            /*
-            // Rotação do Chão (Apenas se estiver movendo)
-            if (isMoving) {
-                double theta = 0;
-
-                if (movingForward) {
-                    if (input.isKeyHeld(KeyEvent.VK_LEFT)) theta = -rotSpeed;
-                    if (input.isKeyHeld(KeyEvent.VK_RIGHT)) theta = rotSpeed;
-                } else {
-                    if (input.isKeyHeld(KeyEvent.VK_LEFT)) theta = rotSpeed;
-                    if (input.isKeyHeld(KeyEvent.VK_RIGHT)) theta = -rotSpeed;
-                }
-
-                if (theta != 0) {
-                    double cx = car.transform.x;
-                    double cz = car.transform.z;
-                    double fx = floor.transform.x;
-                    double fz = floor.transform.z;
-                    double dx2 = fx - cx;
-                    double dz2 = fz - cz;
-                    double cos = Math.cos(theta);
-                    double sin = Math.sin(theta);
-                    
-                    floor.transform.x = cx + (dx2 * cos - dz2 * sin);
-                    floor.transform.z = cz + (dx2 * sin + dz2 * cos);
-                    floor.transform.rotY += theta;
-                }
-            }
-            */
-        }
-
-        // Movimento da luz
+        // Lógica da Luz (Lanterna)
+        // A luz segue a posição da câmera, mas um pouco à frente
         j3d.lighting.PointLight spot = lights.get(0);
+        spot.pos.x = camera.transform.x;
+        spot.pos.y = camera.transform.y;
+        spot.pos.z = camera.transform.z;
+
+        // Controles manuais da luz (opcional, mantido para debug)
         double lSp = 0.3 * speedCorrection;
         if (input.isKeyHeld(KeyEvent.VK_U))
             spot.pos.z -= lSp;
