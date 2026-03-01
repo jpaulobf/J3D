@@ -10,35 +10,50 @@ public class HUD {
 
     // Textura da mira (crosshair) e controle de visibilidade
     private int[] crosshairPixels;
-    private int crosshairSize = 32;
+    private int crosshairSize;
     private boolean visible = true;
 
-    // Fonte simples para números (6x10 pixels)
+    // Fonte simples para números
     private int[][] digitSprites;
-    private final int digitW = 6;
-    private final int digitH = 10;
+    private int digitW;
+    private int digitH;
+    private int spacing;
+    private int margin;
 
     /**
      * Construtor do HUD, que gera a textura da mira proceduralmente.
+     * @param width Largura da tela para cálculo de escala
+     * @param height Altura da tela
      */
-    public HUD() {
-        createCrosshair();
-        createDigits();
+    public HUD(int width, int height) {
+        // Calcula a escala com base na largura da tela, usando 1920 como referência
+        int scale = Math.max(1, Math.round((float) width / 1920.0f));
+
+        this.crosshairSize = 32 * scale;
+        this.digitW = 6 * scale;   // Base 6 (3x2), escala proporcional
+        this.digitH = 10 * scale;  // Base 10 (5x2), escala proporcional
+        this.spacing = 2 * scale;
+        this.margin = 10 * scale;
+
+        createCrosshair(scale);
+        createDigits(2 * scale); // A fonte base é muito pequena (3x5), então multiplicamos por 2*scale
     }
 
     /**
      * Gera a textura da mira proceduralmente.
      */
-    private void createCrosshair() {
+    private void createCrosshair(int scale) {
         crosshairPixels = new int[crosshairSize * crosshairSize];
         int color = 0xFF00FF00; // Verde Sólido (Alpha 255)
         int center = crosshairSize / 2;
+        int range = 2 * scale;
+        int gap = 4 * scale;
 
         for (int y = 0; y < crosshairSize; y++) {
             for (int x = 0; x < crosshairSize; x++) {
                 // Lógica simples para desenhar uma cruz com um buraco no meio
-                boolean vertical = Math.abs(x - center) < 2 && Math.abs(y - center) > 4;
-                boolean horizontal = Math.abs(y - center) < 2 && Math.abs(x - center) > 4;
+                boolean vertical = Math.abs(x - center) < range && Math.abs(y - center) > gap;
+                boolean horizontal = Math.abs(y - center) < range && Math.abs(x - center) > gap;
 
                 if (vertical || horizontal) {
                     crosshairPixels[y * crosshairSize + x] = color;
@@ -50,10 +65,9 @@ public class HUD {
     /**
      * Gera os sprites para os dígitos 0-9 (Bitmap Font simples).
      */
-    private void createDigits() {
+    private void createDigits(int scale) {
         digitSprites = new int[10][digitW * digitH];
         int color = 0xFFFFFF00; // Amarelo Sólido
-        int scale = 2;
         int originalW = 3;
 
         // Padrões 3x5 (1 = pixel pintado, 0 = transparente)
@@ -103,14 +117,14 @@ public class HUD {
         renderer.drawSprite(crosshairPixels, crosshairSize, crosshairSize, x, y);
 
         // Desenha o FPS no canto superior esquerdo (com espaçamento de 10px)
-        drawNumber(renderer, fps, 10, 10);
+        drawNumber(renderer, fps, margin, margin);
     }
 
     private void drawNumber(IRenderer renderer, int number, int x, int y) {
         String s = String.valueOf(number);
         for (int i = 0; i < s.length(); i++) {
             int digit = s.charAt(i) - '0';
-            renderer.drawSprite(digitSprites[digit], digitW, digitH, x + (i * (digitW + 2)), y);
+            renderer.drawSprite(digitSprites[digit], digitW, digitH, x + (i * (digitW + spacing)), y);
         }
     }
 

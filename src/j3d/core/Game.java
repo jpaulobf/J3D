@@ -51,6 +51,8 @@ public class Game implements Runnable {
     private int fps = 0;
     private int frames = 0;
     private long lastFpsTime = System.currentTimeMillis();
+    private int windowCenterX = WIDTH / 2;
+    private int windowCenterY = HEIGHT / 2;
 
     /**
      * Construtor do jogo, onde inicializamos a janela, o renderer, a câmera, os
@@ -66,7 +68,7 @@ public class Game implements Runnable {
         gizmoList = new ArrayList<>();
         renderer = new SoftwareRenderer(WIDTH, HEIGHT);
         physics = new PhysicsEngine();
-        hud = new HUD();
+        hud = new HUD(WIDTH, HEIGHT);
 
         // Inicialização do renderer
         renderer.init();
@@ -103,9 +105,9 @@ public class Game implements Runnable {
         // Configuração inicial da câmera
         // Posiciona o jogador no CENTRO da primeira sala (Sala Esquerda)
         // Indices (1.5, 2.0) * blockSize (10.0)
-        camera.transform.x = 15.0; 
+        camera.transform.x = 15.0;
         camera.transform.z = 20.0;
-        camera.transform.y = 7.5;      // Altura dos olhos ajustada para o novo pé direito
+        camera.transform.y = 7.5; // Altura dos olhos ajustada para o novo pé direito
 
         // Orientação validada
         camera.yaw = 0;
@@ -123,21 +125,25 @@ public class Game implements Runnable {
         // Mapa do Labirinto (1 = Parede, 0 = Vazio)
         // Layout Simplificado: 2 Salas Grandes divididas por uma parede com passagem
         int[][] map = {
-            {1, 1, 1, 1, 1, 1, 1},
-            {1, 0, 0, 1, 0, 0, 1}, // Sala 1 (Esq) | Parede | Sala 2 (Dir)
-            {1, 0, 0, 0, 0, 0, 1}, // Passagem no meio (x=3 é vazio)
-            {1, 0, 0, 1, 0, 0, 1},
-            {1, 1, 1, 1, 1, 1, 1}
+                { 1, 1, 1, 1, 1, 1, 1 },
+                { 1, 0, 0, 1, 0, 0, 1 }, // Sala 1 (Esq) | Parede | Sala 2 (Dir)
+                { 1, 0, 0, 0, 0, 0, 1 }, // Passagem no meio (x=3 é vazio)
+                { 1, 0, 0, 1, 0, 0, 1 },
+                { 1, 1, 1, 1, 1, 1, 1 }
         };
+
+        // OTIMIZAÇÃO: Cria as malhas apenas uma vez e reutiliza para todos os objetos
+        Mesh cubeMesh = Mesh.createCube();
+        Mesh gridMesh = Mesh.createGrid(100, blockSize);
 
         // Gera o labirinto
         for (int z = 0; z < map.length; z++) {
             for (int x = 0; x < map[0].length; x++) {
                 if (map[z][x] == 1) {
-                    GameObject wall = new GameObject(Mesh.createCube());
-                    // CORREÇÃO CRÍTICA: Se o cubo base tem tamanho 2 (-1 a 1), 
+                    GameObject wall = new GameObject(cubeMesh);
+                    // CORREÇÃO CRÍTICA: Se o cubo base tem tamanho 2 (-1 a 1),
                     // a escala deve ser metade do blockSize para ter o tamanho final correto.
-                    wall.transform.setScale(blockSize / 2.0); 
+                    wall.transform.setScale(blockSize / 2.0);
                     wall.transform.x = x * blockSize;
                     wall.transform.z = z * blockSize;
                     wall.transform.y = wallHeight / 2; // Centraliza verticalmente
@@ -147,7 +153,7 @@ public class Game implements Runnable {
         }
 
         // Chão (Grid grande)
-        GameObject floor = new GameObject(Mesh.createGrid(100, blockSize));
+        GameObject floor = new GameObject(gridMesh);
         floor.transform.y = 0; // Chão agora está no nível 0 (base das paredes)
         floor.transform.x = 35; // Centraliza no novo mapa (7 blocos * 10 / 2)
         floor.transform.z = 25; // (5 blocos * 10 / 2)
@@ -155,7 +161,7 @@ public class Game implements Runnable {
         objects.add(floor);
 
         // Teto (Grid grande invertido ou apenas elevado)
-        GameObject ceiling = new GameObject(Mesh.createGrid(100, blockSize));
+        GameObject ceiling = new GameObject(gridMesh);
         ceiling.transform.y = wallHeight + 5.0; // Elevado para garantir que não toque na cabeça
         ceiling.transform.x = 35;
         ceiling.transform.z = 25;
@@ -193,24 +199,22 @@ public class Game implements Runnable {
                 System.out.println("SSAA 2x: " + (sr.ssaaEnabled ? "LIGADO" : "DESLIGADO"));
             }
         }
-        
+
         if (input.isKeyPressed(KeyEvent.VK_F6))
             hud.setVisible(!hud.isVisible());
 
         // Movimento da câmera com mouse
         if (window.getFrame().isFocusOwner()) {
-            java.awt.Point loc = window.getFrame().getLocationOnScreen();
-            int centerX = loc.x + window.getFrame().getWidth() / 2;
-            int centerY = loc.y + window.getFrame().getHeight() / 2;
-
-            int dx = input.getMouseX() - centerX;
-            int dy = input.getMouseY() - centerY;
+            
+            // Calcula o deslocamento do mouse a partir do centro da janela
+            int dx = input.getMouseX() - windowCenterX;
+            int dy = input.getMouseY() - windowCenterY;
 
             if (dx != 0 || dy != 0) {
                 camera.yaw += dx * 0.003;
                 camera.pitch += dy * 0.003;
                 camera.pitch = Math.max(-1.5, Math.min(1.5, camera.pitch));
-                robot.mouseMove(centerX, centerY);
+                robot.mouseMove(windowCenterX, windowCenterY);
             }
         }
 
@@ -289,7 +293,18 @@ public class Game implements Runnable {
             fps = frames;
             frames = 0;
             lastFpsTime = System.currentTimeMillis();
-            window.getFrame().setTitle("TARGET FPS: " + TARGET_FPS + " | ACTUAL FPS: " + fps);
+
+            // Atualiza a posição da janela apenas uma vez por segundo (se o usuário moveu a
+            // janela)
+            try {
+                Point loc = window.getFrame().getLocationOnScreen();
+                windowCenterX = loc.x + window.getFrame().getWidth() / 2;
+                windowCenterY = loc.y + window.getFrame().getHeight() / 2;
+            } catch (Exception e) {
+            }
+
+            // window.getFrame().setTitle("TARGET FPS: " + TARGET_FPS + " | ACTUAL FPS: " +
+            // fps);
         }
     }
 
@@ -312,7 +327,7 @@ public class Game implements Runnable {
             if (showLightGizmo) {
                 renderer.draw(camera, gizmoList, null, true);
             }
-            
+
             // Desenha o HUD (UI Layer)
             hud.draw(renderer, WIDTH, HEIGHT, fps);
 
