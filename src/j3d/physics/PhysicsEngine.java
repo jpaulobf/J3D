@@ -67,4 +67,30 @@ public class PhysicsEngine {
                (entityMinY <= objMaxY && entityMaxY >= objMinY) &&
                (playerMinZ <= objMaxZ && playerMaxZ >= objMinZ);
     }
+
+    /**
+     * Verifica colisão AABB (Axis-Aligned Bounding Box) entre dois GameObjects.
+     */
+    public boolean checkObjectCollision(GameObject a, GameObject b) {
+        if (!a.hasCollision || !b.hasCollision)
+            return false;
+
+        double aMinX = a.transform.x + a.minX * a.transform.scaleX;
+        double aMaxX = a.transform.x + a.maxX * a.transform.scaleX;
+        double aMinY = a.transform.y + a.minY * a.transform.scaleY;
+        double aMaxY = a.transform.y + a.maxY * a.transform.scaleY;
+        double aMinZ = a.transform.z + a.minZ * a.transform.scaleZ;
+        double aMaxZ = a.transform.z + a.maxZ * a.transform.scaleZ;
+
+        double bMinX = b.transform.x + b.minX * b.transform.scaleX;
+        double bMaxX = b.transform.x + b.maxX * b.transform.scaleX;
+        double bMinY = b.transform.y + b.minY * b.transform.scaleY;
+        double bMaxY = b.transform.y + b.maxY * b.transform.scaleY;
+        double bMinZ = b.transform.z + b.minZ * b.transform.scaleZ;
+        double bMaxZ = b.transform.z + b.maxZ * b.transform.scaleZ;
+
+        return (aMinX <= bMaxX && aMaxX >= bMinX) &&
+               (aMinY <= bMaxY && aMaxY >= bMinY) &&
+               (aMinZ <= bMaxZ && aMaxZ >= bMinZ);
+    }
 }

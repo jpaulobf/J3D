@@ -23,8 +23,8 @@ import java.util.ArrayList;
 public class Game implements Runnable {
 
     // Constantes para a resolução da janela
-    private static final int WIDTH = 1024;
-    private static final int HEIGHT = 576;
+    private static final int WIDTH = 1366;
+    private static final int HEIGHT = 768;
 
     // Variáveis de estado do jogo
     private boolean running = true;
@@ -110,6 +110,12 @@ public class Game implements Runnable {
      * importado e uma luz.
      */
     private void getSceneInitialObjets() {
+        
+        GameObject floor = new GameObject(Mesh.createGrid(100, 2.0));
+        floor.transform.y = -1.5;
+        floor.hasCollision = false; // Desativa colisão com o chão para não travar o movimento
+        objects.add(floor);
+
         // leitura do modelo 3D da cena, com textura e cor
         GameObject car = new GameObject(ObjLoader.load("res/car3.obj", Color.RED));
         car.transform.y = -0.5;
@@ -118,15 +124,10 @@ public class Game implements Runnable {
         car.transform.setScale(1);
         objects.add(car);
 
-        // Setup da Cena
-        // GameObject cube = new GameObject(Mesh.createCube());
-        // cube.transform.x = -3;
-        // objects.add(cube);
-
-        GameObject floor = new GameObject(Mesh.createGrid(100, 2.0));
-        floor.transform.y = -1.5;
-        floor.hasCollision = false; // Desativa colisão com o chão para não travar o movimento
-        objects.add(floor);
+        //Setup da Cena
+        GameObject cube = new GameObject(Mesh.createCube());
+        cube.transform.x = -5;
+        objects.add(cube);
 
         // Configuração da luz
         lights.add(new PointLight(0, 20, 0, Color.GREEN, 7));
@@ -223,8 +224,9 @@ public class Game implements Runnable {
         // Controle do Carro (Objeto 0) e Chão (Objeto 1)
         if (objects.size() >= 2) {
 
-            GameObject car = objects.get(0);
-            GameObject floor = objects.get(1);
+            GameObject floor = objects.get(0);
+            GameObject car = objects.get(1);
+            GameObject cube = objects.get(2);
             
             double speed = 0.1 * speedCorrection;
             double rotSpeed = 0.007 * speedCorrection;
@@ -251,14 +253,30 @@ public class Game implements Runnable {
             car.transform.rotY = -currentSteering; // O fator de multiplicação é para amplificar a rotação visual do carro
 
             // Movimento Linear do Chão (Inverso ao do Carro)
+            double moveZ = 0;
             if (input.isKeyHeld(KeyEvent.VK_UP)) {
-                floor.transform.z -= speed;
+                moveZ = -speed;
                 isMoving = true;
                 movingForward = true;
             }
             if (input.isKeyHeld(KeyEvent.VK_DOWN)) {
-                floor.transform.z += speed;
+                moveZ = speed;
                 isMoving = true;
+            }
+
+            if (moveZ != 0) {
+                floor.transform.z += moveZ;
+                cube.transform.z += moveZ;
+
+                // Verifica colisão do carro (index 1) com outros objetos (index 2 em diante)
+                for (int i = 2; i < objects.size(); i++) {
+                    if (physics.checkObjectCollision(car, objects.get(i))) {
+                        // Se colidiu, desfaz o movimento
+                        floor.transform.z -= moveZ;
+                        cube.transform.z -= moveZ;
+                        break;
+                    }
+                }
             }
 
             /*
