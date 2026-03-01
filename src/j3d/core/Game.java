@@ -43,6 +43,10 @@ public class Game implements Runnable {
     private List<GameObject> gizmoList;
     private PhysicsEngine physics;
 
+    // UI / HUD
+    private int[] crosshairPixels;
+    private int crosshairSize = 32;
+
     private double currentSteering = 0;
 
     // Controle de FPS
@@ -88,6 +92,9 @@ public class Game implements Runnable {
         window.getFrame().addKeyListener(input);
         window.getFrame().addMouseMotionListener(input);
         window.getFrame().addMouseWheelListener(input);
+
+        // Cria a textura da mira proceduralmente
+        createCrosshair();
     }
 
     /**
@@ -133,6 +140,27 @@ public class Game implements Runnable {
         lights.add(new PointLight(0, 20, 0, Color.GREEN, 7));
         lightGizmo = new GameObject(Mesh.createSphere(0.2, 8, 8));
         gizmoList.add(lightGizmo);
+    }
+
+    /**
+     * Gera uma mira simples (retícula) em memória para teste.
+     */
+    private void createCrosshair() {
+        crosshairPixels = new int[crosshairSize * crosshairSize];
+        int color = 0xFF00FF00; // Verde Sólido (Alpha 255)
+        int center = crosshairSize / 2;
+        
+        for (int y = 0; y < crosshairSize; y++) {
+            for (int x = 0; x < crosshairSize; x++) {
+                // Lógica simples para desenhar uma cruz com um buraco no meio
+                boolean vertical = Math.abs(x - center) < 2 && Math.abs(y - center) > 4;
+                boolean horizontal = Math.abs(y - center) < 2 && Math.abs(x - center) > 4;
+                
+                if (vertical || horizontal) {
+                    crosshairPixels[y * crosshairSize + x] = color;
+                }
+            }
+        }
     }
 
     /**
@@ -359,6 +387,11 @@ public class Game implements Runnable {
             if (showLightGizmo) {
                 renderer.draw(camera, gizmoList, null, true);
             }
+            
+            // Desenha a mira no centro da tela (UI Layer)
+            renderer.drawSprite(crosshairPixels, crosshairSize, crosshairSize, 
+                (WIDTH / 2) - (crosshairSize / 2), 
+                (HEIGHT / 2) - (crosshairSize / 2));
 
             window.update(renderer.getFrameBuffer(), fps);
 
