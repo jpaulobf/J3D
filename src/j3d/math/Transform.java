@@ -13,8 +13,10 @@ public class Transform {
     public double scaleX = 1.0, scaleY = 1.0, scaleZ = 1.0;
 
     /**
-     * Computes the model matrix for this transform, combining scale, rotation, and
-     * translation.
+     * Calcula a matriz de modelo para esta transformação, combinando escala,
+     * rotação e translação.
+     * A matriz de rotação é construída usando Ângulos de Euler, um conceito
+     * matemático formalizado por Leonhard Euler no século 18.
      * 
      * @return Matrix4
      */
