@@ -13,6 +13,14 @@ public class Mesh {
     public List<Vertex> vertices = new ArrayList<>();
     public List<Triangle> triangles = new ArrayList<>();
 
+    public Mesh() {
+    }
+
+    public Mesh(List<Vertex> vertices, List<Triangle> triangles) {
+        this.vertices = vertices;
+        this.triangles = triangles;
+    }
+
     /**
      * Factory method to create a cube mesh.
      */

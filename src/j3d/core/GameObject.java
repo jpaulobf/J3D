@@ -278,6 +278,12 @@ public class GameObject {
     private int calcLighting(Vertex v, double nx, double ny, double nz, List<PointLight> lights,
             List<Vertex> viewSpaceLights, Color base) {
         double rT = 0, gT = 0, bT = 0, amb = 0.15;
+        
+        // Normaliza a cor base do objeto (0.0 a 1.0)
+        double rb = base.getRed() / 255.0;
+        double gb = base.getGreen() / 255.0;
+        double bb = base.getBlue() / 255.0;
+
         for (int i = 0; i < lights.size(); i++) {
             PointLight light = lights.get(i);
             Vertex lV = viewSpaceLights.get(i); // Usa a posição pré-calculada
@@ -285,12 +291,25 @@ public class GameObject {
             double d = Math.sqrt(lx * lx + ly * ly + lz * lz);
             double dot = Math.max(0, nx * (lx / d) + ny * (ly / d) + nz * (lz / d));
             double att = 1.0 / (1.0 + 0.01 * d * d);
-            rT += (base.getRed() / 255.0) * dot * light.intensity * att;
-            gT += (base.getGreen() / 255.0) * dot * light.intensity * att;
-            bT += (base.getBlue() / 255.0) * dot * light.intensity * att;
+            
+            // Obtém a cor da luz
+            double lr = light.color.getRed() / 255.0;
+            double lg = light.color.getGreen() / 255.0;
+            double lb = light.color.getBlue() / 255.0;
+
+            // Calcula a contribuição difusa considerando a cor da luz e do objeto
+            rT += rb * lr * dot * light.intensity * att;
+            gT += gb * lg * dot * light.intensity * att;
+            bT += bb * lb * dot * light.intensity * att;
         }
-        return new Color((int) (Math.min(1, rT + amb) * 255), (int) (Math.min(1, gT + amb) * 255),
-                (int) (Math.min(1, bT + amb) * 255)).getRGB();
+        
+        // Aplica a luz ambiente multiplicada pela cor base (evita sombras cinzas)
+        rT += rb * amb;
+        gT += gb * amb;
+        bT += bb * amb;
+
+        return new Color((int) (Math.min(1, rT) * 255), (int) (Math.min(1, gT) * 255),
+                (int) (Math.min(1, bT) * 255)).getRGB();
     }
 
     /**

@@ -14,6 +14,8 @@ import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import j3d.ui.HUD;
 
 /**
@@ -48,7 +50,7 @@ public class Game implements Runnable {
     private HUD hud;
 
     // Controle de FPS
-    private int TARGET_FPS = 75;
+    private int TARGET_FPS = 120;
     private int fps = 0;
     private int frames = 0;
     private long lastFpsTime = System.currentTimeMillis();
@@ -142,22 +144,26 @@ public class Game implements Runnable {
                 { 1, 1, 1, 1, 1, 1, 1 }
         };
 
-        // OTIMIZAÇÃO: Cria as malhas apenas uma vez e reutiliza para todos os objetos
-        Mesh cubeMesh = Mesh.createCube();
         Mesh gridMesh = Mesh.createGrid(100, blockSize);
 
-        // Gera o labirinto
+        // --- INTERNAL FACE CULLING (Otimização) ---
+        // Para cada bloco de parede, cria um GameObject com uma malha customizada
+        // contendo apenas as faces visíveis. Isso otimiza a renderização e mantém
+        // a detecção de colisão AABB funcional.
         for (int z = 0; z < map.length; z++) {
             for (int x = 0; x < map[0].length; x++) {
                 if (map[z][x] == 1) {
-                    GameObject wall = new GameObject(cubeMesh);
-                    // Ajusta a escala para o tamanho do bloco e a altura da parede
-                    wall.transform.setScale(blockSize / 2.0);
-                    wall.transform.scaleY = wallHeight / 2.0; // Aplica a escala específica para a nova altura
-                    wall.transform.x = x * blockSize;
-                    wall.transform.z = z * blockSize;
-                    wall.transform.y = wallHeight / 2; // Centraliza verticalmente
-                    objects.add(wall);
+                    // Gera uma malha customizada para este bloco específico
+                    Mesh customWallMesh = createSingleBlockMesh(map, x, z, blockSize, wallHeight);
+                    // Só adiciona o objeto se ele tiver alguma face visível
+                    if (!customWallMesh.triangles.isEmpty()) {
+                        GameObject wall = new GameObject(customWallMesh);
+                        // Os vértices da malha já estão em coordenadas do mundo,
+                        // então o transform do objeto fica na origem (identidade).
+                        // O AABB para colisão será calculado corretamente pelo construtor do
+                        // GameObject.
+                        objects.add(wall);
+                    }
                 }
             }
         }
@@ -179,9 +185,87 @@ public class Game implements Runnable {
         objects.add(ceiling);
 
         // Configuração da luz
-        lights.add(new PointLight(0, 0, 0, Color.ORANGE, 2)); // Luz "Lanterna"
+        lights.add(new PointLight(0, 0, 0, Color.WHITE, 2)); // Luz "Lanterna"
         lightGizmo = new GameObject(Mesh.createSphere(0.2, 8, 8));
         gizmoList.add(lightGizmo);
+    }
+
+    /**
+     * Cria uma malha customizada para um único bloco do mapa, contendo apenas as
+     * faces visíveis (não adjacentes a outros blocos).
+     */
+    private Mesh createSingleBlockMesh(int[][] map, int x, int z, double blockSize, double wallHeight) {
+        List<j3d.geometry.Vertex> vertices = new ArrayList<>();
+        List<j3d.geometry.Triangle> triangles = new ArrayList<>();
+        Map<String, Integer> vertexMap = new HashMap<>();
+
+        // Função auxiliar para adicionar vértices sem duplicação (vertex welding)
+        java.util.function.Function<j3d.geometry.Vertex, Integer> addVertex = (v) -> {
+            String key = String.format("%.2f_%.2f_%.2f", v.x, v.y, v.z);
+            if (vertexMap.containsKey(key)) {
+                return vertexMap.get(key);
+            } else {
+                int index = vertices.size();
+                vertices.add(v);
+                vertexMap.put(key, index);
+                return index;
+            }
+        };
+
+        Color wallColor = Color.RED;
+
+        // Verifica os vizinhos para determinar quais faces desenhar
+        boolean frontIsEmpty = z + 1 >= map.length || map[z + 1][x] == 0;
+        boolean backIsEmpty = z - 1 < 0 || map[z - 1][x] == 0;
+        boolean rightIsEmpty = x + 1 >= map[0].length || map[z][x + 1] == 0;
+        boolean leftIsEmpty = x - 1 < 0 || map[z][x - 1] == 0;
+        boolean topIsEmpty = true; // Topo da parede é sempre visível
+        boolean bottomIsEmpty = true; // Base da parede é sempre visível (contra o chão)
+
+        // Coordenadas do mundo para os 8 cantos deste bloco
+        double x0 = x * blockSize;
+        double x1 = (x + 1) * blockSize;
+        double z0 = z * blockSize;
+        double z1 = (z + 1) * blockSize;
+        double y0 = 0;
+        double y1 = wallHeight;
+
+        j3d.geometry.Vertex v000 = new j3d.geometry.Vertex(x0, y0, z0);
+        j3d.geometry.Vertex v100 = new j3d.geometry.Vertex(x1, y0, z0);
+        j3d.geometry.Vertex v010 = new j3d.geometry.Vertex(x0, y1, z0);
+        j3d.geometry.Vertex v110 = new j3d.geometry.Vertex(x1, y1, z0);
+        j3d.geometry.Vertex v001 = new j3d.geometry.Vertex(x0, y0, z1);
+        j3d.geometry.Vertex v101 = new j3d.geometry.Vertex(x1, y0, z1);
+        j3d.geometry.Vertex v011 = new j3d.geometry.Vertex(x0, y1, z1);
+        j3d.geometry.Vertex v111 = new j3d.geometry.Vertex(x1, y1, z1);
+
+        // Gera os triângulos (quads) para cada face visível
+        if (rightIsEmpty) { // Face Direita (+X)
+            int i1 = addVertex.apply(v100), i2 = addVertex.apply(v110), i3 = addVertex.apply(v111), i4 = addVertex.apply(v101);
+            triangles.add(new j3d.geometry.Triangle(i1, i2, i3, wallColor)); triangles.add(new j3d.geometry.Triangle(i1, i3, i4, wallColor));
+        }
+        if (leftIsEmpty) { // Face Esquerda (-X)
+            int i1 = addVertex.apply(v001), i2 = addVertex.apply(v011), i3 = addVertex.apply(v010), i4 = addVertex.apply(v000);
+            triangles.add(new j3d.geometry.Triangle(i1, i2, i3, wallColor)); triangles.add(new j3d.geometry.Triangle(i1, i3, i4, wallColor));
+        }
+        if (frontIsEmpty) { // Face Frontal (+Z)
+            int i1 = addVertex.apply(v001), i2 = addVertex.apply(v101), i3 = addVertex.apply(v111), i4 = addVertex.apply(v011);
+            triangles.add(new j3d.geometry.Triangle(i1, i2, i3, wallColor)); triangles.add(new j3d.geometry.Triangle(i1, i3, i4, wallColor));
+        }
+        if (backIsEmpty) { // Face Traseira (-Z)
+            int i1 = addVertex.apply(v100), i2 = addVertex.apply(v000), i3 = addVertex.apply(v010), i4 = addVertex.apply(v110);
+            triangles.add(new j3d.geometry.Triangle(i1, i2, i3, wallColor)); triangles.add(new j3d.geometry.Triangle(i1, i3, i4, wallColor));
+        }
+        if (topIsEmpty) { // Face Superior (+Y)
+            int i1 = addVertex.apply(v010), i2 = addVertex.apply(v011), i3 = addVertex.apply(v111), i4 = addVertex.apply(v110);
+            triangles.add(new j3d.geometry.Triangle(i1, i2, i3, wallColor)); triangles.add(new j3d.geometry.Triangle(i1, i3, i4, wallColor));
+        }
+        if (bottomIsEmpty) { // Face Inferior (-Y)
+            int i1 = addVertex.apply(v001), i2 = addVertex.apply(v000), i3 = addVertex.apply(v100), i4 = addVertex.apply(v101);
+            triangles.add(new j3d.geometry.Triangle(i1, i2, i3, wallColor)); triangles.add(new j3d.geometry.Triangle(i1, i3, i4, wallColor));
+        }
+
+        return new Mesh(vertices, triangles);
     }
 
     /**
