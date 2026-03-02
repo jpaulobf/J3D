@@ -212,7 +212,7 @@ public class Game implements Runnable {
             }
         };
 
-        Color wallColor = Color.RED;
+        Color wallColor = Color.GRAY;
 
         // Verifica os vizinhos para determinar quais faces desenhar
         boolean frontIsEmpty = z + 1 >= map.length || map[z + 1][x] == 0;
