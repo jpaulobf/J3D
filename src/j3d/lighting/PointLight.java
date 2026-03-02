@@ -1,7 +1,8 @@
 package j3d.lighting;
 
 import java.awt.Color;
-import j3d.math.Vertex;
+
+import j3d.geometry.Vertex;
 
 /**
  * PointLight class representing a point light source in 3D space.

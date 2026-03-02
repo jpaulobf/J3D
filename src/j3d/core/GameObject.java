@@ -4,11 +4,12 @@ import java.awt.Color;
 import java.util.List;
 import j3d.geometry.Mesh;
 import j3d.geometry.Triangle;
+import j3d.geometry.Vertex;
+
 import java.util.ArrayList;
 import j3d.lighting.PointLight;
 import j3d.math.Matrix4;
 import j3d.math.Transform;
-import j3d.math.Vertex;
 
 /**
  * GameObject class representing a game object with a mesh and a transform.
@@ -194,7 +195,10 @@ public class GameObject {
         ClippedVertex(Vertex v, int color) { this.v = v; this.color = color; }
     }
 
-    // Algoritmo Sutherland-Hodgman para o Near Plane (W = 0.1)
+    /**
+     * Implementação do algoritmo de Sutherland-Hodgman (1974) para clipping de polígonos.
+     * Realiza o corte da geometria contra o Near Plane (W = 0.1).
+     */
     private List<ClippedVertex> clipPolygon(List<ClippedVertex> vertices) {
         List<ClippedVertex> output = new ArrayList<>();
         double wMin = 0.1; // Near Plane threshold
@@ -259,6 +263,8 @@ public class GameObject {
     /**
      * Calculate lighting method to compute the color of a vertex based on its
      * normal, the scene lights, and the base color of the triangle.
+     * <p>
+     * Baseado no modelo de reflexão difusa (Lambert) e sombreamento de Gouraud (1971).
      * 
      * @param v
      * @param nx
@@ -290,6 +296,8 @@ public class GameObject {
     /**
      * Rasterize method to fill the triangle defined by vertices v with the
      * specified color, using the z-buffer for depth testing.
+     * <p>
+     * Utiliza a abordagem de Coordenadas Baricêntricas (Möbius, 1827) para interpolação.
      * 
      * @param pixels
      * @param zBuf
@@ -403,6 +411,8 @@ public class GameObject {
     /**
      * Draw line method to draw a line between two vertices v1 and v2 with the
      * specified color, using Bresenham's line algorithm.
+     * <p>
+     * Algoritmo desenvolvido por Jack Bresenham (1962) na IBM.
      * 
      * @param pixels
      * @param v1
@@ -434,6 +444,7 @@ public class GameObject {
     /**
      * Rasterização alternativa usando algoritmo Scanline (Linha de Varredura).
      * Útil para comparação de performance e estudo.
+     * Técnica clássica de preenchimento de polígonos (Wylie, Romney, Evans, Erdahl, 1967).
      */
     void rasterizeScanline(int[] pixels, double[] zBuf, Vertex[] v, int c1, int c2, int c3, int w, int h) {
         // 1. Ordena vértices por Y (Bubble sort simples para 3 elementos)

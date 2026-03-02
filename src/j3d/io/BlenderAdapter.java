@@ -2,7 +2,7 @@ package j3d.io;
 
 import java.awt.Color;
 import j3d.geometry.Mesh;
-import j3d.math.Vertex;
+import j3d.geometry.Vertex;
 
 /**
  * Classe utilitária para carregar modelos exportados do Blender.

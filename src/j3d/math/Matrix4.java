@@ -1,5 +1,7 @@
 package j3d.math;
 
+import j3d.geometry.Vertex;
+
 public class Matrix4 {
 
     // 4x4 matrix for 3D transformations

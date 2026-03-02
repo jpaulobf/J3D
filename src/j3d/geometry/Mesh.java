@@ -4,8 +4,6 @@ import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
 
-import j3d.math.Vertex;
-
 /**
  * Mesh class representing a 3D mesh with vertices and triangles.
  */

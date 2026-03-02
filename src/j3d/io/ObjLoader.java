@@ -8,7 +8,7 @@ import java.util.HashMap;
 import java.util.Map;
 import j3d.geometry.Mesh;
 import j3d.geometry.Triangle;
-import j3d.math.Vertex;
+import j3d.geometry.Vertex;
 
 /**
  * ObjLoader class responsible for loading 3D models from .obj files, including
