@@ -205,12 +205,15 @@ public class Game implements Runnable {
         createBlock(-45, mezaninoY, -10, 5, 1, 5, platformColor); // Pequena varanda
 
         // leitura do modelo 3D da cena, com textura e cor
-        GameObject cube = new GameObject(ObjLoader.load("res/sala.obj", Color.RED));
-        cube.transform.y = -0.5;
-        cube.transform.x = -6;
-        cube.transform.z = -5;
-        cube.transform.setScale(20);
-        objects.add(cube);
+        // Usa loadScene para separar os móveis/paredes em objetos com colisões individuais
+        List<GameObject> sceneObjects = ObjLoader.loadScene("res/sala.obj", Color.RED);
+        for (GameObject obj : sceneObjects) {
+            obj.transform.y = -0.5;
+            obj.transform.x = -6;
+            obj.transform.z = -5;
+            obj.transform.setScale(20);
+            objects.add(obj);
+        }
 
         // Configuração da luz
         lights.add(new PointLight(0, 0, 0, Color.WHITE, 2)); // Luz "Lanterna"
