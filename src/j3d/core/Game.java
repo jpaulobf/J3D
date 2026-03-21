@@ -205,7 +205,7 @@ public class Game implements Runnable {
         createBlock(-45, mezaninoY, -10, 5, 1, 5, platformColor); // Pequena varanda
 
         // leitura do modelo 3D da cena, com textura e cor
-        GameObject cube = new GameObject(ObjLoader.load("res/cube.obj", Color.RED));
+        GameObject cube = new GameObject(ObjLoader.load("res/sala.obj", Color.RED));
         cube.transform.y = -0.5;
         cube.transform.x = -6;
         cube.transform.z = -5;
