@@ -5,7 +5,7 @@ import java.util.List;
 import j3d.geometry.Mesh;
 import j3d.geometry.Triangle;
 import j3d.geometry.Vertex;
-
+import j3d.graphics.Texture;
 import java.util.ArrayList;
 import j3d.lighting.PointLight;
 import j3d.math.Matrix4;
@@ -152,6 +152,11 @@ public class GameObject {
                 Vertex p1 = Matrix4.multiply(proj, v1);
                 Vertex p2 = Matrix4.multiply(proj, v2);
                 Vertex p3 = Matrix4.multiply(proj, v3);
+                
+                // Repassa coordenadas de textura dos vértices originais
+                p1.u = mesh.vertices.get(t.v1).u; p1.v = mesh.vertices.get(t.v1).v;
+                p2.u = mesh.vertices.get(t.v2).u; p2.v = mesh.vertices.get(t.v2).v;
+                p3.u = mesh.vertices.get(t.v3).u; p3.v = mesh.vertices.get(t.v3).v;
 
                 // 2. Monta o polígono inicial
                 List<ClippedVertex> polygon = new ArrayList<>();
@@ -178,9 +183,9 @@ public class GameObject {
                         drawWireframe(pixels, new Vertex[]{s0, s1, s2}, t.baseColor.getRGB(), w, h);
                     } else {
                         if (scanline) {
-                            rasterizeScanline(pixels, zBuf, new Vertex[]{s0, s1, s2}, cp0.color, cp1.color, cp2.color, w, h);
+                            rasterizeScanline(pixels, zBuf, new Vertex[]{s0, s1, s2}, cp0.color, cp1.color, cp2.color, t.texture, w, h);
                         } else {
-                            rasterize(pixels, zBuf, new Vertex[]{s0, s1, s2}, cp0.color, cp1.color, cp2.color, w, h);
+                            rasterize(pixels, zBuf, new Vertex[]{s0, s1, s2}, cp0.color, cp1.color, cp2.color, t.texture, w, h);
                         }
                     }
                 }
@@ -233,6 +238,8 @@ public class GameObject {
             v1.v.z + (v2.v.z - v1.v.z) * t
         );
         nv.w = v1.v.w + (v2.v.w - v1.v.w) * t; // Importante interpolar W também
+        nv.u = v1.v.u + (v2.v.u - v1.v.u) * t;
+        nv.v = v1.v.v + (v2.v.v - v1.v.v) * t;
 
         // Interpolação Linear da Cor (R, G, B)
         int c1 = v1.color;
@@ -253,11 +260,16 @@ public class GameObject {
     private Vertex toScreen(Vertex v, int w, int h) {
         // Perspectiva Divide
         double invW = 1.0 / v.w;
-        return new Vertex(
+        Vertex s = new Vertex(
             (v.x * invW + 1) * w * 0.5, 
             (1 - v.y * invW) * h * 0.5, 
             invW // Armazenamos 1/Z (ou 1/W) para o Z-Buffer
         );
+        // Correção de Perspectiva: Pré-divide U e V por W (W original, não invW)
+        // Aqui usamos invW para multiplicar, que é o mesmo que dividir por W.
+        s.u = v.u * invW;
+        s.v = v.v * invW;
+        return s;
     }
 
     /**
@@ -327,7 +339,7 @@ public class GameObject {
      * @param w
      * @param h
      */
-    void rasterize(int[] pixels, double[] zBuf, Vertex[] v, int c1, int c2, int c3, int w, int h) {
+    void rasterize(int[] pixels, double[] zBuf, Vertex[] v, int c1, int c2, int c3, Texture tex, int w, int h) {
         int minX = (int) Math.max(0, Math.min(v[0].x, Math.min(v[1].x, v[2].x)));
         int maxX = (int) Math.min(w - 1, Math.max(v[0].x, Math.max(v[1].x, v[2].x)));
         int minY = (int) Math.max(0, Math.min(v[0].y, Math.min(v[1].y, v[2].y)));
@@ -360,6 +372,12 @@ public class GameObject {
         double dDepthDx = dw0dx * v[0].z + dw1dx * v[1].z + dw2dx * v[2].z;
         double dDepthDy = dw0dy * v[0].z + dw1dy * v[1].z + dw2dy * v[2].z;
 
+        // Derivadas de UV (já divididos por W em toScreen)
+        double dUDx = dw0dx * v[0].u + dw1dx * v[1].u + dw2dx * v[2].u;
+        double dUDy = dw0dy * v[0].u + dw1dy * v[1].u + dw2dy * v[2].u;
+        double dVDx = dw0dx * v[0].v + dw1dx * v[1].v + dw2dx * v[2].v;
+        double dVDy = dw0dy * v[0].v + dw1dy * v[1].v + dw2dy * v[2].v;
+
         double dRDx = dw0dx * r1 + dw1dx * r2 + dw2dx * r3;
         double dRDy = dw0dy * r1 + dw1dy * r2 + dw2dy * r3;
         double dGDx = dw0dx * g1 + dw1dx * g2 + dw2dx * g3;
@@ -369,6 +387,8 @@ public class GameObject {
 
         // Valores iniciais no canto superior esquerdo
         double depthRow = w0Row * v[0].z + w1Row * v[1].z + w2Row * v[2].z;
+        double uRow = w0Row * v[0].u + w1Row * v[1].u + w2Row * v[2].u;
+        double vRow = w0Row * v[0].v + w1Row * v[1].v + w2Row * v[2].v;
         double rRow = w0Row * r1 + w1Row * r2 + w2Row * r3;
         double gRow = w0Row * g1 + w1Row * g2 + w2Row * g3;
         double bRow = w0Row * b1 + w1Row * b2 + w2Row * b3;
@@ -380,6 +400,7 @@ public class GameObject {
             double w2 = w2Row;
             
             double depth = depthRow;
+            double u = uRow, vTex = vRow;
             double r = rRow, g = gRow, b = bRow;
 
             // Otimização: Calcula o índice inicial da linha fora do loop X
@@ -391,7 +412,27 @@ public class GameObject {
                     // Maior valor = Mais perto da câmera. Sem divisões!
                     if (depth > zBuf[idx]) {
                         zBuf[idx] = depth;
-                        pixels[idx] = ((int)r << 16) | ((int)g << 8) | (int)b;
+                        
+                        int finalColor;
+                        if (tex != null) {
+                            // Recupera U e V reais dividindo por 1/W (que é o 'depth' aqui)
+                            // Multiplicação por cor (Modulate)
+                            int texColor = tex.getSample(u / depth, vTex / depth);
+                            // Mistura a cor da textura com a luz (Gouraud)
+                            // Extrai componentes da textura
+                            int tR = (texColor >> 16) & 0xFF;
+                            int tG = (texColor >> 8) & 0xFF;
+                            int tB = texColor & 0xFF;
+                            
+                            // Multiplica (r, g, b são 0-255 da luz)
+                            int fR = (int)(tR * (r / 255.0));
+                            int fG = (int)(tG * (g / 255.0));
+                            int fB = (int)(tB * (b / 255.0));
+                            finalColor = (fR << 16) | (fG << 8) | fB;
+                        } else {
+                            finalColor = ((int)r << 16) | ((int)g << 8) | (int)b;
+                        }
+                        pixels[idx] = finalColor;
                     }
                 }
                 // Incrementa X: apenas somas, sem multiplicações!
@@ -399,6 +440,7 @@ public class GameObject {
                 w1 += dw1dx;
                 w2 += dw2dx;
                 depth += dDepthDx;
+                u += dUDx; vTex += dVDx;
                 r += dRDx; g += dGDx; b += dBDx;
                 idx++; // Avança para o próximo pixel no array linearmente
             }
@@ -407,6 +449,7 @@ public class GameObject {
             w1Row += dw1dy;
             w2Row += dw2dy;
             depthRow += dDepthDy;
+            uRow += dUDy; vRow += dVDy;
             rRow += dRDy; gRow += dGDy; bRow += dBDy;
         }
     }
@@ -465,7 +508,7 @@ public class GameObject {
      * Útil para comparação de performance e estudo.
      * Técnica clássica de preenchimento de polígonos (Wylie, Romney, Evans, Erdahl, 1967).
      */
-    void rasterizeScanline(int[] pixels, double[] zBuf, Vertex[] v, int c1, int c2, int c3, int w, int h) {
+    void rasterizeScanline(int[] pixels, double[] zBuf, Vertex[] v, int c1, int c2, int c3, Texture tex, int w, int h) {
         // 1. Ordena vértices por Y (Bubble sort simples para 3 elementos)
         Vertex vMin = v[0], vMid = v[1], vMax = v[2];
         int cMin = c1, cMid = c2, cMax = c3;

@@ -6,6 +6,7 @@ package j3d.geometry;
 public class Vertex {
     // x, y, z coordinates and homogeneous w coordinate
     public double x, y, z, w = 1.0;
+    public double u = 0, v = 0;
 
     /**
      * Constructor for Vertex.

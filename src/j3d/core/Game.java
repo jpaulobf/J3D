@@ -210,7 +210,7 @@ public class Game implements Runnable {
 
         // leitura do modelo 3D da cena, com textura e cor
         // Usa loadScene para separar os móveis/paredes em objetos com colisões individuais
-        List<GameObject> sceneObjects = ObjLoader.loadScene("res/sala.obj", Color.RED);
+        List<GameObject> sceneObjects = ObjLoader.loadScene("res/sala.obj", Color.LIGHT_GRAY);
         for (GameObject obj : sceneObjects) {
             obj.transform.y = -0.5;
             obj.transform.x = -6;
