@@ -63,9 +63,9 @@ public class PhysicsEngine {
         double objMaxZ = object.transform.z + object.maxZ * object.transform.scaleZ;
 
         // 3. Verifica a sobreposição em todos os 3 eixos. Há colisão se todos se sobrepõem.
-        return (playerMinX <= objMaxX && playerMaxX >= objMinX) &&
-               (entityMinY <= objMaxY && entityMaxY >= objMinY) &&
-               (playerMinZ <= objMaxZ && playerMaxZ >= objMinZ);
+        return (playerMinX < objMaxX && playerMaxX > objMinX) &&
+               (entityMinY < objMaxY && entityMaxY > objMinY) &&
+               (playerMinZ < objMaxZ && playerMaxZ > objMinZ);
     }
 
     /**
@@ -89,8 +89,8 @@ public class PhysicsEngine {
         double bMinZ = b.transform.z + b.minZ * b.transform.scaleZ;
         double bMaxZ = b.transform.z + b.maxZ * b.transform.scaleZ;
 
-        return (aMinX <= bMaxX && aMaxX >= bMinX) &&
-               (aMinY <= bMaxY && aMaxY >= bMinY) &&
-               (aMinZ <= bMaxZ && aMaxZ >= bMinZ);
+        return (aMinX < bMaxX && aMaxX > bMinX) &&
+               (aMinY < bMaxY && aMaxY > bMinY) &&
+               (aMinZ < bMaxZ && aMaxZ > bMinZ);
     }
 }

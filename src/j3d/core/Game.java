@@ -59,6 +59,12 @@ public class Game implements Runnable {
     private int windowCenterX = WIDTH / 2;
     private int windowCenterY = HEIGHT / 2;
 
+    // Física do Jogador
+    private double verticalVelocity = 0;
+    private boolean isGrounded = false;
+    private static final double GRAVITY = -25.0; // Aceleração da gravidade
+    private static final double JUMP_FORCE = 10.0; // Força do pulo
+
     /**
      * Construtor do jogo, onde inicializamos a janela, o renderer, a câmera, os
      * objetos e as luzes.
@@ -222,84 +228,6 @@ public class Game implements Runnable {
     }
 
     /**
-     * Cria uma malha customizada para um único bloco do mapa, contendo apenas as
-     * faces visíveis (não adjacentes a outros blocos).
-     */
-    private Mesh createSingleBlockMesh(int[][] map, int x, int z, double blockSize, double wallHeight) {
-        List<j3d.geometry.Vertex> vertices = new ArrayList<>();
-        List<j3d.geometry.Triangle> triangles = new ArrayList<>();
-        Map<String, Integer> vertexMap = new HashMap<>();
-
-        // Função auxiliar para adicionar vértices sem duplicação (vertex welding)
-        java.util.function.Function<j3d.geometry.Vertex, Integer> addVertex = (v) -> {
-            String key = String.format("%.2f_%.2f_%.2f", v.x, v.y, v.z);
-            if (vertexMap.containsKey(key)) {
-                return vertexMap.get(key);
-            } else {
-                int index = vertices.size();
-                vertices.add(v);
-                vertexMap.put(key, index);
-                return index;
-            }
-        };
-
-        Color wallColor = Color.GRAY;
-
-        // Verifica os vizinhos para determinar quais faces desenhar
-        boolean frontIsEmpty = z + 1 >= map.length || map[z + 1][x] == 0;
-        boolean backIsEmpty = z - 1 < 0 || map[z - 1][x] == 0;
-        boolean rightIsEmpty = x + 1 >= map[0].length || map[z][x + 1] == 0;
-        boolean leftIsEmpty = x - 1 < 0 || map[z][x - 1] == 0;
-        boolean topIsEmpty = true; // Topo da parede é sempre visível
-        boolean bottomIsEmpty = true; // Base da parede é sempre visível (contra o chão)
-
-        // Coordenadas do mundo para os 8 cantos deste bloco
-        double x0 = x * blockSize;
-        double x1 = (x + 1) * blockSize;
-        double z0 = z * blockSize;
-        double z1 = (z + 1) * blockSize;
-        double y0 = 0;
-        double y1 = wallHeight;
-
-        j3d.geometry.Vertex v000 = new j3d.geometry.Vertex(x0, y0, z0);
-        j3d.geometry.Vertex v100 = new j3d.geometry.Vertex(x1, y0, z0);
-        j3d.geometry.Vertex v010 = new j3d.geometry.Vertex(x0, y1, z0);
-        j3d.geometry.Vertex v110 = new j3d.geometry.Vertex(x1, y1, z0);
-        j3d.geometry.Vertex v001 = new j3d.geometry.Vertex(x0, y0, z1);
-        j3d.geometry.Vertex v101 = new j3d.geometry.Vertex(x1, y0, z1);
-        j3d.geometry.Vertex v011 = new j3d.geometry.Vertex(x0, y1, z1);
-        j3d.geometry.Vertex v111 = new j3d.geometry.Vertex(x1, y1, z1);
-
-        // Gera os triângulos (quads) para cada face visível
-        if (rightIsEmpty) { // Face Direita (+X)
-            int i1 = addVertex.apply(v100), i2 = addVertex.apply(v110), i3 = addVertex.apply(v111), i4 = addVertex.apply(v101);
-            triangles.add(new j3d.geometry.Triangle(i1, i2, i3, wallColor)); triangles.add(new j3d.geometry.Triangle(i1, i3, i4, wallColor));
-        }
-        if (leftIsEmpty) { // Face Esquerda (-X)
-            int i1 = addVertex.apply(v001), i2 = addVertex.apply(v011), i3 = addVertex.apply(v010), i4 = addVertex.apply(v000);
-            triangles.add(new j3d.geometry.Triangle(i1, i2, i3, wallColor)); triangles.add(new j3d.geometry.Triangle(i1, i3, i4, wallColor));
-        }
-        if (frontIsEmpty) { // Face Frontal (+Z)
-            int i1 = addVertex.apply(v001), i2 = addVertex.apply(v101), i3 = addVertex.apply(v111), i4 = addVertex.apply(v011);
-            triangles.add(new j3d.geometry.Triangle(i1, i2, i3, wallColor)); triangles.add(new j3d.geometry.Triangle(i1, i3, i4, wallColor));
-        }
-        if (backIsEmpty) { // Face Traseira (-Z)
-            int i1 = addVertex.apply(v100), i2 = addVertex.apply(v000), i3 = addVertex.apply(v010), i4 = addVertex.apply(v110);
-            triangles.add(new j3d.geometry.Triangle(i1, i2, i3, wallColor)); triangles.add(new j3d.geometry.Triangle(i1, i3, i4, wallColor));
-        }
-        if (topIsEmpty) { // Face Superior (+Y)
-            int i1 = addVertex.apply(v010), i2 = addVertex.apply(v011), i3 = addVertex.apply(v111), i4 = addVertex.apply(v110);
-            triangles.add(new j3d.geometry.Triangle(i1, i2, i3, wallColor)); triangles.add(new j3d.geometry.Triangle(i1, i3, i4, wallColor));
-        }
-        if (bottomIsEmpty) { // Face Inferior (-Y)
-            int i1 = addVertex.apply(v001), i2 = addVertex.apply(v000), i3 = addVertex.apply(v100), i4 = addVertex.apply(v101);
-            triangles.add(new j3d.geometry.Triangle(i1, i2, i3, wallColor)); triangles.add(new j3d.geometry.Triangle(i1, i3, i4, wallColor));
-        }
-
-        return new Mesh(vertices, triangles);
-    }
-
-    /**
      * Atualiza o estado do jogo, processando o input do usuário para movimentar a
      * câmera e a luz, e atualizando a rotação dos objetos. Também calcula o FPS
      * atual e atualiza o título da janela com essa informação.
@@ -351,11 +279,32 @@ public class Game implements Runnable {
             }
         }
 
-        // Movimento vertical da câmera com Scroll
-        int scroll = input.getScrollDelta();
-        if (scroll != 0) {
-            camera.transform.y -= scroll * 0.5; // Invertido: Scroll para trás sobe, para frente desce (ou vice-versa
-                                                // conforme preferência)
+        // --- FÍSICA VERTICAL (Gravidade e Pulo) ---
+        
+        // Aplica gravidade na velocidade vertical
+        verticalVelocity += GRAVITY * deltaTime;
+
+        // Pulo (apenas se estiver no chão)
+        if (input.isKeyPressed(KeyEvent.VK_SPACE) && isGrounded) {
+            verticalVelocity = JUMP_FORCE;
+            isGrounded = false;
+        }
+
+        // Aplica velocidade vertical e resolve colisão
+        double dy = verticalVelocity * deltaTime;
+        double nextY = camera.transform.y + dy;
+
+        if (physics.checkPlayerCollision(camera.transform.x, nextY, camera.transform.z, objects)) {
+            if (verticalVelocity < 0) { 
+                isGrounded = true; // Colidiu caindo -> Chão
+                verticalVelocity = 0;
+            } else if (verticalVelocity > 0) {
+                verticalVelocity = 0; // Colidiu subindo -> Teto
+            }
+            // Se colidiu, não atualiza o Y (impede atravessar)
+        } else {
+            camera.transform.y = nextY;
+            isGrounded = false; // Se moveu livremente no Y, está no ar (ou caindo)
         }
 
         // Movimento da câmera com teclado (WASD)
