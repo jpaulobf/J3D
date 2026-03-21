@@ -6,6 +6,8 @@ import j3d.lighting.PointLight;
 import j3d.physics.PhysicsEngine;
 import j3d.geometry.Mesh;
 import j3d.input.InputManager;
+import j3d.io.ObjLoader;
+
 import java.awt.Color;
 import java.awt.Point;
 import java.awt.Robot;
@@ -118,71 +120,97 @@ public class Game implements Runnable {
     }
 
     /**
+     * Helper para criar blocos sólidos (Paredes, Pisos, Degraus).
+     * Usa o cubo padrão e ajusta a escala e posição.
+     */
+    private void createBlock(double x, double y, double z, double sX, double sY, double sZ, Color color) {
+        // Cria o cubo base
+        Mesh m = Mesh.createCube();
+        
+        // Opcional: Pintar o cubo de uma cor sólida para ficar mais bonito que o arco-íris padrão
+        if (color != null) {
+            for (j3d.geometry.Triangle t : m.triangles) {
+                t.baseColor = color;
+            }
+        }
+
+        GameObject obj = new GameObject(m);
+        obj.transform.x = x;
+        obj.transform.y = y;
+        obj.transform.z = z;
+        obj.transform.scaleX = sX;
+        obj.transform.scaleY = sY;
+        obj.transform.scaleZ = sZ;
+        
+        objects.add(obj);
+    }
+
+    /**
      * Configura os objetos iniciais da cena, incluindo formas básicas, um modelo 3D
      * importado e uma luz.
      */
     private void getSceneInitialObjets() {
-        double blockSize = 10.0; // Ampliado de 4.0 para 10.0 (Salas muito maiores)
-        double wallHeight = 20.0; // Altura dobrada (era 10.0)
+        // Cores para o cenário
+        Color floorColor = new Color(50, 50, 50);
+        Color wallColor = new Color(100, 100, 120);
+        Color platformColor = new Color(150, 100, 50); // Madeira escura
+        Color stairColor = new Color(180, 120, 60);    // Madeira clara
+        Color pillarColor = new Color(80, 80, 80);
 
-        // Mapa do Labirinto (1 = Parede, 0 = Vazio)
-        // Layout Simplificado: 2 Salas Grandes divididas por uma parede com passagem
-        int[][] map = {
-                { 1, 1, 1, 1, 1, 1, 1 },
-                { 1, 0, 0, 0, 0, 0, 1 }, // Sala 1 (Esq) | Parede | Sala 2 (Dir)
-                { 1, 0, 0, 0, 0, 0, 1 }, // Passagem no meio (x=3 é vazio)
-                { 1, 0, 0, 0, 0, 0, 1 },
-                { 1, 1, 1, 0, 1, 1, 1 },
-                { 1, 0, 1, 0, 1, 0, 1 },
-                { 1, 0, 0, 0, 0, 0, 1 },
-                { 1, 0, 0, 0, 0, 0, 1 },
-                { 1, 0, 0, 0, 0, 0, 1 },
-                { 1, 0, 0, 0, 0, 0, 1 },
-                { 1, 0, 1, 0, 1, 1, 1 },
-                { 1, 0, 1, 0, 1, 0, 1 },
-                { 1, 0, 1, 0, 1, 1, 1 },
-                { 1, 1, 1, 1, 1, 1, 1 }
-        };
+        // 1. CHÃO PRINCIPAL (Nível 0)
+        // Cria um chão grande (Scale X=50, Z=50)
+        // Nota: O cubo vai de -1 a 1, então scale 50 gera um tamanho total de 100.
+        createBlock(0, -1.0, 0, 50, 1, 50, floorColor);
 
-        Mesh gridMesh = Mesh.createGrid(100, blockSize);
+        // 2. PAREDES EXTERNAS (Arena)
+        // Paredes altas ao redor
+        createBlock(-50, 10, 0, 1, 20, 50, wallColor); // Parede Esquerda
+        createBlock(50, 10, 0, 1, 20, 50, wallColor);  // Parede Direita
+        createBlock(0, 10, 50, 50, 20, 1, wallColor);  // Parede Fundo
+        createBlock(0, 10, -50, 50, 20, 1, wallColor); // Parede Frente
 
-        // --- INTERNAL FACE CULLING (Otimização) ---
-        // Para cada bloco de parede, cria um GameObject com uma malha customizada
-        // contendo apenas as faces visíveis. Isso otimiza a renderização e mantém
-        // a detecção de colisão AABB funcional.
-        for (int z = 0; z < map.length; z++) {
-            for (int x = 0; x < map[0].length; x++) {
-                if (map[z][x] == 1) {
-                    // Gera uma malha customizada para este bloco específico
-                    Mesh customWallMesh = createSingleBlockMesh(map, x, z, blockSize, wallHeight);
-                    // Só adiciona o objeto se ele tiver alguma face visível
-                    if (!customWallMesh.triangles.isEmpty()) {
-                        GameObject wall = new GameObject(customWallMesh);
-                        // Os vértices da malha já estão em coordenadas do mundo,
-                        // então o transform do objeto fica na origem (identidade).
-                        // O AABB para colisão será calculado corretamente pelo construtor do
-                        // GameObject.
-                        objects.add(wall);
-                    }
-                }
-            }
+        // 3. MEZANINO (Segundo Andar)
+        // Uma plataforma elevada em Y=10, ocupando o fundo da sala
+        double mezaninoY = 10.0;
+        createBlock(0, mezaninoY, 30, 30, 1, 15, platformColor);
+
+        // Pilares de sustentação do mezanino (Visual)
+        createBlock(-25, 0, 40, 2, mezaninoY, 2, pillarColor);
+        createBlock(25, 0, 40, 2, mezaninoY, 2, pillarColor);
+        createBlock(-25, 0, 20, 2, mezaninoY, 2, pillarColor);
+        createBlock(25, 0, 20, 2, mezaninoY, 2, pillarColor);
+
+        // 4. ESCADARIA CENTRAL
+        // Cria degraus subindo do chão até o mezanino
+        double startZ = 10.0; // Começa um pouco antes do mezanino
+        double startY = 0.0;
+        int steps = 10;
+        double stepHeight = mezaninoY / steps; // 1.0 de altura por degrau
+        double stepDepth = 2.0;
+        double stepWidth = 8.0;
+
+        for (int i = 0; i < steps; i++) {
+            // Cada degrau sobe em Y e avança em Z
+            double y = startY + (i * stepHeight);
+            double z = startZ + (i * stepDepth);
+            
+            // O Y do createBlock é o centro do objeto. 
+            // Se o degrau tem altura 'stepHeight', o centro deve ser ajustado.
+            createBlock(0, y, z, stepWidth, stepHeight, stepDepth, stairColor);
         }
 
-        // Chão (Grid grande)
-        GameObject floor = new GameObject(gridMesh);
-        floor.transform.y = 0; // Chão agora está no nível 0 (base das paredes)
-        floor.transform.x = 35; // Centraliza no novo mapa (7 blocos * 10 / 2)
-        floor.transform.z = 25; // (5 blocos * 10 / 2)
-        floor.hasCollision = false;
-        objects.add(floor);
+        // 5. PASSARELA SUPERIOR (Ponte)
+        // Conecta o mezanino a uma varanda lateral
+        createBlock(-35, mezaninoY, 10, 5, 1, 20, platformColor); // Ponte lateral esquerda
+        createBlock(-45, mezaninoY, -10, 5, 1, 5, platformColor); // Pequena varanda
 
-        // Teto (Grid grande invertido ou apenas elevado)
-        GameObject ceiling = new GameObject(gridMesh);
-        ceiling.transform.y = wallHeight + 5.0; // Elevado para garantir que não toque na cabeça
-        ceiling.transform.x = 35;
-        ceiling.transform.z = 25;
-        ceiling.hasCollision = false;
-        objects.add(ceiling);
+        // leitura do modelo 3D da cena, com textura e cor
+        GameObject cube = new GameObject(ObjLoader.load("res/cube.obj", Color.RED));
+        cube.transform.y = -0.5;
+        cube.transform.x = -6;
+        cube.transform.z = -5;
+        cube.transform.setScale(20);
+        objects.add(cube);
 
         // Configuração da luz
         lights.add(new PointLight(0, 0, 0, Color.WHITE, 2)); // Luz "Lanterna"
