@@ -11,6 +11,7 @@ import j3d.lighting.PointLight;
  * camera, objects, and lights.
  */
 public interface IRenderer {
+
     /**
      * Initializes the renderer, setting up necessary resources and configurations.
      */
@@ -36,5 +37,9 @@ public interface IRenderer {
      */
     int[] getFrameBuffer();
 
+    /**
+     * Returns if the ssaa is enabled.
+     * @return
+     */
     boolean isSsaaEnabled();
 }

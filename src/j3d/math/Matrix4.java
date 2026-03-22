@@ -2,6 +2,9 @@ package j3d.math;
 
 import j3d.geometry.Vertex;
 
+/**
+ * Matrix4 class representing a 4x4 matrix for 3D transformations.
+ */
 public class Matrix4 {
 
     // 4x4 matrix for 3D transformations

@@ -1,7 +1,6 @@
 package j3d.lighting;
 
 import java.awt.Color;
-
 import j3d.geometry.Vertex;
 
 /**
@@ -16,6 +15,7 @@ public class PointLight {
 
     /**
      * Constructor for PointLight.
+     * 
      * @param x
      * @param y
      * @param z

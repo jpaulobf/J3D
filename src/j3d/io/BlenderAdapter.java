@@ -5,21 +5,26 @@ import j3d.geometry.Mesh;
 import j3d.geometry.Vertex;
 
 /**
- * Classe utilitária para carregar modelos exportados do Blender.
- * O Blender nativamente usa o eixo Z como "cima" (Z-Up), enquanto o J3D usa Y (Y-Up).
- * Esta classe carrega o OBJ e converte automaticamente o sistema de coordenadas.
+ * Utility class to load models exported from Blender.
+ * Blender natively uses the Z-axis as "up" (Z-Up), while J3D uses Y (Y-Up).
+ * This class loads the OBJ and automatically converts the coordinate system.
  */
 public class BlenderAdapter {
 
     /**
-     * Carrega um arquivo .obj exportado do Blender e corrige a orientação dos eixos.
+     * Loads an .obj file exported from Blender and corrects axis orientation.
+     * 
+     * @param filePath The path to the OBJ file.
+     * @param color    The fallback color if no material is found.
+     * @return The mesh with corrected coordinates.
      */
     public static Mesh adapt(String filePath, Color color) {
-        // 1. Carrega a geometria bruta usando o loader existente
+        // 1. Loads raw geometry using the existing loader
         Mesh mesh = ObjLoader.load(filePath, color);
 
-        // 2. Converte de Z-Up (Blender) para Y-Up (J3D)
-        // Isso equivale a uma rotação de -90 graus no eixo X: (x, y, z) -> (x, z, -y)
+        // 2. Converts from Z-Up (Blender) to Y-Up (J3D)
+        // This is equivalent to a -90 degree rotation on the X axis: (x, y, z) -> (x,
+        // z, -y)
         for (Vertex v : mesh.vertices) {
             double tempY = v.y;
             v.y = v.z;
