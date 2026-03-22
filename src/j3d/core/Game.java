@@ -26,8 +26,8 @@ import j3d.ui.HUD;
 public class Game implements Runnable {
 
     // Window resolution constants
-    private static final int WIDTH = 1920;
-    private static final int HEIGHT = 1080;
+    private static final int WIDTH = 1600;
+    private static final int HEIGHT = 900;
 
     // Game state variables
     private boolean running = true;
@@ -50,7 +50,7 @@ public class Game implements Runnable {
     private HUD hud;
 
     // FPS Control
-    private int TARGET_FPS = 120;
+    private int TARGET_FPS = 60;
     private int fps = 0;
     private int frames = 0;
     private long lastFpsTime = System.currentTimeMillis();
@@ -185,7 +185,7 @@ public class Game implements Runnable {
 
         // 4. CENTRAL STAIRCASE
         // Creates steps rising from floor to mezzanine
-        double startZ = 10.0; // Starts a bit before mezzanine
+        double startZ = -3.0; // Starts a bit before mezzanine
         double startY = 0.0;
         int steps = 10;
         double stepHeight = mezaninoY / steps; // 1.0 height per step
@@ -213,7 +213,7 @@ public class Game implements Runnable {
         for (GameObject obj : sceneObjects) {
             obj.transform.y = -0.5;
             obj.transform.x = -6;
-            obj.transform.z = -5;
+            obj.transform.z = -25;
             obj.transform.setScale(20);
             objects.add(obj);
         }

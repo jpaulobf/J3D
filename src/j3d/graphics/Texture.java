@@ -36,9 +36,9 @@ public class Texture {
             height = image.getHeight();
             pixels = new int[width * height];
             image.getRGB(0, 0, width, height, pixels, 0, width);
-            System.out.println("Textura carregada: " + path);
+            System.out.println("Texture loaded: " + path);
         } catch (IOException e) {
-            System.err.println("Erro ao carregar textura: " + path);
+            System.err.println("Problem loading texture: " + path);
             // Creates error texture (Magenta/Black)
             createErrorTexture();
         }
