@@ -35,6 +35,20 @@ public class Matrix4 {
     }
 
     /**
+     * Multiplies this matrix with a vertex, storing the result in the 'dest' Vertex.
+     * This avoids creating a new Vertex object, reducing Garbage Collection pressure.
+     * 
+     * @param v    Input vertex
+     * @param dest Output vertex (result)
+     */
+    public void multiply(Vertex v, Vertex dest) {
+        dest.x = v.x * m[0][0] + v.y * m[0][1] + v.z * m[0][2] + v.w * m[0][3];
+        dest.y = v.x * m[1][0] + v.y * m[1][1] + v.z * m[1][2] + v.w * m[1][3];
+        dest.z = v.x * m[2][0] + v.y * m[2][1] + v.z * m[2][2] + v.w * m[2][3];
+        dest.w = v.x * m[3][0] + v.y * m[3][1] + v.z * m[3][2] + v.w * m[3][3];
+    }
+
+    /**
      * Multiplies two 4x4 matrices.
      * 
      * @param a

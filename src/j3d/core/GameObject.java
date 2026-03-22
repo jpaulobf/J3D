@@ -30,6 +30,19 @@ public class GameObject {
     // Culling Properties (Optimization)
     private double cX, cY, cZ, radius;
 
+    // --- Object Pooling / Cache (Garbage Collection Optimization) ---
+    // Reusable vertices to avoid allocations inside the render loop
+    private final Vertex vCache1 = new Vertex(0, 0, 0);
+    private final Vertex vCache2 = new Vertex(0, 0, 0);
+    private final Vertex vCache3 = new Vertex(0, 0, 0);
+    private final Vertex pCache1 = new Vertex(0, 0, 0);
+    private final Vertex pCache2 = new Vertex(0, 0, 0);
+    private final Vertex pCache3 = new Vertex(0, 0, 0);
+    private final Vertex sCache0 = new Vertex(0, 0, 0);
+    private final Vertex sCache1 = new Vertex(0, 0, 0);
+    private final Vertex sCache2 = new Vertex(0, 0, 0);
+    private final Vertex[] rasterVertices = new Vertex[3];
+
     /**
      * Constructor for GameObject.
      * 
@@ -114,9 +127,15 @@ public class GameObject {
 
         for (Triangle t : mesh.triangles) {
 
-            Vertex v1 = Matrix4.multiply(modelView, mesh.vertices.get(t.v1));
-            Vertex v2 = Matrix4.multiply(modelView, mesh.vertices.get(t.v2));
-            Vertex v3 = Matrix4.multiply(modelView, mesh.vertices.get(t.v3));
+            // Optimized: Use cache instead of creating new vertices
+            modelView.multiply(mesh.vertices.get(t.v1), vCache1);
+            modelView.multiply(mesh.vertices.get(t.v2), vCache2);
+            modelView.multiply(mesh.vertices.get(t.v3), vCache3);
+            
+            // Aliases for readability (pointing to cache)
+            Vertex v1 = vCache1;
+            Vertex v2 = vCache2;
+            Vertex v3 = vCache3;
 
             double nx = (v2.y - v1.y) * (v3.z - v1.z) - (v2.z - v1.z) * (v3.y - v1.y);
             double ny = (v2.z - v1.z) * (v3.x - v1.x) - (v2.x - v1.x) * (v3.z - v1.z);
@@ -150,9 +169,13 @@ public class GameObject {
                 }
 
                 // 1. Projection to Clip Space (not divided by W yet)
-                Vertex p1 = Matrix4.multiply(proj, v1);
-                Vertex p2 = Matrix4.multiply(proj, v2);
-                Vertex p3 = Matrix4.multiply(proj, v3);
+                proj.multiply(v1, pCache1);
+                proj.multiply(v2, pCache2);
+                proj.multiply(v3, pCache3);
+                
+                Vertex p1 = pCache1;
+                Vertex p2 = pCache2;
+                Vertex p3 = pCache3;
 
                 // Pass through original texture coordinates
                 p1.u = mesh.vertices.get(t.v1).u;
@@ -179,18 +202,23 @@ public class GameObject {
                     ClippedVertex cp2 = polygon.get(i + 1);
 
                     // Perspective and Viewport (Screen Space)
-                    Vertex s0 = toScreen(cp0.v, w, h);
-                    Vertex s1 = toScreen(cp1.v, w, h);
-                    Vertex s2 = toScreen(cp2.v, w, h);
+                    toScreen(cp0.v, w, h, sCache0);
+                    toScreen(cp1.v, w, h, sCache1);
+                    toScreen(cp2.v, w, h, sCache2);
+
+                    // Reuse array for rasterizer
+                    rasterVertices[0] = sCache0;
+                    rasterVertices[1] = sCache1;
+                    rasterVertices[2] = sCache2;
 
                     if (wire) {
-                        drawWireframe(pixels, new Vertex[] { s0, s1, s2 }, t.baseColor.getRGB(), w, h);
+                        drawWireframe(pixels, rasterVertices, t.baseColor.getRGB(), w, h);
                     } else {
                         if (scanline) {
-                            rasterizeScanline(pixels, zBuf, new Vertex[] { s0, s1, s2 }, cp0.color, cp1.color,
+                            rasterizeScanline(pixels, zBuf, rasterVertices, cp0.color, cp1.color,
                                     cp2.color, t.texture, w, h);
                         } else {
-                            rasterize(pixels, zBuf, new Vertex[] { s0, s1, s2 }, cp0.color, cp1.color, cp2.color,
+                            rasterize(pixels, zBuf, rasterVertices, cp0.color, cp1.color, cp2.color,
                                     t.texture, w, h);
                         }
                     }
@@ -266,19 +294,17 @@ public class GameObject {
     }
 
     // Converts from Clip Space to Screen Space
-    private Vertex toScreen(Vertex v, int w, int h) {
+    // Optimized to write to 'out' vertex instead of creating new
+    private void toScreen(Vertex v, int w, int h, Vertex out) {
         // Perspective Divide
         double invW = 1.0 / v.w;
-        Vertex s = new Vertex(
-                (v.x * invW + 1) * w * 0.5,
-                (1 - v.y * invW) * h * 0.5,
-                invW // Store 1/Z (or 1/W) for Z-Buffer
-        );
+        out.x = (v.x * invW + 1) * w * 0.5;
+        out.y = (1 - v.y * invW) * h * 0.5;
+        out.z = invW; // Store 1/Z (or 1/W) for Z-Buffer
+        
         // Perspective Correction: Pre-divide U and V by W (original W, not invW)
-        // Here we use invW to multiply, which is the same as dividing by W.
-        s.u = v.u * invW;
-        s.v = v.v * invW;
-        return s;
+        out.u = v.u * invW;
+        out.v = v.v * invW;
     }
 
     /**
