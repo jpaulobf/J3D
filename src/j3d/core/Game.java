@@ -116,7 +116,7 @@ public class Game implements Runnable {
         // Indices (1.5, 2.0) * blockSize (10.0)
         camera.transform.x = 30.0;
         camera.transform.z = 5.0;
-        camera.transform.y = 7.5; // Eye height adjusted for new ceiling height
+        camera.transform.y = 4; // Eye height adjusted for new ceiling height
 
         // Validated orientation
         camera.yaw = 0;
@@ -155,7 +155,6 @@ public class Game implements Runnable {
      */
     private void getSceneInitialObjets() {
         // Scenery colors
-        Color floorColor = new Color(50, 50, 50);
         Color wallColor = new Color(245, 235, 205); // Beige / Creme claro
         Color platformColor = new Color(150, 100, 50); // Dark Wood
         Color stairColor = new Color(180, 120, 60); // Light Wood
