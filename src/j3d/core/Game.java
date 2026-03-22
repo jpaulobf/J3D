@@ -246,7 +246,7 @@ public class Game implements Runnable {
             if (renderer instanceof SoftwareRenderer) {
                 SoftwareRenderer sr = (SoftwareRenderer) renderer;
                 sr.ssaaEnabled = !sr.ssaaEnabled;
-                System.out.println("SSAA 2x: " + (sr.ssaaEnabled ? "LIGADO" : "DESLIGADO"));
+                System.out.println("SSAA 2x: " + (sr.ssaaEnabled ? "ON" : "OFF"));
             }
         }
 
@@ -255,7 +255,7 @@ public class Game implements Runnable {
 
         if (input.isKeyPressed(KeyEvent.VK_F10)) {
             GameObject.scanline = !GameObject.scanline;
-            System.out.println("Rasterização Scanline: " + (GameObject.scanline ? "LIGADO" : "DESLIGADO"));
+            System.out.println("Scanline Rasterization: " + (GameObject.scanline ? "ON" : "OFF"));
         }
 
         if (input.isKeyPressed(KeyEvent.VK_ESCAPE))
@@ -374,62 +374,66 @@ public class Game implements Runnable {
         lightGizmo.transform.y = spot.pos.y;
         lightGizmo.transform.z = spot.pos.z;
 
-        // FPS Update
-        frames++;
-        if (System.currentTimeMillis() - lastFpsTime >= 1000) {
-            fps = frames;
-            frames = 0;
-            lastFpsTime = System.currentTimeMillis();
-
-            // Updates window position only once per second (if user moved the window)
-            try {
-                Point loc = window.getFrame().getLocationOnScreen();
-                windowCenterX = loc.x + window.getFrame().getWidth() / 2;
-                windowCenterY = loc.y + window.getFrame().getHeight() / 2;
-            } catch (Exception e) {
-            }
-
-            // window.getFrame().setTitle("TARGET FPS: " + TARGET_FPS + " | ACTUAL FPS: " +
-            // fps);
-        }
     }
 
     @Override
     public void run() {
-        double drawInterval = 1000000000.0 / TARGET_FPS;
-        double nextDrawTime = System.nanoTime() + drawInterval;
+        // Fixed time step for logic updates
+        // For 60 FPS, this is approximately 16.66ms
+        final double nsPerTick = 1000000000.0 / TARGET_FPS;
+
         long lastTime = System.nanoTime();
+        double delta = 0;
+        
+        long timer = System.currentTimeMillis();
+        int framesCount = 0; // Local variable to count frames
 
         while (running) {
             long now = System.nanoTime();
-            // Calculates elapsed time since last frame in seconds
-            double deltaTime = (now - lastTime) / 1_000_000_000.0;
+            delta += (now - lastTime) / nsPerTick;
             lastTime = now;
 
-            update(deltaTime);
-            renderer.clear();
+            boolean shouldRender = false;
 
-            renderer.draw(camera, objects, lights, wireframe);
-            if (showLightGizmo) {
-                renderer.draw(camera, gizmoList, null, true);
+            // Logic update loop (Physics/Game Logic)
+            // Ensures the game runs at the correct speed regardless of framerate
+            // If the PC lags, this while loop runs multiple times to catch up to real time
+            while (delta >= 1) {
+                update(1.0 / TARGET_FPS); // Pass a constant and stable delta time
+                delta--;
+                shouldRender = true;
             }
 
-            hud.draw(renderer, WIDTH, HEIGHT, fps);
-
-            window.update(renderer.getFrameBuffer());
-
-            try {
-                double remainingTime = nextDrawTime - System.nanoTime();
-                remainingTime /= 1000000;
-
-                if (remainingTime < 0) {
-                    remainingTime = 0;
+            if (shouldRender) {
+                renderer.clear();
+                renderer.draw(camera, objects, lights, wireframe);
+                if (showLightGizmo) {
+                    renderer.draw(camera, gizmoList, null, true);
                 }
-
-                Thread.sleep((long) remainingTime);
-
-                nextDrawTime += drawInterval;
-            } catch (Exception e) {
+                hud.draw(renderer, WIDTH, HEIGHT, fps);
+                window.update(renderer.getFrameBuffer());
+                framesCount++;
+            } else {
+                // If no update or render needed, sleep a bit to save CPU
+                try {
+                    Thread.sleep(1);
+                } catch (InterruptedException e) {
+                }
+            }
+            
+            // FPS counter update (1 second)
+            if (System.currentTimeMillis() - timer >= 1000) {
+                fps = framesCount;
+                framesCount = 0;
+                timer += 1000;
+                
+                // Recalculates window center (in case user moves it)
+                try {
+                    Point loc = window.getFrame().getLocationOnScreen();
+                    windowCenterX = loc.x + window.getFrame().getWidth() / 2;
+                    windowCenterY = loc.y + window.getFrame().getHeight() / 2;
+                } catch (Exception e) {
+                }
             }
         }
     }
