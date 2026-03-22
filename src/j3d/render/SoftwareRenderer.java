@@ -20,7 +20,7 @@ public class SoftwareRenderer implements IRenderer {
     private int[] pixels;
     private double[] zBuffer;
 
-    // Buffers de Alta Resolução (2x) para o SSAA
+    // High Resolution Buffers (2x) for SSAA
     private int[] hrPixels;
     private double[] hrZBuffer;
 
@@ -45,7 +45,7 @@ public class SoftwareRenderer implements IRenderer {
         this.pixels = new int[width * height];
         this.zBuffer = new double[width * height];
 
-        // Inicializa os buffers gigantes (4 vezes mais pixels no total!)
+        // Initializes giant buffers (4 times more pixels in total!)
         hrPixels = new int[(width * 2) * (height * 2)];
         hrZBuffer = new double[(width * 2) * (height * 2)];
     }
@@ -65,7 +65,7 @@ public class SoftwareRenderer implements IRenderer {
     }
 
     /**
-     * Método genérico de desenho que não conhece a lógica do cenário.
+     * Generic draw method that doesn't know scene logic.
      */
     @Override
     public void draw(Camera cam, List<GameObject> objects, List<PointLight> lights, boolean wireframe) {
@@ -74,18 +74,18 @@ public class SoftwareRenderer implements IRenderer {
 
         for (GameObject obj : objects) {
             if (ssaaEnabled) {
-                // Manda o GameObject desenhar no buffer gigante (2x)
+                // Sends GameObject to draw on giant buffer (2x)
                 obj.draw(hrPixels, hrZBuffer, cam, lights, width * 2, height * 2, wireframe);
             } else {
-                // Desenho normal (1x)
+                // Normal drawing (1x)
                 obj.draw(pixels, zBuffer, cam, lights, width, height, wireframe);
             }
         }
     }
 
     /**
-     * Desenha um sprite 2D sobre a cena.
-     * Suporta transparência (Alpha Channel) e ajusta escala para SSAA.
+     * Draws a 2D sprite over the scene.
+     * Supports transparency (Alpha Channel) and scales for SSAA.
      */
     @Override
     public void drawSprite(int[] spritePixels, int spriteW, int spriteH, int x, int y) {
@@ -97,8 +97,8 @@ public class SoftwareRenderer implements IRenderer {
     }
 
     /**
-     * Desenha um sprite 2D diretamente no buffer de pixels, ignorando o Z-Buffer.
-     * Útil para HUD, miras e interfaces.
+     * Draws a 2D sprite directly into pixel buffer, ignoring Z-Buffer.
+     * Useful for HUD, crosshairs, and interfaces.
      * 
      * @param spritePixels
      * @param spriteW
@@ -121,7 +121,7 @@ public class SoftwareRenderer implements IRenderer {
                     continue;
 
                 int color = spritePixels[spriteRowOffset + i];
-                // Verifica canal Alpha (ARGB). Se for 0, é totalmente transparente.
+                // Checks Alpha channel (ARGB). If 0, it is fully transparent.
                 if ((color >>> 24) != 0) {
                     pixels[rowOffset + px] = color;
                 }
@@ -130,10 +130,10 @@ public class SoftwareRenderer implements IRenderer {
     }
 
     /**
-     * Desenha um sprite 2D diretamente no buffer de pixels de alta resolução,
-     * ignorando o Z-Buffer.
-     * Útil para HUD, miras e interfaces, mantendo o tamanho visual do sprite mesmo
-     * com SSAA.
+     * Draws a 2D sprite directly into high-resolution pixel buffer, ignoring
+     * Z-Buffer.
+     * Useful for HUD, crosshairs, and interfaces, maintaining sprite visual size
+     * even with SSAA.
      * 
      * @param spritePixels
      * @param spriteW
@@ -145,27 +145,27 @@ public class SoftwareRenderer implements IRenderer {
         int hrW = width * 2;
         int hrH = height * 2;
 
-        // Escala a posição para o buffer 2x
+        // Scales position for 2x buffer
         int startX = x * 2;
         int startY = y * 2;
 
         for (int j = 0; j < spriteH; j++) {
             int py = startY + j * 2;
             if (py >= hrH)
-                break; // Passou do limite inferior
+                break; // Passed bottom limit
 
             int spriteRowOffset = j * spriteW;
 
             for (int i = 0; i < spriteW; i++) {
                 int px = startX + i * 2;
                 if (px >= hrW)
-                    break; // Passou do limite direito
+                    break; // Passed right limit
 
                 int color = spritePixels[spriteRowOffset + i];
 
                 if ((color >>> 24) != 0) {
-                    // Desenha um bloco 2x2 no buffer de alta resolução
-                    // para manter o tamanho visual do sprite na tela
+                    // Draws a 2x2 block on high-res buffer
+                    // to maintain sprite visual size on screen
                     if (py >= 0 && px >= 0)
                         hrPixels[py * hrW + px] = color;
                     if (py >= 0 && px + 1 < hrW && px + 1 >= 0)
@@ -187,7 +187,7 @@ public class SoftwareRenderer implements IRenderer {
     private void resolveSSAA() {
         int hrWidth = width * 2;
 
-        // Processamento paralelo para utilizar todos os núcleos da CPU
+        // Parallel processing to utilize all CPU cores
         IntStream.range(0, height).parallel().forEach(y -> {
             int rowOffset = y * width;
             int hrRow1Offset = (y * 2) * hrWidth;
@@ -201,7 +201,7 @@ public class SoftwareRenderer implements IRenderer {
                 int p3 = hrPixels[hrRow2Offset + hrX];
                 int p4 = hrPixels[hrRow2Offset + hrX + 1];
 
-                // Otimização Bitwise: Soma os canais mascarados e divide por 4 (>> 2) no final
+                // Bitwise Optimization: Sums masked channels and divides by 4 (>> 2) at the end
                 int b = (p1 & 0xFF) + (p2 & 0xFF) + (p3 & 0xFF) + (p4 & 0xFF);
                 int g = (p1 & 0xFF00) + (p2 & 0xFF00) + (p3 & 0xFF00) + (p4 & 0xFF00);
                 int r = (p1 & 0xFF0000) + (p2 & 0xFF0000) + (p3 & 0xFF0000) + (p4 & 0xFF0000);
@@ -220,7 +220,7 @@ public class SoftwareRenderer implements IRenderer {
     @Override
     public int[] getFrameBuffer() {
         if (ssaaEnabled) {
-            resolveSSAA(); // Esmaga a imagem gigante antes de mandar para a tela
+            resolveSSAA(); // Downsamples the giant image before sending to screen
         }
         return pixels;
     }

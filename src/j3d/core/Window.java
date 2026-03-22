@@ -24,26 +24,25 @@ public class Window {
      */
     public Window(String title, int width, int height) {
         frame = new JFrame(title);
-        frame.setUndecorated(true); // Remove bordas e barra de título
+        frame.setUndecorated(true); // Removes borders and title bar
         canvas = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
         canvasPixels = ((DataBufferInt) canvas.getRaster().getDataBuffer()).getData();
 
         JPanel panel = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
-                // Não chamamos super.paintComponent(g) para evitar limpar a tela
-                // desnecessariamente
+                // We don't call super.paintComponent(g) to avoid clearing screen unnecessarily
                 Graphics2D g2d = (Graphics2D) g;
 
-                // Hints para priorizar velocidade na transferência da imagem para a tela
+                // Hints to prioritize speed when transferring image to screen
                 g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_SPEED);
                 g2d.setRenderingHint(RenderingHints.KEY_DITHERING, RenderingHints.VALUE_DITHER_DISABLE);
                 System.setProperty("sun.java2d.d3d", "true");
 
-                // Escala a imagem do buffer para o tamanho total da janela (Fullscreen)
+                // Scales image from buffer to full window size (Fullscreen)
                 g2d.drawImage(canvas, 0, 0, getWidth(), getHeight(), null);
 
-                // Sincroniza com o display hardware para evitar tearing e lag visual
+                // Syncs with display hardware to avoid tearing and visual lag
                 Toolkit.getDefaultToolkit().sync();
             }
         };
@@ -51,13 +50,15 @@ public class Window {
         frame.add(panel);
         frame.pack();
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setExtendedState(JFrame.MAXIMIZED_BOTH); // Maximiza a janela
+        frame.setExtendedState(JFrame.MAXIMIZED_BOTH); // Maximizes the window
         frame.setLocationRelativeTo(null);
         frame.setVisible(true);
     }
 
     /**
-     * Atualiza os pixels do canvas com os dados do renderer e o FPS atual, e solicita a repintura da tela.
+     * Updates canvas pixels with renderer data and current FPS, and requests screen
+     * repaint.
+     * 
      * @param rendererPixels
      */
     public void update(int[] rendererPixels) {
@@ -66,7 +67,8 @@ public class Window {
     }
 
     /**
-     * Getter para o JFrame, necessário para capturar eventos de input e obter a posição do mouse.
+     * Getter for JFrame, necessary to capture input events and get mouse position.
+     * 
      * @return
      */
     public JFrame getFrame() {

@@ -19,17 +19,19 @@ public interface IRenderer {
     /** Clears the frame buffer, preparing for a new frame to be drawn. */
     void clear();
 
-    /** Método genérico de desenho que não conhece a lógica do cenário */
+    /** Generic draw method that doesn't know scene logic */
     void draw(Camera cam, List<GameObject> objects, List<PointLight> lights, boolean wireframe);
 
     /**
-     * Desenha um sprite 2D diretamente no buffer de pixels, ignorando o Z-Buffer.
-     * Útil para HUD, miras e interfaces.
+     * Draws a 2D sprite directly into pixel buffer, ignoring Z-Buffer.
+     * Useful for HUD, crosshairs, and interfaces.
      */
     void drawSprite(int[] spritePixels, int spriteW, int spriteH, int x, int y);
 
     /**
-     * Returns the current frame buffer as an array of integers representing pixel colors.
+     * Returns the current frame buffer as an array of integers representing pixel
+     * colors.
+     * 
      * @return
      */
     int[] getFrameBuffer();

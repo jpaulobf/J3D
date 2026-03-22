@@ -22,18 +22,18 @@ public class GameObject {
     public static boolean gouraud = true;
     public static boolean scanline = false;
 
-    // Propriedades de Colisão
+    // Collision Properties
     public boolean hasCollision = true;
     public double minX = 0, maxX = 0, minZ = 0, maxZ = 0;
     public double minY = 0, maxY = 0;
 
-    // Propriedades para Culling (Otimização)
+    // Culling Properties (Optimization)
     private double cX, cY, cZ, radius;
 
     /**
      * Constructor for GameObject.
      * 
-     * @param m
+     * @param m The mesh to be used by this object.
      */
     public GameObject(Mesh m) {
         mesh = m;
@@ -44,7 +44,7 @@ public class GameObject {
         minZ = Double.MAX_VALUE;
         maxZ = -Double.MAX_VALUE;
 
-        // Calcula os limites da caixa de colisão (AABB) do objeto
+        // Calculates the collision box limits (AABB) of the object
         for (Vertex v : m.vertices) {
             if (v.x < minX)
                 minX = v.x;
@@ -60,7 +60,7 @@ public class GameObject {
                 maxZ = v.z;
         }
 
-        // Calcula o centro e o raio da esfera envolvente para Culling rápido
+        // Calculates center and radius of the bounding sphere for fast Culling
         cX = (minX + maxX) / 2.0;
         cY = (minY + maxY) / 2.0;
         cZ = (minZ + maxZ) / 2.0;
@@ -71,13 +71,13 @@ public class GameObject {
      * Draw method to render the game object using the provided pixels, z-buffer,
      * camera, scene lights, and dimensions.
      * 
-     * @param pixels
-     * @param zBuf
-     * @param cam
-     * @param sceneLights
-     * @param w
-     * @param h
-     * @param wire
+     * @param pixels      The pixel array buffer.
+     * @param zBuf        The z-buffer for depth testing.
+     * @param cam         The active camera.
+     * @param sceneLights The list of lights in the scene.
+     * @param w           Screen width.
+     * @param h           Screen height.
+     * @param wire        If true, renders wireframe.
      */
     public void draw(int[] pixels, double[] zBuf, Camera cam, List<PointLight> sceneLights, int w, int h,
             boolean wire) {
@@ -86,24 +86,25 @@ public class GameObject {
         Matrix4 proj = Matrix4.projection(90, (double) w / h, 0.1, 1000);
         Matrix4 modelView = Matrix4.multiply(view, model);
 
-        // --- FRUSTUM CULLING (Otimização) ---
-        // Transforma o centro do objeto para o espaço da câmera (View Space)
+        // --- FRUSTUM CULLING (Optimization) ---
+        // Transforms object center to View Space
         Vertex center = new Vertex(cX, cY, cZ);
         Vertex viewCenter = Matrix4.multiply(modelView, center);
 
-        // Ajusta o raio com base na escala do objeto
+        // Adjusts radius based on object scale
         double maxScale = Math.max(transform.scaleX, Math.max(transform.scaleY, transform.scaleZ));
         double r = radius * maxScale;
 
-        // Verifica se a esfera está totalmente atrás da câmera (Z > -Near) ou muito longe (Z < -Far)
-        // Nota: No View Space, a câmera olha para -Z. Objetos na frente têm Z negativo.
+        // Checks if the sphere is completely behind the camera (Z > -Near) or too far
+        // (Z < -Far)
+        // Note: In View Space, camera looks at -Z. Objects in front have negative Z.
         if (viewCenter.z - r > -0.1 || viewCenter.z + r < -1000) {
-            return; // Objeto invisível, não desenha nada!
+            return; // Invisible object, draw nothing!
         }
 
-        // Pré-calcular luzes no espaço da câmera (View Space)
-        // Evita multiplicar matrizes (operação pesada) para cada vértice de cada
-        // triângulo
+        // Pre-calculate lights in View Space
+        // Avoids matrix multiplication (heavy operation) for every vertex of every
+        // triangle
         java.util.ArrayList<Vertex> viewSpaceLights = new java.util.ArrayList<>();
         if (sceneLights != null) {
             for (PointLight light : sceneLights) {
@@ -121,11 +122,11 @@ public class GameObject {
             double ny = (v2.z - v1.z) * (v3.x - v1.x) - (v2.x - v1.x) * (v3.z - v1.z);
             double nz = (v2.x - v1.x) * (v3.y - v1.y) - (v2.y - v1.y) * (v3.x - v1.x);
 
-            // Backface Culling antes da normalização
-            // O sinal do produto escalar não muda com a normalização, então checamos antes
+            // Backface Culling before normalization
+            // Dot product sign doesn't change with normalization, so check before
             if (nx * v1.x + ny * v1.y + nz * v1.z < 0) {
 
-                // Agora sim normalizamos, pois precisamos do vetor unitário para a iluminação
+                // Now we normalize, as we need unit vector for lighting
                 double len = Math.sqrt(nx * nx + ny * ny + nz * nz);
                 if (len > 0) {
                     nx /= len;
@@ -148,44 +149,49 @@ public class GameObject {
                     }
                 }
 
-                // 1. Projeção para Clip Space (ainda sem dividir por W)
+                // 1. Projection to Clip Space (not divided by W yet)
                 Vertex p1 = Matrix4.multiply(proj, v1);
                 Vertex p2 = Matrix4.multiply(proj, v2);
                 Vertex p3 = Matrix4.multiply(proj, v3);
-                
-                // Repassa coordenadas de textura dos vértices originais
-                p1.u = mesh.vertices.get(t.v1).u; p1.v = mesh.vertices.get(t.v1).v;
-                p2.u = mesh.vertices.get(t.v2).u; p2.v = mesh.vertices.get(t.v2).v;
-                p3.u = mesh.vertices.get(t.v3).u; p3.v = mesh.vertices.get(t.v3).v;
 
-                // 2. Monta o polígono inicial
+                // Pass through original texture coordinates
+                p1.u = mesh.vertices.get(t.v1).u;
+                p1.v = mesh.vertices.get(t.v1).v;
+                p2.u = mesh.vertices.get(t.v2).u;
+                p2.v = mesh.vertices.get(t.v2).v;
+                p3.u = mesh.vertices.get(t.v3).u;
+                p3.v = mesh.vertices.get(t.v3).v;
+
+                // 2. Assemble initial polygon
                 List<ClippedVertex> polygon = new ArrayList<>();
                 polygon.add(new ClippedVertex(p1, c1));
                 polygon.add(new ClippedVertex(p2, c2));
                 polygon.add(new ClippedVertex(p3, c3));
 
-                // 3. Aplica Clipping (Sutherland-Hodgman no Near Plane)
+                // 3. Apply Clipping (Sutherland-Hodgman on Near Plane)
                 polygon = clipPolygon(polygon);
 
-                // 4. Triangulação (Triangle Fan) e Rasterização
-                // Se o clipping gerou um Quad (4 vértices), isso vai desenhar 2 triângulos.
+                // 4. Triangulation (Triangle Fan) and Rasterization
+                // If clipping generated a Quad (4 vertices), this will draw 2 triangles.
                 for (int i = 1; i < polygon.size() - 1; i++) {
                     ClippedVertex cp0 = polygon.get(0);
                     ClippedVertex cp1 = polygon.get(i);
                     ClippedVertex cp2 = polygon.get(i + 1);
 
-                    // Perspectiva e Viewport (Screen Space)
+                    // Perspective and Viewport (Screen Space)
                     Vertex s0 = toScreen(cp0.v, w, h);
                     Vertex s1 = toScreen(cp1.v, w, h);
                     Vertex s2 = toScreen(cp2.v, w, h);
 
                     if (wire) {
-                        drawWireframe(pixels, new Vertex[]{s0, s1, s2}, t.baseColor.getRGB(), w, h);
+                        drawWireframe(pixels, new Vertex[] { s0, s1, s2 }, t.baseColor.getRGB(), w, h);
                     } else {
                         if (scanline) {
-                            rasterizeScanline(pixels, zBuf, new Vertex[]{s0, s1, s2}, cp0.color, cp1.color, cp2.color, t.texture, w, h);
+                            rasterizeScanline(pixels, zBuf, new Vertex[] { s0, s1, s2 }, cp0.color, cp1.color,
+                                    cp2.color, t.texture, w, h);
                         } else {
-                            rasterize(pixels, zBuf, new Vertex[]{s0, s1, s2}, cp0.color, cp1.color, cp2.color, t.texture, w, h);
+                            rasterize(pixels, zBuf, new Vertex[] { s0, s1, s2 }, cp0.color, cp1.color, cp2.color,
+                                    t.texture, w, h);
                         }
                     }
                 }
@@ -193,16 +199,20 @@ public class GameObject {
         }
     }
 
-    // Classe auxiliar para manter Vértice e Cor juntos durante o clipping
+    // Helper class to keep Vertex and Color together during clipping
     private static class ClippedVertex {
         Vertex v;
         int color;
-        ClippedVertex(Vertex v, int color) { this.v = v; this.color = color; }
+
+        ClippedVertex(Vertex v, int color) {
+            this.v = v;
+            this.color = color;
+        }
     }
 
     /**
-     * Implementação do algoritmo de Sutherland-Hodgman (1974) para clipping de polígonos.
-     * Realiza o corte da geometria contra o Near Plane (W = 0.1).
+     * Implementation of Sutherland-Hodgman algorithm (1974) for polygon clipping.
+     * Clips geometry against the Near Plane (W = 0.1).
      */
     private List<ClippedVertex> clipPolygon(List<ClippedVertex> vertices) {
         List<ClippedVertex> output = new ArrayList<>();
@@ -227,28 +237,27 @@ public class GameObject {
         return output;
     }
 
-    // Calcula a interseção e interpola a cor
+    // Calculates intersection and interpolates color
     private ClippedVertex intersect(ClippedVertex v1, ClippedVertex v2, double wPlane) {
         double t = (wPlane - v1.v.w) / (v2.v.w - v1.v.w);
 
-        // Interpolação Linear do Vértice (X, Y, Z, W)
+        // Linear Interpolation of Vertex (X, Y, Z, W)
         Vertex nv = new Vertex(
-            v1.v.x + (v2.v.x - v1.v.x) * t,
-            v1.v.y + (v2.v.y - v1.v.y) * t,
-            v1.v.z + (v2.v.z - v1.v.z) * t
-        );
-        nv.w = v1.v.w + (v2.v.w - v1.v.w) * t; // Importante interpolar W também
+                v1.v.x + (v2.v.x - v1.v.x) * t,
+                v1.v.y + (v2.v.y - v1.v.y) * t,
+                v1.v.z + (v2.v.z - v1.v.z) * t);
+        nv.w = v1.v.w + (v2.v.w - v1.v.w) * t; // Important to interpolate W as well
         nv.u = v1.v.u + (v2.v.u - v1.v.u) * t;
         nv.v = v1.v.v + (v2.v.v - v1.v.v) * t;
 
-        // Interpolação Linear da Cor (R, G, B)
+        // Linear Interpolation of Color (R, G, B)
         int c1 = v1.color;
         int c2 = v2.color;
         int r = (int) (((c1 >> 16) & 0xFF) + t * (((c2 >> 16) & 0xFF) - ((c1 >> 16) & 0xFF)));
         int g = (int) (((c1 >> 8) & 0xFF) + t * (((c2 >> 8) & 0xFF) - ((c1 >> 8) & 0xFF)));
         int b = (int) ((c1 & 0xFF) + t * ((c2 & 0xFF) - (c1 & 0xFF)));
-        
-        // Clamp para evitar overflow de cor
+
+        // Clamp to avoid color overflow
         r = Math.max(0, Math.min(255, r));
         g = Math.max(0, Math.min(255, g));
         b = Math.max(0, Math.min(255, b));
@@ -256,17 +265,17 @@ public class GameObject {
         return new ClippedVertex(nv, (r << 16) | (g << 8) | b);
     }
 
-    // Converte de Clip Space para Screen Space
+    // Converts from Clip Space to Screen Space
     private Vertex toScreen(Vertex v, int w, int h) {
-        // Perspectiva Divide
+        // Perspective Divide
         double invW = 1.0 / v.w;
         Vertex s = new Vertex(
-            (v.x * invW + 1) * w * 0.5, 
-            (1 - v.y * invW) * h * 0.5, 
-            invW // Armazenamos 1/Z (ou 1/W) para o Z-Buffer
+                (v.x * invW + 1) * w * 0.5,
+                (1 - v.y * invW) * h * 0.5,
+                invW // Store 1/Z (or 1/W) for Z-Buffer
         );
-        // Correção de Perspectiva: Pré-divide U e V por W (W original, não invW)
-        // Aqui usamos invW para multiplicar, que é o mesmo que dividir por W.
+        // Perspective Correction: Pre-divide U and V by W (original W, not invW)
+        // Here we use invW to multiply, which is the same as dividing by W.
         s.u = v.u * invW;
         s.v = v.v * invW;
         return s;
@@ -276,46 +285,46 @@ public class GameObject {
      * Calculate lighting method to compute the color of a vertex based on its
      * normal, the scene lights, and the base color of the triangle.
      * <p>
-     * Baseado no modelo de reflexão difusa (Lambert) e sombreamento de Gouraud (1971).
+     * Based on diffuse reflection model (Lambert) and Gouraud shading (1971).
      * 
-     * @param v
-     * @param nx
-     * @param ny
-     * @param nz
-     * @param lights
-     * @param viewSpaceLights
-     * @param base
-     * @return
+     * @param v               The vertex position.
+     * @param nx              Normal X.
+     * @param ny              Normal Y.
+     * @param nz              Normal Z.
+     * @param lights          List of lights.
+     * @param viewSpaceLights List of lights transformed to view space.
+     * @param base            Base color.
+     * @return The calculated RGB color.
      */
     private int calcLighting(Vertex v, double nx, double ny, double nz, List<PointLight> lights,
             List<Vertex> viewSpaceLights, Color base) {
         double rT = 0, gT = 0, bT = 0, amb = 0.15;
-        
-        // Normaliza a cor base do objeto (0.0 a 1.0)
+
+        // Normalizes object base color (0.0 to 1.0)
         double rb = base.getRed() / 255.0;
         double gb = base.getGreen() / 255.0;
         double bb = base.getBlue() / 255.0;
 
         for (int i = 0; i < lights.size(); i++) {
             PointLight light = lights.get(i);
-            Vertex lV = viewSpaceLights.get(i); // Usa a posição pré-calculada
+            Vertex lV = viewSpaceLights.get(i); // Uses pre-calculated position
             double lx = lV.x - v.x, ly = lV.y - v.y, lz = lV.z - v.z;
             double d = Math.sqrt(lx * lx + ly * ly + lz * lz);
             double dot = Math.max(0, nx * (lx / d) + ny * (ly / d) + nz * (lz / d));
             double att = 1.0 / (1.0 + 0.01 * d * d);
-            
-            // Obtém a cor da luz
+
+            // Gets light color
             double lr = light.color.getRed() / 255.0;
             double lg = light.color.getGreen() / 255.0;
             double lb = light.color.getBlue() / 255.0;
 
-            // Calcula a contribuição difusa considerando a cor da luz e do objeto
+            // Calculates diffuse contribution considering light and object color
             rT += rb * lr * dot * light.intensity * att;
             gT += gb * lg * dot * light.intensity * att;
             bT += bb * lb * dot * light.intensity * att;
         }
-        
-        // Aplica a luz ambiente multiplicada pela cor base (evita sombras cinzas)
+
+        // Applies ambient light multiplied by base color (avoids gray shadows)
         rT += rb * amb;
         gT += gb * amb;
         bT += bb * amb;
@@ -328,16 +337,16 @@ public class GameObject {
      * Rasterize method to fill the triangle defined by vertices v with the
      * specified color, using the z-buffer for depth testing.
      * <p>
-     * Utiliza a abordagem de Coordenadas Baricêntricas (Möbius, 1827) para interpolação.
+     * Uses Barycentric Coordinates approach (Möbius, 1827) for interpolation.
      * 
-     * @param pixels
-     * @param zBuf
-     * @param v
-     * @param c1
-     * @param c2
-     * @param c3
-     * @param w
-     * @param h
+     * @param pixels The pixel buffer.
+     * @param zBuf   The depth buffer.
+     * @param v      Array of 3 vertices (screen space).
+     * @param c1     Color of vertex 1.
+     * @param c2     Color of vertex 2.
+     * @param c3     Color of vertex 3.
+     * @param w      Screen width.
+     * @param h      Screen height.
      */
     void rasterize(int[] pixels, double[] zBuf, Vertex[] v, int c1, int c2, int c3, Texture tex, int w, int h) {
         int minX = (int) Math.max(0, Math.min(v[0].x, Math.min(v[1].x, v[2].x)));
@@ -347,14 +356,14 @@ public class GameObject {
         double area = (v[1].y - v[2].y) * (v[0].x - v[2].x) + (v[2].x - v[1].x) * (v[0].y - v[2].y);
         if (area == 0)
             return;
-        double invArea = 1.0 / area; // Otimização 3: Multiplicação é muito mais rápida que divisão
+        double invArea = 1.0 / area; // Optimization 3: Multiplication is much faster than division
 
         int r1 = (c1 >> 16) & 0xFF, g1 = (c1 >> 8) & 0xFF, b1 = c1 & 0xFF;
         int r2 = (c2 >> 16) & 0xFF, g2 = (c2 >> 8) & 0xFF, b2 = c2 & 0xFF;
         int r3 = (c3 >> 16) & 0xFF, g3 = (c3 >> 8) & 0xFF, b3 = c3 & 0xFF;
 
-        // Pré-cálculo dos passos incrementais (derivadas parciais)
-        // Quanto w0, w1 e w2 mudam ao andar 1 pixel em X ou Y
+        // Pre-calculation of incremental steps (partial derivatives)
+        // How much w0, w1 and w2 change when moving 1 pixel in X or Y
         double dw0dx = (v[1].y - v[2].y) * invArea;
         double dw0dy = (v[2].x - v[1].x) * invArea;
         double dw1dx = (v[2].y - v[0].y) * invArea;
@@ -362,17 +371,18 @@ public class GameObject {
         double dw2dx = (v[0].y - v[1].y) * invArea;
         double dw2dy = (v[1].x - v[0].x) * invArea;
 
-        // Valores iniciais de w0, w1, w2 no canto superior esquerdo do Bounding Box (minX, minY)
+        // Initial values of w0, w1, w2 at the top-left corner of the Bounding Box
+        // (minX, minY)
         double w0Row = ((v[1].y - v[2].y) * (minX - v[2].x) + (v[2].x - v[1].x) * (minY - v[2].y)) * invArea;
         double w1Row = ((v[2].y - v[0].y) * (minX - v[2].x) + (v[0].x - v[2].x) * (minY - v[2].y)) * invArea;
         double w2Row = ((v[0].y - v[1].y) * (minX - v[0].x) + (v[1].x - v[0].x) * (minY - v[0].y)) * invArea;
 
-        // Pré-cálculo das derivadas de Profundidade (1/Z) e Cor
-        // Isso permite interpolar Z, R, G e B usando apenas somas
+        // Pre-calculation of Depth (1/Z) and Color derivatives
+        // This allows interpolating Z, R, G, and B using only additions
         double dDepthDx = dw0dx * v[0].z + dw1dx * v[1].z + dw2dx * v[2].z;
         double dDepthDy = dw0dy * v[0].z + dw1dy * v[1].z + dw2dy * v[2].z;
 
-        // Derivadas de UV (já divididos por W em toScreen)
+        // UV derivatives (already divided by W in toScreen)
         double dUDx = dw0dx * v[0].u + dw1dx * v[1].u + dw2dx * v[2].u;
         double dUDy = dw0dy * v[0].u + dw1dy * v[1].u + dw2dy * v[2].u;
         double dVDx = dw0dx * v[0].v + dw1dx * v[1].v + dw2dx * v[2].v;
@@ -385,7 +395,7 @@ public class GameObject {
         double dBDx = dw0dx * b1 + dw1dx * b2 + dw2dx * b3;
         double dBDy = dw0dy * b1 + dw1dy * b2 + dw2dy * b3;
 
-        // Valores iniciais no canto superior esquerdo
+        // Initial values at top-left corner
         double depthRow = w0Row * v[0].z + w1Row * v[1].z + w2Row * v[2].z;
         double uRow = w0Row * v[0].u + w1Row * v[1].u + w2Row * v[2].u;
         double vRow = w0Row * v[0].v + w1Row * v[1].v + w2Row * v[2].v;
@@ -394,63 +404,69 @@ public class GameObject {
         double bRow = w0Row * b1 + w1Row * b2 + w2Row * b3;
 
         for (int y = minY; y <= maxY; y++) {
-            // Inicializa os pesos para o começo desta linha
+            // Initializes weights for the start of this line
             double w0 = w0Row;
             double w1 = w1Row;
             double w2 = w2Row;
-            
+
             double depth = depthRow;
             double u = uRow, vTex = vRow;
             double r = rRow, g = gRow, b = bRow;
 
-            // Otimização: Calcula o índice inicial da linha fora do loop X
+            // Optimization: Calculates initial line index outside X loop
             int idx = y * w + minX;
 
             for (int x = minX; x <= maxX; x++) {
                 if (w0 >= 0 && w1 >= 0 && w2 >= 0) {
-                    // Otimização Z-Buffer: Armazenamos 1/Z diretamente.
-                    // Maior valor = Mais perto da câmera. Sem divisões!
+                    // Z-Buffer Optimization: We store 1/Z directly.
+                    // Higher value = Closer to camera. No divisions!
                     if (depth > zBuf[idx]) {
                         zBuf[idx] = depth;
-                        
+
                         int finalColor;
                         if (tex != null) {
-                            // Recupera U e V reais dividindo por 1/W (que é o 'depth' aqui)
-                            // Multiplicação por cor (Modulate)
+                            // Recovers real U and V by dividing by 1/W (which is 'depth' here)
+                            // Color Multiplication (Modulate)
                             int texColor = tex.getSample(u / depth, vTex / depth);
-                            // Mistura a cor da textura com a luz (Gouraud)
-                            // Extrai componentes da textura
+                            // Mixes texture color with light (Gouraud)
+                            // Extracts texture components
                             int tR = (texColor >> 16) & 0xFF;
                             int tG = (texColor >> 8) & 0xFF;
                             int tB = texColor & 0xFF;
-                            
-                            // Multiplica (r, g, b são 0-255 da luz)
-                            int fR = (int)(tR * (r / 255.0));
-                            int fG = (int)(tG * (g / 255.0));
-                            int fB = (int)(tB * (b / 255.0));
+
+                            // Multiplies (r, g, b are 0-255 from light)
+                            int fR = (int) (tR * (r / 255.0));
+                            int fG = (int) (tG * (g / 255.0));
+                            int fB = (int) (tB * (b / 255.0));
                             finalColor = (fR << 16) | (fG << 8) | fB;
                         } else {
-                            finalColor = ((int)r << 16) | ((int)g << 8) | (int)b;
+                            finalColor = ((int) r << 16) | ((int) g << 8) | (int) b;
                         }
                         pixels[idx] = finalColor;
                     }
                 }
-                // Incrementa X: apenas somas, sem multiplicações!
+                // Increment X: just additions, no multiplications!
                 w0 += dw0dx;
                 w1 += dw1dx;
                 w2 += dw2dx;
                 depth += dDepthDx;
-                u += dUDx; vTex += dVDx;
-                r += dRDx; g += dGDx; b += dBDx;
-                idx++; // Avança para o próximo pixel no array linearmente
+                u += dUDx;
+                vTex += dVDx;
+                r += dRDx;
+                g += dGDx;
+                b += dBDx;
+                idx++; // Advances to next pixel in array linearly
             }
-            // Incrementa Y para a próxima linha
+            // Increment Y for next line
             w0Row += dw0dy;
             w1Row += dw1dy;
             w2Row += dw2dy;
             depthRow += dDepthDy;
-            uRow += dUDy; vRow += dVDy;
-            rRow += dRDy; gRow += dGDy; bRow += dBDy;
+            uRow += dUDy;
+            vRow += dVDy;
+            rRow += dRDy;
+            gRow += dGDy;
+            bRow += dBDy;
         }
     }
 
@@ -458,11 +474,11 @@ public class GameObject {
      * Draw wireframe method to draw the edges of the triangle defined by vertices v
      * with the specified color.
      * 
-     * @param pixels
-     * @param v
-     * @param color
-     * @param w
-     * @param h
+     * @param pixels The pixel buffer.
+     * @param v      Array of vertices.
+     * @param color  The line color.
+     * @param w      Screen width.
+     * @param h      Screen height.
      */
     void drawWireframe(int[] pixels, Vertex[] v, int color, int w, int h) {
         drawLine(pixels, v[0], v[1], color, w, h);
@@ -474,14 +490,14 @@ public class GameObject {
      * Draw line method to draw a line between two vertices v1 and v2 with the
      * specified color, using Bresenham's line algorithm.
      * <p>
-     * Algoritmo desenvolvido por Jack Bresenham (1962) na IBM.
+     * Algorithm developed by Jack Bresenham (1962) at IBM.
      * 
-     * @param pixels
-     * @param v1
-     * @param v2
-     * @param color
-     * @param w
-     * @param h
+     * @param pixels The pixel buffer.
+     * @param v1     Start vertex.
+     * @param v2     End vertex.
+     * @param color  Line color.
+     * @param w      Screen width.
+     * @param h      Screen height.
      */
     void drawLine(int[] pixels, Vertex v1, Vertex v2, int color, int w, int h) {
         int x0 = (int) v1.x, y0 = (int) v1.y, x1 = (int) v2.x, y1 = (int) v2.y;
@@ -504,33 +520,55 @@ public class GameObject {
     }
 
     /**
-     * Rasterização alternativa usando algoritmo Scanline (Linha de Varredura).
-     * Útil para comparação de performance e estudo.
-     * Técnica clássica de preenchimento de polígonos (Wylie, Romney, Evans, Erdahl, 1967).
+     * Alternative rasterization using Scanline algorithm.
+     * Useful for performance comparison and study.
+     * Classic polygon filling technique (Wylie, Romney, Evans, Erdahl, 1967).
      */
     void rasterizeScanline(int[] pixels, double[] zBuf, Vertex[] v, int c1, int c2, int c3, Texture tex, int w, int h) {
-        // 1. Ordena vértices por Y (Bubble sort simples para 3 elementos)
+        // 1. Sort vertices by Y (Simple Bubble sort for 3 elements)
         Vertex vMin = v[0], vMid = v[1], vMax = v[2];
         int cMin = c1, cMid = c2, cMax = c3;
 
-        if (vMin.y > vMid.y) { Vertex t = vMin; vMin = vMid; vMid = t; int tc = cMin; cMin = cMid; cMid = tc; }
-        if (vMin.y > vMax.y) { Vertex t = vMin; vMin = vMax; vMax = t; int tc = cMin; cMin = cMax; cMax = tc; }
-        if (vMid.y > vMax.y) { Vertex t = vMid; vMid = vMax; vMax = t; int tc = cMid; cMid = cMax; cMax = tc; }
+        if (vMin.y > vMid.y) {
+            Vertex t = vMin;
+            vMin = vMid;
+            vMid = t;
+            int tc = cMin;
+            cMin = cMid;
+            cMid = tc;
+        }
+        if (vMin.y > vMax.y) {
+            Vertex t = vMin;
+            vMin = vMax;
+            vMax = t;
+            int tc = cMin;
+            cMin = cMax;
+            cMax = tc;
+        }
+        if (vMid.y > vMax.y) {
+            Vertex t = vMid;
+            vMid = vMax;
+            vMax = t;
+            int tc = cMid;
+            cMid = cMax;
+            cMax = tc;
+        }
 
         int y1 = (int) vMin.y;
         int y2 = (int) vMid.y;
         int y3 = (int) vMax.y;
 
-        // Se o triângulo não tem altura ou está fora da tela verticalmente, ignora
-        if (y1 >= h || y3 < 0 || y1 == y3) return;
+        // If triangle has no height or is vertically off-screen, ignore
+        if (y1 >= h || y3 < 0 || y1 == y3)
+            return;
 
-        // Extrai componentes de cor
+        // Extract color components
         float r1 = (cMin >> 16) & 0xFF, g1 = (cMin >> 8) & 0xFF, b1 = cMin & 0xFF;
         float r2 = (cMid >> 16) & 0xFF, g2 = (cMid >> 8) & 0xFF, b2 = cMid & 0xFF;
         float r3 = (cMax >> 16) & 0xFF, g3 = (cMax >> 8) & 0xFF, b3 = cMax & 0xFF;
 
-        // OTIMIZAÇÃO: Calcula os gradientes (d/dx) do plano do triângulo UMA VEZ.
-        // Isso evita recalcular (zEnd - zStart) / width a cada linha desenhada.
+        // OPTIMIZATION: Calculates triangle plane gradients (d/dx) ONCE.
+        // This avoids recalculating (zEnd - zStart) / width for every drawn line.
         double den = (vMid.x - vMin.x) * (vMax.y - vMin.y) - (vMax.x - vMin.x) * (vMid.y - vMin.y);
         double invDen = Math.abs(den) < 1e-9 ? 0 : 1.0 / den;
 
@@ -539,7 +577,7 @@ public class GameObject {
         double dGdx = ((g2 - g1) * (vMax.y - vMin.y) - (g3 - g1) * (vMid.y - vMin.y)) * invDen;
         double dBdx = ((b2 - b1) * (vMax.y - vMin.y) - (b3 - b1) * (vMid.y - vMin.y)) * invDen;
 
-        // --- Aresta Longa (vMin -> vMax) ---
+        // --- Long Edge (vMin -> vMax) ---
         double invHeightLong = 1.0 / (vMax.y - vMin.y);
         double dxLong = (vMax.x - vMin.x) * invHeightLong;
         double dzLong = (vMax.z - vMin.z) * invHeightLong;
@@ -550,78 +588,97 @@ public class GameObject {
         double xLong = vMin.x, zLong = vMin.z;
         double rLong = r1, gLong = g1, bLong = b1;
 
-        // --- Parte Superior (vMin -> vMid) ---
+        // --- Top Part (vMin -> vMid) ---
         if (y2 > y1) {
             double invHeight1 = 1.0 / (vMid.y - vMin.y);
             double dx1 = (vMid.x - vMin.x) * invHeight1;
-            double dz1 = (vMid.z - vMin.z) * invHeight1;
-            double dr1 = (r2 - r1) * invHeight1;
-            double dg1 = (g2 - g1) * invHeight1;
-            double db1 = (b2 - b1) * invHeight1;
+            //double dz1 = (vMid.z - vMin.z) * invHeight1;
+            //double dr1 = (r2 - r1) * invHeight1;
+            //double dg1 = (g2 - g1) * invHeight1;
+            //double db1 = (b2 - b1) * invHeight1;
 
-            double x1_val = vMin.x, z1_val = vMin.z;
-            double r1_val = r1, g1_val = g1, b1_val = b1;
+            double x1_val = vMin.x;//, z1_val = vMin.z;
+            //double r1_val = r1, g1_val = g1, b1_val = b1;
 
             for (int y = y1; y < y2; y++) {
                 if (y >= 0 && y < h) {
-                    drawScanline(pixels, zBuf, y, w, (int)xLong, (int)x1_val, zLong, rLong, gLong, bLong, dZdx, dRdx, dGdx, dBdx);
+                    drawScanline(pixels, zBuf, y, w, (int) xLong, (int) x1_val, zLong, rLong, gLong, bLong, dZdx, dRdx,
+                            dGdx, dBdx);
                 }
-                xLong += dxLong; zLong += dzLong; rLong += drLong; gLong += dgLong; bLong += dbLong;
-                x1_val += dx1; z1_val += dz1; r1_val += dr1; g1_val += dg1; b1_val += db1;
+                xLong += dxLong;
+                zLong += dzLong;
+                rLong += drLong;
+                gLong += dgLong;
+                bLong += dbLong;
+                x1_val += dx1;
+                //z1_val += dz1;
+                //r1_val += dr1;
+                //g1_val += dg1;
+                //b1_val += db1;
             }
         }
 
-        // --- Parte Inferior (vMid -> vMax) ---
+        // --- Bottom Part (vMid -> vMax) ---
         if (y3 > y2) {
             double invHeight2 = 1.0 / (vMax.y - vMid.y);
             double dx2 = (vMax.x - vMid.x) * invHeight2;
-            double dz2 = (vMax.z - vMid.z) * invHeight2;
-            double dr2 = (r3 - r2) * invHeight2;
-            double dg2 = (g3 - g2) * invHeight2;
-            double db2 = (b3 - b2) * invHeight2;
+            //double dz2 = (vMax.z - vMid.z) * invHeight2;
+            //double dr2 = (r3 - r2) * invHeight2;
+            //double dg2 = (g3 - g2) * invHeight2;
+            //double db2 = (b3 - b2) * invHeight2;
 
-            double x2_val = vMid.x, z2_val = vMid.z;
-            double r2_val = r2, g2_val = g2, b2_val = b2;
+            double x2_val = vMid.x;//, z2_val = vMid.z;
+            //double r2_val = r2, g2_val = g2, b2_val = b2;
 
             for (int y = y2; y < y3; y++) {
                 if (y >= 0 && y < h) {
-                    drawScanline(pixels, zBuf, y, w, (int)xLong, (int)x2_val, zLong, rLong, gLong, bLong, dZdx, dRdx, dGdx, dBdx);
+                    drawScanline(pixels, zBuf, y, w, (int) xLong, (int) x2_val, zLong, rLong, gLong, bLong, dZdx, dRdx,
+                            dGdx, dBdx);
                 }
-                xLong += dxLong; zLong += dzLong; rLong += drLong; gLong += dgLong; bLong += dbLong;
-                x2_val += dx2; z2_val += dz2; r2_val += dr2; g2_val += dg2; b2_val += db2;
+                xLong += dxLong;
+                zLong += dzLong;
+                rLong += drLong;
+                gLong += dgLong;
+                bLong += dbLong;
+                x2_val += dx2;
+                //z2_val += dz2;
+                //r2_val += dr2;
+                //g2_val += dg2;
+                //b2_val += db2;
             }
         }
     }
 
-    // Desenha uma linha horizontal interpolando Z e Cor
-    private void drawScanline(int[] pixels, double[] zBuf, int y, int w, 
-                              int xStart, int xEnd, 
-                              double zStart, 
-                              double rStart, double gStart, double bStart,
-                              double dZdx, double dRdx, double dGdx, double dBdx) {
-        
-        // Garante que desenhamos da esquerda para a direita
+    // Draws a horizontal line interpolating Z and Color
+    private void drawScanline(int[] pixels, double[] zBuf, int y, int w,
+            int xStart, int xEnd,
+            double zStart,
+            double rStart, double gStart, double bStart,
+            double dZdx, double dRdx, double dGdx, double dBdx) {
+
+        // Ensures we draw from left to right
         if (xStart > xEnd) {
-            // Os atributos (zStart, rStart, etc) correspondem ao xStart original.
-            // Se vamos começar a desenhar em xEnd, precisamos calcular os atributos nesse ponto.
+            // Attributes (zStart, rStart, etc) correspond to original xStart.
+            // If we start drawing at xEnd, we need to calculate attributes at that point.
             double dist = xEnd - xStart; // dist é negativo
             zStart += dist * dZdx;
             rStart += dist * dRdx;
             gStart += dist * dGdx;
             bStart += dist * dBdx;
-            
-            // Troca os limites
+
+            // Swap limits
             int temp = xStart;
             xStart = xEnd;
             xEnd = temp;
         }
 
-        if (xEnd < 0 || xStart >= w) return;
+        if (xEnd < 0 || xStart >= w)
+            return;
 
         int x0 = Math.max(0, xStart);
         int x1 = Math.min(w - 1, xEnd);
 
-        // Ajusta valores iniciais para o caso de a linha começar fora da tela (clipping)
+        // Adjusts initial values in case line starts off-screen (clipping)
         if (x0 > xStart) {
             double diff = x0 - xStart;
             zStart += dZdx * diff;
@@ -634,11 +691,11 @@ public class GameObject {
         for (int x = x0; x <= x1; x++) {
             if (zStart > zBuf[rowOffset + x]) {
                 zBuf[rowOffset + x] = zStart;
-                pixels[rowOffset + x] = ((int)rStart << 16) | ((int)gStart << 8) | (int)bStart;
+                pixels[rowOffset + x] = ((int) rStart << 16) | ((int) gStart << 8) | (int) bStart;
             }
-            zStart += dZdx; 
-            rStart += dRdx; 
-            gStart += dGdx; 
+            zStart += dZdx;
+            rStart += dRdx;
+            gStart += dGdx;
             bStart += dBdx;
         }
     }

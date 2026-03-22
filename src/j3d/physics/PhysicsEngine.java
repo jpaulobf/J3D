@@ -14,14 +14,14 @@ public class PhysicsEngine {
     public static final double PLAYER_EYE_HEIGHT = 1.6;
 
     /**
-     * Verifica se uma posição futura do jogador colide com a geometria do mundo.
+     * Checks if a future player position collides with world geometry.
      */
     public boolean checkPlayerCollision(double targetX, double targetY, double targetZ, List<GameObject> worldObjects) {
         double feetY = targetY - PLAYER_EYE_HEIGHT;
         double headY = feetY + PLAYER_HEIGHT;
 
         for (GameObject obj : worldObjects) {
-            // Ignoramos objetos que não têm colisão (como o seu chão)
+            // Ignore objects without collision (like your floor)
             if (!obj.hasCollision)
                 continue;
 
@@ -33,28 +33,28 @@ public class PhysicsEngine {
     }
 
     /**
-     * Verifica se uma posição (geralmente a câmera) colide com este objeto.
-     * A verificação é feita usando AABB (Axis-Aligned Bounding Box).
+     * Checks if a position (usually the camera) collides with this object.
+     * The check is done using AABB (Axis-Aligned Bounding Box).
      * 
-     * @param x          Posição X da entidade
-     * @param z          Posição Z da entidade
-     * @param entityMinY Posição Y da base da entidade (pés)
-     * @param entityMaxY Posição Y do topo da entidade (cabeça)
-     * @param radius     Raio da entidade (usado para definir a caixa do jogador)
-     * @return true se houver colisão
+     * @param x          Entity X position
+     * @param z          Entity Z position
+     * @param entityMinY Entity base Y position (feet)
+     * @param entityMaxY Entity top Y position (head)
+     * @param radius     Entity radius (used to define player box)
+     * @return true if there is a collision
      */
     public boolean checkCollision(double x, double z, double entityMinY, double entityMaxY, double radius,
             GameObject object) {
         if (!object.hasCollision)
             return false;
 
-        // 1. Define o AABB do jogador (entidade)
+        // 1. Define player AABB (entity)
         double playerMinX = x - radius;
         double playerMaxX = x + radius;
         double playerMinZ = z - radius;
         double playerMaxZ = z + radius;
 
-        // 2. Define o AABB do objeto no espaço do mundo
+        // 2. Define object AABB in world space
         double objMinX = object.transform.x + object.minX * object.transform.scaleX;
         double objMaxX = object.transform.x + object.maxX * object.transform.scaleX;
         double objMinY = object.transform.y + object.minY * object.transform.scaleY;
@@ -62,14 +62,14 @@ public class PhysicsEngine {
         double objMinZ = object.transform.z + object.minZ * object.transform.scaleZ;
         double objMaxZ = object.transform.z + object.maxZ * object.transform.scaleZ;
 
-        // 3. Verifica a sobreposição em todos os 3 eixos. Há colisão se todos se sobrepõem.
+        // 3. Check overlap on all 3 axes. Collision exists if all overlap.
         return (playerMinX < objMaxX && playerMaxX > objMinX) &&
-               (entityMinY < objMaxY && entityMaxY > objMinY) &&
-               (playerMinZ < objMaxZ && playerMaxZ > objMinZ);
+                (entityMinY < objMaxY && entityMaxY > objMinY) &&
+                (playerMinZ < objMaxZ && playerMaxZ > objMinZ);
     }
 
     /**
-     * Verifica colisão AABB (Axis-Aligned Bounding Box) entre dois GameObjects.
+     * Checks AABB (Axis-Aligned Bounding Box) collision between two GameObjects.
      */
     public boolean checkObjectCollision(GameObject a, GameObject b) {
         if (!a.hasCollision || !b.hasCollision)
@@ -90,7 +90,7 @@ public class PhysicsEngine {
         double bMaxZ = b.transform.z + b.maxZ * b.transform.scaleZ;
 
         return (aMinX < bMaxX && aMaxX > bMinX) &&
-               (aMinY < bMaxY && aMaxY > bMinY) &&
-               (aMinZ < bMaxZ && aMaxZ > bMinZ);
+                (aMinY < bMaxY && aMaxY > bMinY) &&
+                (aMinZ < bMaxZ && aMaxZ > bMinZ);
     }
 }

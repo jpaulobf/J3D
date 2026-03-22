@@ -9,25 +9,25 @@ public class Transform {
     // Position (x, y, z) and rotation (rotX, rotY, rotZ) in radians
     public double x = 0, y = 0, z = 0, rotX = 0, rotY = 0, rotZ = 0;
 
-    // Scale properties initialized to 1.0 (tamanho original)
+    // Scale properties initialized to 1.0 (original size)
     public double scaleX = 1.0, scaleY = 1.0, scaleZ = 1.0;
 
     /**
-     * Calcula a matriz de modelo para esta transformação, combinando escala,
-     * rotação e translação.
-     * A matriz de rotação é construída usando Ângulos de Euler, um conceito
-     * matemático formalizado por Leonhard Euler no século 18.
+     * Calculates the model matrix for this transform, combining scale,
+     * rotation, and translation.
+     * Rotation matrix is built using Euler Angles, a mathematical concept
+     * formalized by Leonhard Euler in the 18th century.
      * 
      * @return Matrix4
      */
     public Matrix4 getModelMatrix() {
-        // 1. Matriz de Escala (Scale)
+        // 1. Scale Matrix
         Matrix4 s = new Matrix4();
         s.m[0][0] = scaleX;
         s.m[1][1] = scaleY;
         s.m[2][2] = scaleZ;
 
-        // 2. Matriz de Rotação (Rotation)
+        // 2. Rotation Matrix
         double cx = Math.cos(rotX), sx = Math.sin(rotX), cy = Math.cos(rotY), sy = Math.sin(rotY), cz = Math.cos(rotZ),
                 sz = Math.sin(rotZ);
         Matrix4 r = new Matrix4();
@@ -41,23 +41,21 @@ public class Transform {
         r.m[2][1] = cx * sy * sz + sx * cz;
         r.m[2][2] = cx * cy;
 
-        // 3. Matriz de Translação (Translation)
+        // 3. Translation Matrix
         Matrix4 t = new Matrix4();
         t.m[0][3] = x;
         t.m[1][3] = y;
         t.m[2][3] = z;
 
-        // A ordem matemática (Scale -> Rotate -> Translate) aplicada da direita para a
-        // esquerda
+        // The mathematical order (Scale -> Rotate -> Translate) applied right to left
         Matrix4 rs = Matrix4.multiply(r, s);
         return Matrix4.multiply(t, rs);
     }
 
     /**
-     * Método de conveniência para alterar a escala de todos os eixos uniformemente.
+     * Convenience method to change scale of all axes uniformly.
      * 
-     * @param scale O novo tamanho (ex: 2.0 para dobrar o tamanho, 0.5 para diminuir
-     *              pela metade)
+     * @param scale The new size (e.g., 2.0 to double size, 0.5 to halve)
      */
     public void setScale(double scale) {
         this.scaleX = scale;

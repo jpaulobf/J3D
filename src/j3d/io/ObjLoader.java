@@ -32,14 +32,13 @@ public class ObjLoader {
         Mesh mesh = new Mesh();
         List<Double[]> rawVertices = new ArrayList<>();
         List<Double[]> rawUVs = new ArrayList<>();
-        Map<String, Integer> vertexCache = new HashMap<>(); // Cache para evitar duplicatas: "idxV/idxVT" -> index
+        Map<String, Integer> vertexCache = new HashMap<>(); // Cache to avoid duplicates: "idxV/idxVT" -> index
         Map<String, Color> materials = new HashMap<>();
         Map<String, Texture> textures = new HashMap<>();
         Color currentColor = fallbackColor;
         Texture currentTexture = null;
 
-        // Tenta descobrir o diretório base para procurar o arquivo .mtl no mesmo lugar
-        // do .obj
+        // Tries to discover base directory to look for .mtl file in same place as .obj
         File objFile = new File(filePath);
         String parentDir = objFile.getParent() == null ? "" : objFile.getParent() + File.separator;
 
@@ -48,36 +47,36 @@ public class ObjLoader {
             while ((line = br.readLine()) != null) {
                 line = line.trim();
 
-                // 1. LER BIBLIOTECA DE MATERIAIS (.mtl)
+                // 1. READ MATERIAL LIBRARY (.mtl)
                 if (line.startsWith("mtllib ")) {
                     String mtlFileName = line.split("\\s+")[1];
                     loadMaterials(parentDir + mtlFileName, materials, textures);
                 }
-                // 2. TROCAR DE COR
+                // 2. CHANGE COLOR
                 else if (line.startsWith("usemtl ")) {
                     String mtlName = line.split("\\s+")[1];
-                    // Se o material existir no mapa, usa ele. Se não, mantém o fallback.
+                    // If material exists in map, use it. If not, keep fallback.
                     currentColor = materials.getOrDefault(mtlName, fallbackColor);
                     currentTexture = textures.get(mtlName);
                 }
-                // 3. LER VÉRTICES
+                // 3. READ VERTICES
                 else if (line.startsWith("v ")) {
                     String[] tokens = line.split("\\s+");
-                    rawVertices.add(new Double[]{
-                        Double.parseDouble(tokens[1]),
-                        Double.parseDouble(tokens[2]),
-                        Double.parseDouble(tokens[3])
+                    rawVertices.add(new Double[] {
+                            Double.parseDouble(tokens[1]),
+                            Double.parseDouble(tokens[2]),
+                            Double.parseDouble(tokens[3])
                     });
                 }
-                // LER UVS
+                // READ UVS
                 else if (line.startsWith("vt ")) {
                     String[] tokens = line.split("\\s+");
-                    rawUVs.add(new Double[]{
-                        Double.parseDouble(tokens[1]),
-                        Double.parseDouble(tokens[2])
+                    rawUVs.add(new Double[] {
+                            Double.parseDouble(tokens[1]),
+                            Double.parseDouble(tokens[2])
                     });
                 }
-                // 4. LER FACES (TRIÂNGULOS / QUADS)
+                // 4. READ FACES (TRIANGLES / QUADS)
                 else if (line.startsWith("f ")) {
                     String[] tokens = line.split("\\s+");
 
@@ -85,10 +84,10 @@ public class ObjLoader {
                     int v2 = processVertex(tokens[2], rawVertices, rawUVs, mesh.vertices, vertexCache);
                     int v3 = processVertex(tokens[3], rawVertices, rawUVs, mesh.vertices, vertexCache);
 
-                    // Criamos o triângulo aplicando a 'currentColor' atual
+                    // Create triangle applying current 'currentColor'
                     mesh.triangles.add(new Triangle(v1, v2, v3, currentColor, currentTexture));
 
-                    // Triangulação automática para Quads
+                    // Automatic triangulation for Quads
                     if (tokens.length > 4) {
                         int v4 = processVertex(tokens[4], rawVertices, rawUVs, mesh.vertices, vertexCache);
                         mesh.triangles.add(new Triangle(v1, v3, v4, currentColor, currentTexture));
@@ -107,22 +106,23 @@ public class ObjLoader {
     }
 
     /**
-     * Carrega um arquivo OBJ e separa os grupos (tags 'g' ou 'o') em GameObjects distintos.
-     * Isso permite que cada parte do modelo tenha sua própria caixa de colisão (AABB).
+     * Loads an OBJ file and separates groups ('g' or 'o' tags) into distinct
+     * GameObjects.
+     * This allows each part of the model to have its own collision box (AABB).
      */
     public static List<GameObject> loadScene(String filePath, Color fallbackColor) {
         List<GameObject> objects = new ArrayList<>();
-        
+
         List<Double[]> rawVertices = new ArrayList<>();
         List<Double[]> rawUVs = new ArrayList<>();
-        List<Vertex> globalVertices = new ArrayList<>(); // Vértices finais (V + VT)
+        List<Vertex> globalVertices = new ArrayList<>(); // Final vertices (V + VT)
         Map<String, Integer> vertexCache = new HashMap<>(); // Cache "vIdx/vtIdx" -> globalIndex
-        
-        // Mapa de Grupo -> Lista de Triângulos (usando índices globais)
+
+        // Group Map -> Triangle List (using global indices)
         Map<String, List<Triangle>> groups = new HashMap<>();
         Map<String, Color> materials = new HashMap<>();
         Map<String, Texture> textures = new HashMap<>();
-        
+
         String currentGroup = "default";
         Color currentColor = fallbackColor;
         Texture currentTexture = null;
@@ -139,46 +139,43 @@ public class ObjLoader {
 
                 if (line.startsWith("mtllib ")) {
                     loadMaterials(parentDir + line.split("\\s+")[1], materials, textures);
-                } 
-                else if (line.startsWith("usemtl ")) {
+                } else if (line.startsWith("usemtl ")) {
                     String mtlName = line.split("\\s+")[1];
                     currentColor = materials.getOrDefault(mtlName, fallbackColor);
                     currentTexture = textures.get(mtlName);
                 }
-                // Detecta troca de objeto ou grupo
+                // Detects object or group switch
                 else if (line.startsWith("o ") || line.startsWith("g ")) {
                     String rawName = line.substring(2).trim();
                     currentGroup = rawName;
-                    
-                    // Garante nomes únicos. Se "cube" já existe, cria "cube_1", "cube_2", etc.
+
+                    // Ensures unique names. If "cube" already exists, creates "cube_1", "cube_2",
+                    // etc.
                     int id = 1;
                     while (groups.containsKey(currentGroup)) {
                         currentGroup = rawName + "_" + id++;
                     }
                     groups.put(currentGroup, new ArrayList<>());
-                }
-                else if (line.startsWith("v ")) {
+                } else if (line.startsWith("v ")) {
                     String[] tokens = line.split("\\s+");
-                    rawVertices.add(new Double[]{
-                        Double.parseDouble(tokens[1]),
-                        Double.parseDouble(tokens[2]),
-                        Double.parseDouble(tokens[3])
+                    rawVertices.add(new Double[] {
+                            Double.parseDouble(tokens[1]),
+                            Double.parseDouble(tokens[2]),
+                            Double.parseDouble(tokens[3])
                     });
-                }
-                else if (line.startsWith("vt ")) {
+                } else if (line.startsWith("vt ")) {
                     String[] tokens = line.split("\\s+");
-                    rawUVs.add(new Double[]{
-                        Double.parseDouble(tokens[1]),
-                        Double.parseDouble(tokens[2])
+                    rawUVs.add(new Double[] {
+                            Double.parseDouble(tokens[1]),
+                            Double.parseDouble(tokens[2])
                     });
-                }
-                else if (line.startsWith("f ")) {
+                } else if (line.startsWith("f ")) {
                     String[] tokens = line.split("\\s+");
                     int v1 = processVertex(tokens[1], rawVertices, rawUVs, globalVertices, vertexCache);
                     int v2 = processVertex(tokens[2], rawVertices, rawUVs, globalVertices, vertexCache);
                     int v3 = processVertex(tokens[3], rawVertices, rawUVs, globalVertices, vertexCache);
 
-                    // Adiciona o triângulo à lista do grupo atual
+                    // Adds triangle to current group list
                     groups.get(currentGroup).add(new Triangle(v1, v2, v3, currentColor, currentTexture));
 
                     if (tokens.length > 4) {
@@ -188,25 +185,26 @@ public class ObjLoader {
                 }
             }
 
-            // Processa os grupos para criar GameObjects individuais
+            // Processes groups to create individual GameObjects
             for (Map.Entry<String, List<Triangle>> entry : groups.entrySet()) {
                 List<Triangle> groupTris = entry.getValue();
-                if (groupTris.isEmpty()) continue;
+                if (groupTris.isEmpty())
+                    continue;
 
                 List<Vertex> localVertices = new ArrayList<>();
                 List<Triangle> localTris = new ArrayList<>();
                 Map<Integer, Integer> globalToLocalMap = new HashMap<>();
 
                 for (Triangle t : groupTris) {
-                    // Remapeia os índices globais para locais deste novo Mesh
+                    // Remaps global indices to locals for this new Mesh
                     int localV1 = mapVertex(t.v1, globalVertices, localVertices, globalToLocalMap);
                     int localV2 = mapVertex(t.v2, globalVertices, localVertices, globalToLocalMap);
                     int localV3 = mapVertex(t.v3, globalVertices, localVertices, globalToLocalMap);
-                    
+
                     localTris.add(new Triangle(localV1, localV2, localV3, t.baseColor, t.texture));
                 }
 
-                // Cria o objeto apenas com os vértices que ele usa (gera AABB correta)
+                // Creates object only with vertices it uses (generates correct AABB)
                 objects.add(new GameObject(new Mesh(localVertices, localTris)));
             }
 
@@ -217,9 +215,11 @@ public class ObjLoader {
         return objects;
     }
 
-    // Converte a string de índice "v/vt/vn" em um Vertex real com UVs e gerencia o cache
-    private static int processVertex(String token, List<Double[]> rawV, List<Double[]> rawVT, List<Vertex> finalVertices, Map<String, Integer> cache) {
-        if (cache.containsKey(token)) return cache.get(token);
+    // Converts index string "v/vt/vn" into real Vertex with UVs and manages cache
+    private static int processVertex(String token, List<Double[]> rawV, List<Double[]> rawVT,
+            List<Vertex> finalVertices, Map<String, Integer> cache) {
+        if (cache.containsKey(token))
+            return cache.get(token);
 
         String[] parts = token.split("/");
         int vIdx = Integer.parseInt(parts[0]) - 1;
@@ -240,12 +240,14 @@ public class ObjLoader {
         return newIdx;
     }
 
-    // Auxiliar para remapear vértices globais para locais
-    private static int mapVertex(int globalIdx, List<Vertex> globalData, List<Vertex> localData, Map<Integer, Integer> map) {
-        if (map.containsKey(globalIdx)) return map.get(globalIdx);
+    // Helper to remap global vertices to local ones
+    private static int mapVertex(int globalIdx, List<Vertex> globalData, List<Vertex> localData,
+            Map<Integer, Integer> map) {
+        if (map.containsKey(globalIdx))
+            return map.get(globalIdx);
         Vertex v = globalData.get(globalIdx);
         Vertex newV = new Vertex(v.x, v.y, v.z);
-        newV.u = v.u; // Clona UV
+        newV.u = v.u; // Clone UV
         newV.v = v.v;
         localData.add(newV);
         int newIdx = localData.size() - 1;
@@ -254,7 +256,7 @@ public class ObjLoader {
     }
 
     /**
-     * Lê o arquivo .mtl e extrai as cores Diffuse (Kd)
+     * Reads .mtl file and extracts Diffuse colors (Kd)
      */
     private static void loadMaterials(String mtlPath, Map<String, Color> materials, Map<String, Texture> textures) {
         File mtlFile = new File(mtlPath);
@@ -270,15 +272,14 @@ public class ObjLoader {
                 if (line.startsWith("newmtl ")) {
                     currentMtlName = line.split("\\s+")[1];
                 } else if (line.startsWith("Kd ")) {
-                    // Kd define a cor RGB (valores de 0.0 a 1.0)
+                    // Kd defines RGB color (values 0.0 to 1.0)
                     String[] tokens = line.split("\\s+");
                     float r = Float.parseFloat(tokens[1]);
                     float g = Float.parseFloat(tokens[2]);
                     float b = Float.parseFloat(tokens[3]);
                     materials.put(currentMtlName, new Color(r, g, b));
-                }
-                else if (line.startsWith("map_Kd ")) {
-                    // Carrega a textura
+                } else if (line.startsWith("map_Kd ")) {
+                    // Loads texture
                     String texFile = line.split("\\s+")[1];
                     textures.put(currentMtlName, new Texture(parentDir + texFile));
                 }

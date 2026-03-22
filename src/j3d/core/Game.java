@@ -25,16 +25,16 @@ import j3d.ui.HUD;
  */
 public class Game implements Runnable {
 
-    // Constantes para a resolução da janela
+    // Window resolution constants
     private static final int WIDTH = 1366;
     private static final int HEIGHT = 768;
 
-    // Variáveis de estado do jogo
+    // Game state variables
     private boolean running = true;
     private boolean wireframe = false;
     private boolean showLightGizmo = false;
 
-    // Componentes do jogo
+    // Game components
     private Window window;
     private IRenderer renderer;
     private InputManager input;
@@ -49,7 +49,7 @@ public class Game implements Runnable {
     // UI / HUD
     private HUD hud;
 
-    // Controle de FPS
+    // FPS Control
     private int TARGET_FPS = 120;
     private int fps = 0;
     private int frames = 0;
@@ -57,18 +57,18 @@ public class Game implements Runnable {
     private int windowCenterX = WIDTH / 2;
     private int windowCenterY = HEIGHT / 2;
 
-    // Física do Jogador
+    // Player Physics
     private double verticalVelocity = 0;
     private boolean isGrounded = false;
-    private static final double GRAVITY = -25.0; // Aceleração da gravidade
-    private static final double JUMP_FORCE = 10.0; // Força do pulo
+    private static final double GRAVITY = -25.0; // Gravity acceleration
+    private static final double JUMP_FORCE = 10.0; // Jump force
 
     /**
-     * Construtor do jogo, onde inicializamos a janela, o renderer, a câmera, os
-     * objetos e as luzes.
+     * Game constructor, where we initialize the window, renderer, camera,
+     * objects, and lights.
      */
     public Game() {
-        // Inicialização do jogo
+        // Game initialization
         window = new Window("Engine 3D - J3D Game", WIDTH, HEIGHT);
         input = new InputManager();
         camera = new Camera();
@@ -79,7 +79,7 @@ public class Game implements Runnable {
         physics = new PhysicsEngine();
         hud = new HUD(WIDTH, HEIGHT);
 
-        // Inicialização do renderer
+        // Renderer initialization
         renderer.init();
 
         try {
@@ -87,51 +87,51 @@ public class Game implements Runnable {
         } catch (Exception e) {
         }
 
-        // Esconde o cursor
+        // Hides the cursor
         window.getFrame().setCursor(window.getFrame().getToolkit().createCustomCursor(
                 new BufferedImage(1, 1, 2), new Point(0, 0), ""));
 
-        // Configuração inicial dos objetos da cena
+        // Initial scene object configuration
         this.getSceneInitialObjets();
 
-        // Configuração inicial da câmera
+        // Initial camera configuration
         this.initialSceneCameraConfiguration();
 
-        // Configuração dos listeners de input
+        // Input listener configuration
         window.getFrame().addKeyListener(input);
         window.getFrame().addMouseMotionListener(input);
         window.getFrame().addMouseWheelListener(input);
 
-        // Garante que a janela receba o foco do teclado imediatamente ao iniciar
+        // Ensures window gets keyboard focus immediately upon starting
         window.getFrame().requestFocus();
     }
 
     /**
-     * Configura a posição e orientação inicial da câmera para uma visão adequada da
-     * cena.
+     * Sets up the initial camera position and orientation for a proper view of the
+     * scene.
      */
     private void initialSceneCameraConfiguration() {
-        // Configuração inicial da câmera
-        // Posiciona o jogador no CENTRO da primeira sala (Sala Esquerda)
+        // Initial camera configuration
+        // Positions the player in the CENTER of the first room (Left Room)
         // Indices (1.5, 2.0) * blockSize (10.0)
         camera.transform.x = 15.0;
         camera.transform.z = 20.0;
-        camera.transform.y = 7.5; // Altura dos olhos ajustada para o novo pé direito
+        camera.transform.y = 7.5; // Eye height adjusted for new ceiling height
 
-        // Orientação validada
+        // Validated orientation
         camera.yaw = 0;
         camera.pitch = 0;
     }
 
     /**
-     * Helper para criar blocos sólidos (Paredes, Pisos, Degraus).
-     * Usa o cubo padrão e ajusta a escala e posição.
+     * Helper to create solid blocks (Walls, Floors, Steps).
+     * Uses standard cube and adjusts scale and position.
      */
     private void createBlock(double x, double y, double z, double sX, double sY, double sZ, Color color) {
-        // Cria o cubo base
+        // Creates base cube
         Mesh m = Mesh.createCube();
-        
-        // Opcional: Pintar o cubo de uma cor sólida para ficar mais bonito que o arco-íris padrão
+
+        // Optional: Paint the cube a solid color to look better than standard rainbow
         if (color != null) {
             for (j3d.geometry.Triangle t : m.triangles) {
                 t.baseColor = color;
@@ -145,71 +145,71 @@ public class Game implements Runnable {
         obj.transform.scaleX = sX;
         obj.transform.scaleY = sY;
         obj.transform.scaleZ = sZ;
-        
+
         objects.add(obj);
     }
 
     /**
-     * Configura os objetos iniciais da cena, incluindo formas básicas, um modelo 3D
-     * importado e uma luz.
+     * Sets up the initial scene objects, including basic shapes, an imported 3D
+     * model, and a light.
      */
     private void getSceneInitialObjets() {
-        // Cores para o cenário
+        // Scenery colors
         Color floorColor = new Color(50, 50, 50);
         Color wallColor = new Color(100, 100, 120);
-        Color platformColor = new Color(150, 100, 50); // Madeira escura
-        Color stairColor = new Color(180, 120, 60);    // Madeira clara
+        Color platformColor = new Color(150, 100, 50); // Dark Wood
+        Color stairColor = new Color(180, 120, 60); // Light Wood
         Color pillarColor = new Color(80, 80, 80);
 
-        // 1. CHÃO PRINCIPAL (Nível 0)
-        // Cria um chão grande (Scale X=50, Z=50)
-        // Nota: O cubo vai de -1 a 1, então scale 50 gera um tamanho total de 100.
+        // 1. MAIN FLOOR (Level 0)
+        // Creates a large floor (Scale X=50, Z=50)
+        // Note: Cube goes from -1 to 1, so scale 50 generates a total size of 100.
         createBlock(0, -1.0, 0, 50, 1, 50, floorColor);
 
-        // 2. PAREDES EXTERNAS (Arena)
-        // Paredes altas ao redor
-        createBlock(-50, 10, 0, 1, 20, 50, wallColor); // Parede Esquerda
-        createBlock(50, 10, 0, 1, 20, 50, wallColor);  // Parede Direita
-        createBlock(0, 10, 50, 50, 20, 1, wallColor);  // Parede Fundo
-        createBlock(0, 10, -50, 50, 20, 1, wallColor); // Parede Frente
+        // 2. EXTERNAL WALLS (Arena)
+        // High surrounding walls
+        createBlock(-50, 10, 0, 1, 20, 50, wallColor); // Left Wall
+        createBlock(50, 10, 0, 1, 20, 50, wallColor); // Right Wall
+        createBlock(0, 10, 50, 50, 20, 1, wallColor); // Back Wall
+        createBlock(0, 10, -50, 50, 20, 1, wallColor); // Front Wall
 
-        // 3. MEZANINO (Segundo Andar)
-        // Uma plataforma elevada em Y=10, ocupando o fundo da sala
+        // 3. MEZZANINE (Second Floor)
+        // An elevated platform at Y=10, occupying the back of the room
         double mezaninoY = 10.0;
         createBlock(0, mezaninoY, 30, 30, 1, 15, platformColor);
 
-        // Pilares de sustentação do mezanino (Visual)
+        // Mezzanine support pillars (Visual)
         createBlock(-25, 0, 40, 2, mezaninoY, 2, pillarColor);
         createBlock(25, 0, 40, 2, mezaninoY, 2, pillarColor);
         createBlock(-25, 0, 20, 2, mezaninoY, 2, pillarColor);
         createBlock(25, 0, 20, 2, mezaninoY, 2, pillarColor);
 
-        // 4. ESCADARIA CENTRAL
-        // Cria degraus subindo do chão até o mezanino
-        double startZ = 10.0; // Começa um pouco antes do mezanino
+        // 4. CENTRAL STAIRCASE
+        // Creates steps rising from floor to mezzanine
+        double startZ = 10.0; // Starts a bit before mezzanine
         double startY = 0.0;
         int steps = 10;
-        double stepHeight = mezaninoY / steps; // 1.0 de altura por degrau
+        double stepHeight = mezaninoY / steps; // 1.0 height per step
         double stepDepth = 2.0;
         double stepWidth = 8.0;
 
         for (int i = 0; i < steps; i++) {
-            // Cada degrau sobe em Y e avança em Z
+            // Each step goes up in Y and forward in Z
             double y = startY + (i * stepHeight);
             double z = startZ + (i * stepDepth);
-            
-            // O Y do createBlock é o centro do objeto. 
-            // Se o degrau tem altura 'stepHeight', o centro deve ser ajustado.
+
+            // The Y in createBlock is the object center.
+            // If step has height 'stepHeight', center must be adjusted.
             createBlock(0, y, z, stepWidth, stepHeight, stepDepth, stairColor);
         }
 
-        // 5. PASSARELA SUPERIOR (Ponte)
-        // Conecta o mezanino a uma varanda lateral
-        createBlock(-35, mezaninoY, 10, 5, 1, 20, platformColor); // Ponte lateral esquerda
-        createBlock(-45, mezaninoY, -10, 5, 1, 5, platformColor); // Pequena varanda
+        // 5. UPPER WALKWAY (Bridge)
+        // Connects mezzanine to a side balcony
+        createBlock(-35, mezaninoY, 10, 5, 1, 20, platformColor); // Left side bridge
+        createBlock(-45, mezaninoY, -10, 5, 1, 5, platformColor); // Small balcony
 
-        // leitura do modelo 3D da cena, com textura e cor
-        // Usa loadScene para separar os móveis/paredes em objetos com colisões individuais
+        // read 3D scene model, with texture and color
+        // Uses loadScene to separate furniture/walls into individual collision objects
         List<GameObject> sceneObjects = ObjLoader.loadScene("res/sala.obj", Color.LIGHT_GRAY);
         for (GameObject obj : sceneObjects) {
             obj.transform.y = -0.5;
@@ -219,22 +219,22 @@ public class Game implements Runnable {
             objects.add(obj);
         }
 
-        // Configuração da luz
-        lights.add(new PointLight(0, 0, 0, Color.WHITE, 2)); // Luz "Lanterna"
+        // Light configuration
+        lights.add(new PointLight(0, 0, 0, Color.WHITE, 2)); // "Flashlight" Light
         lightGizmo = new GameObject(Mesh.createSphere(0.2, 8, 8));
         gizmoList.add(lightGizmo);
     }
 
     /**
-     * Atualiza o estado do jogo, processando o input do usuário para movimentar a
-     * câmera e a luz, e atualizando a rotação dos objetos. Também calcula o FPS
-     * atual e atualiza o título da janela com essa informação.
+     * Updates game state, processing user input to move camera and light,
+     * and updating object rotation. Also calculates current FPS and updates
+     * window title with this information.
      */
     private void update(double deltaTime) {
-        // Correção de velocidade baseada no FPS para garantir movimento consistente
+        // Speed correction based on FPS to ensure consistent movement
         double speedCorrection = deltaTime * 60.0;
 
-        // Toggle de modos de renderização e visualização
+        // Toggle rendering and visualization modes
         if (input.isKeyPressed(KeyEvent.VK_F2))
             wireframe = !wireframe;
         if (input.isKeyPressed(KeyEvent.VK_F3))
@@ -243,7 +243,7 @@ public class Game implements Runnable {
             GameObject.gouraud = !GameObject.gouraud;
 
         if (input.isKeyPressed(KeyEvent.VK_F5)) {
-            // Supondo que você faça um cast se a sua variável renderer for uma interface
+            // Assuming you cast if your renderer variable is an interface
             if (renderer instanceof SoftwareRenderer) {
                 SoftwareRenderer sr = (SoftwareRenderer) renderer;
                 sr.ssaaEnabled = !sr.ssaaEnabled;
@@ -262,10 +262,10 @@ public class Game implements Runnable {
         if (input.isKeyPressed(KeyEvent.VK_ESCAPE))
             System.exit(0);
 
-        // Movimento da câmera com mouse
+        // Camera movement with mouse
         if (window.getFrame().isFocusOwner()) {
-            
-            // Calcula o deslocamento do mouse a partir do centro da janela
+
+            // Calculates mouse displacement from window center
             int dx = input.getMouseX() - windowCenterX;
             int dy = input.getMouseY() - windowCenterY;
 
@@ -277,42 +277,43 @@ public class Game implements Runnable {
             }
         }
 
-        // --- FÍSICA VERTICAL (Gravidade e Pulo) ---
-        
-        // Aplica gravidade na velocidade vertical
+        // --- VERTICAL PHYSICS (Gravity and Jump) ---
+
+        // Applies gravity to vertical velocity
         verticalVelocity += GRAVITY * deltaTime;
 
-        // Pulo (apenas se estiver no chão)
+        // Jump (only if grounded)
         if (input.isKeyPressed(KeyEvent.VK_SPACE) && isGrounded) {
             verticalVelocity = JUMP_FORCE;
             isGrounded = false;
         }
 
-        // Aplica velocidade vertical e resolve colisão
+        // Applies vertical velocity and resolves collision
         double dy = verticalVelocity * deltaTime;
         double nextY = camera.transform.y + dy;
 
         if (physics.checkPlayerCollision(camera.transform.x, nextY, camera.transform.z, objects)) {
-            if (verticalVelocity < 0) { 
-                isGrounded = true; // Colidiu caindo -> Chão
+            if (verticalVelocity < 0) {
+                isGrounded = true; // Collided falling -> Floor
                 verticalVelocity = 0;
             } else if (verticalVelocity > 0) {
-                verticalVelocity = 0; // Colidiu subindo -> Teto
+                verticalVelocity = 0; // Collided rising -> Ceiling
             }
-            // Se colidiu, não atualiza o Y (impede atravessar)
+            // If collided, do not update Y (prevents clipping)
         } else {
             camera.transform.y = nextY;
-            isGrounded = false; // Se moveu livremente no Y, está no ar (ou caindo)
+            isGrounded = false; // Moved freely in Y, is in air (or falling)
         }
 
-        // Movimento da câmera com teclado (WASD)
+        // Camera movement with keyboard (WASD)
         double baseSpeed = 0.3;
         try {
-            // Dobra a velocidade se Caps Lock estiver ativado (modo "sprint")
+            // Doubles speed if Caps Lock is active ("sprint" mode)
             if (Toolkit.getDefaultToolkit().getLockingKeyState(KeyEvent.VK_CAPS_LOCK)) {
-                baseSpeed *= 2; // Dobra a velocidade
+                baseSpeed *= 2; // Doubles speed
             }
-        } catch (Exception e) { }
+        } catch (Exception e) {
+        }
 
         double camSp = baseSpeed * speedCorrection;
         double sY = Math.sin(camera.yaw);
@@ -338,25 +339,24 @@ public class Game implements Runnable {
             dz += sY * camSp;
         }
 
-        // Aplica movimento no eixo X se não houver colisão
+        // Applies movement on X axis if no collision
         if (!physics.checkPlayerCollision(camera.transform.x + dx, camera.transform.y, camera.transform.z, objects)) {
             camera.transform.x += dx;
         }
 
-        // Aplica movimento no eixo Z se não houver colisão (permite deslizar nas
-        // paredes)
+        // Applies movement on Z axis if no collision (allows sliding on walls)
         if (!physics.checkPlayerCollision(camera.transform.x, camera.transform.y, camera.transform.z + dz, objects)) {
             camera.transform.z += dz;
         }
 
-        // Lógica da Luz (Lanterna)
-        // A luz segue a posição da câmera, mas um pouco à frente
+        // Light Logic (Flashlight)
+        // Light follows camera position, but slightly ahead
         j3d.lighting.PointLight spot = lights.get(0);
         spot.pos.x = camera.transform.x;
         spot.pos.y = camera.transform.y;
         spot.pos.z = camera.transform.z;
 
-        // Controles manuais da luz (opcional, mantido para debug)
+        // Manual light controls (optional, kept for debug)
         double lSp = 0.3 * speedCorrection;
         if (input.isKeyHeld(KeyEvent.VK_U))
             spot.pos.z -= lSp;
@@ -375,15 +375,14 @@ public class Game implements Runnable {
         lightGizmo.transform.y = spot.pos.y;
         lightGizmo.transform.z = spot.pos.z;
 
-        // Atualização do FPS
+        // FPS Update
         frames++;
         if (System.currentTimeMillis() - lastFpsTime >= 1000) {
             fps = frames;
             frames = 0;
             lastFpsTime = System.currentTimeMillis();
 
-            // Atualiza a posição da janela apenas uma vez por segundo (se o usuário moveu a
-            // janela)
+            // Updates window position only once per second (if user moved the window)
             try {
                 Point loc = window.getFrame().getLocationOnScreen();
                 windowCenterX = loc.x + window.getFrame().getWidth() / 2;
@@ -404,7 +403,7 @@ public class Game implements Runnable {
 
         while (running) {
             long now = System.nanoTime();
-            // Calcula o tempo decorrido desde o último frame em segundos
+            // Calculates elapsed time since last frame in seconds
             double deltaTime = (now - lastTime) / 1_000_000_000.0;
             lastTime = now;
 

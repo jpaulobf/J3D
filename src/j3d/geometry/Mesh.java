@@ -120,42 +120,42 @@ public class Mesh {
             }
         }
 
-        // --- Extrusão para criar a caixa (Box) ---
-        double height = 1.0; // Espessura do chão
+        // --- Extrusion to create the Box ---
+        double height = 1.0; // Floor thickness
         double min = -half * tileSize;
         double max = half * tileSize;
-        Color sideColor = new Color(30, 30, 30); // Cor cinza escuro para as laterais
+        Color sideColor = new Color(30, 30, 30); // Dark gray for sides
 
-        // Adiciona os 4 vértices da base
+        // Adds the 4 base vertices
         int baseIdx = m.vertices.size();
-        m.vertices.add(new Vertex(min, -height, min)); // 0: Trás-Esquerda (Base)
-        m.vertices.add(new Vertex(max, -height, min)); // 1: Trás-Direita (Base)
-        m.vertices.add(new Vertex(max, -height, max)); // 2: Frente-Direita (Base)
-        m.vertices.add(new Vertex(min, -height, max)); // 3: Frente-Esquerda (Base)
+        m.vertices.add(new Vertex(min, -height, min)); // 0: Back-Left (Base)
+        m.vertices.add(new Vertex(max, -height, min)); // 1: Back-Right (Base)
+        m.vertices.add(new Vertex(max, -height, max)); // 2: Front-Right (Base)
+        m.vertices.add(new Vertex(min, -height, max)); // 3: Front-Left (Base)
 
-        // Índices dos cantos da superfície superior já existentes
-        int topBL = 0; // Trás-Esquerda (Topo)
-        int topBR = size; // Trás-Direita (Topo)
-        int topFL = size * row; // Frente-Esquerda (Topo)
-        int topFR = size * row + size; // Frente-Direita (Topo)
+        // Top surface corner indices already exist
+        int topBL = 0; // Back-Left (Top)
+        int topBR = size; // Back-Right (Top)
+        int topFL = size * row; // Front-Left (Top)
+        int topFR = size * row + size; // Front-Right (Top)
 
-        // Face Traseira (Z = min)
+        // Back Face (Z = min)
         m.triangles.add(new Triangle(topBL, topBR, baseIdx + 0, sideColor));
         m.triangles.add(new Triangle(baseIdx + 0, topBR, baseIdx + 1, sideColor));
 
-        // Face Frontal (Z = max)
+        // Front Face (Z = max)
         m.triangles.add(new Triangle(topFL, baseIdx + 3, topFR, sideColor));
         m.triangles.add(new Triangle(baseIdx + 3, baseIdx + 2, topFR, sideColor));
 
-        // Face Esquerda (X = min)
+        // Left Face (X = min)
         m.triangles.add(new Triangle(topBL, baseIdx + 0, topFL, sideColor));
         m.triangles.add(new Triangle(baseIdx + 0, baseIdx + 3, topFL, sideColor));
 
-        // Face Direita (X = max)
+        // Right Face (X = max)
         m.triangles.add(new Triangle(topBR, topFR, baseIdx + 1, sideColor));
         m.triangles.add(new Triangle(baseIdx + 1, topFR, baseIdx + 2, sideColor));
 
-        // Face Inferior (Fundo)
+        // Bottom Face
         m.triangles.add(new Triangle(baseIdx + 0, baseIdx + 1, baseIdx + 2, sideColor));
         m.triangles.add(new Triangle(baseIdx + 0, baseIdx + 2, baseIdx + 3, sideColor));
 
