@@ -114,7 +114,7 @@ public class Mesh {
         for (int z = 0; z < size; z++) {
             for (int x = 0; x < size; x++) {
                 int i = z * row + x;
-                Color col = (x + z) % 2 == 0 ? new Color(200, 200, 200) : new Color(100, 100, 100);
+                Color col = (x + z) % 2 == 0 ? Color.WHITE : new Color(30, 30, 30); // Checkered Flag Style
                 m.triangles.add(new Triangle(i, i + row, i + 1, col));
                 m.triangles.add(new Triangle(i + 1, i + row, i + row + 1, col));
             }

@@ -56,10 +56,19 @@ public class SoftwareRenderer implements IRenderer {
     @Override
     public void clear() {
         if (ssaaEnabled) {
-            Arrays.fill(hrPixels, 0xFF87CEEB);
+            int h = height * 2;
+            int w = width * 2;
+            for (int y = 0; y < h; y++) {
+                // Gradiente vertical: Azul Profundo (Topo) -> Azul Claro (Baixo)
+                int color = interpolateColor(0xFF1E90FF, 0xFF87CEEB, (float) y / h);
+                Arrays.fill(hrPixels, y * w, y * w + w, color);
+            }
             Arrays.fill(hrZBuffer, 0.0);
         } else {
-            Arrays.fill(pixels, 0xFF87CEEB);
+            for (int y = 0; y < height; y++) {
+                int color = interpolateColor(0xFF1E90FF, 0xFF87CEEB, (float) y / height);
+                Arrays.fill(pixels, y * width, y * width + width, color);
+            }
             Arrays.fill(zBuffer, 0.0);
         }
     }
@@ -228,5 +237,24 @@ public class SoftwareRenderer implements IRenderer {
     @Override
     public boolean isSsaaEnabled() {
         return ssaaEnabled;
+    }
+
+    /**
+     * Interpolates between two colors based on a ratio t (0.0 to 1.0).
+     */
+    private int interpolateColor(int c1, int c2, float t) {
+        int r1 = (c1 >> 16) & 0xFF;
+        int g1 = (c1 >> 8) & 0xFF;
+        int b1 = c1 & 0xFF;
+
+        int r2 = (c2 >> 16) & 0xFF;
+        int g2 = (c2 >> 8) & 0xFF;
+        int b2 = c2 & 0xFF;
+
+        int r = (int) (r1 + (r2 - r1) * t);
+        int g = (int) (g1 + (g2 - g1) * t);
+        int b = (int) (b1 + (b2 - b1) * t);
+
+        return (0xFF << 24) | (r << 16) | (g << 8) | b;
     }
 }

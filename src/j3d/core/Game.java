@@ -114,8 +114,8 @@ public class Game implements Runnable {
         // Initial camera configuration
         // Positions the player in the CENTER of the first room (Left Room)
         // Indices (1.5, 2.0) * blockSize (10.0)
-        camera.transform.x = 15.0;
-        camera.transform.z = 20.0;
+        camera.transform.x = 30.0;
+        camera.transform.z = 5.0;
         camera.transform.y = 7.5; // Eye height adjusted for new ceiling height
 
         // Validated orientation
@@ -156,15 +156,15 @@ public class Game implements Runnable {
     private void getSceneInitialObjets() {
         // Scenery colors
         Color floorColor = new Color(50, 50, 50);
-        Color wallColor = new Color(100, 100, 120);
+        Color wallColor = new Color(245, 235, 205); // Beige / Creme claro
         Color platformColor = new Color(150, 100, 50); // Dark Wood
         Color stairColor = new Color(180, 120, 60); // Light Wood
         Color pillarColor = new Color(80, 80, 80);
 
         // 1. MAIN FLOOR (Level 0)
-        // Creates a large floor (Scale X=50, Z=50)
-        // Note: Cube goes from -1 to 1, so scale 50 generates a total size of 100.
-        createBlock(0, -1.0, 0, 50, 1, 50, floorColor);
+        // Creates a checkered grid floor
+        GameObject floor = new GameObject(Mesh.createGrid(20, 5.0)); // 20x20 blocks of size 5 (Total 100x100)
+        objects.add(floor);
 
         // 2. EXTERNAL WALLS (Arena)
         // High surrounding walls
