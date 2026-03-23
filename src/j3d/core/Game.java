@@ -98,7 +98,8 @@ public class Game implements Runnable {
                     new BufferedImage(1, 1, 2), new Point(0, 0), ""));
         }
 
-        // Release the OpenGL context from the Main thread so the Game thread can claim it later
+        // Release the OpenGL context from the Main thread so the Game thread can claim
+        // it later
         window.releaseContext();
 
         // Initial scene object configuration
@@ -114,7 +115,7 @@ public class Game implements Runnable {
             window.getFrame().addKeyListener(input);
             window.getFrame().addMouseMotionListener(input);
             window.getFrame().addMouseWheelListener(input);
-            
+
             // Ensures window gets keyboard focus immediately upon starting
             window.getFrame().requestFocus();
         }
@@ -405,7 +406,7 @@ public class Game implements Runnable {
 
         long lastTime = System.nanoTime();
         double delta = 0;
-        
+
         long timer = System.currentTimeMillis();
         int framesCount = 0; // Local variable to count frames
 
@@ -441,13 +442,13 @@ public class Game implements Runnable {
                 } catch (InterruptedException e) {
                 }
             }
-            
+
             // FPS counter update (1 second)
             if (System.currentTimeMillis() - timer >= 1000) {
                 fps = framesCount;
                 framesCount = 0;
                 timer += 1000;
-                
+
                 // Recalculates window center (in case user moves it)
                 try {
                     if (window.getFrame() != null) {
