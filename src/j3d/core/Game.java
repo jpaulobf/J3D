@@ -52,8 +52,6 @@ public class Game implements Runnable {
     // FPS Control
     private int TARGET_FPS = 60;
     private int fps = 0;
-    private int frames = 0;
-    private long lastFpsTime = System.currentTimeMillis();
     private int windowCenterX = WIDTH / 2;
     private int windowCenterY = HEIGHT / 2;
 
