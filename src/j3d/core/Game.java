@@ -26,8 +26,8 @@ import j3d.ui.HUD;
 public class Game implements Runnable {
 
     // Window resolution constants
-    private static final int WIDTH = 1920;
-    private static final int HEIGHT = 1080;
+    private static final int WIDTH = 1600;
+    private static final int HEIGHT = 900;
 
     // Game state variables
     private boolean running = true;
