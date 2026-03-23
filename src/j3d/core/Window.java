@@ -14,6 +14,8 @@ public class Window implements IGameWindow {
     private BufferedImage canvas;
     private int[] canvasPixels;
     private boolean closeRequested = false;
+    private int originalWidth;
+    private int originalHeight;
 
     /**
      * Constructor for the Window class, where we initialize the JFrame, set it to
@@ -24,6 +26,8 @@ public class Window implements IGameWindow {
      * @param height
      */
     public Window(String title, int width, int height) {
+        this.originalWidth = width;
+        this.originalHeight = height;
         frame = new JFrame(title);
         frame.setUndecorated(true); // Removes borders and title bar
         canvas = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
@@ -114,5 +118,23 @@ public class Window implements IGameWindow {
     @Override
     public Point getLocationOnScreen() {
         return frame.getLocationOnScreen();
+    }
+
+    @Override
+    public void toggleFullscreen() {
+        frame.dispose(); // Required to change decorated status
+        
+        boolean isCurrentlyUndecorated = frame.isUndecorated();
+        frame.setUndecorated(!isCurrentlyUndecorated);
+
+        if (!isCurrentlyUndecorated) { // Switch to Fullscreen (Undecorated)
+            frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
+        } else { // Switch to Windowed (Decorated)
+            frame.setExtendedState(JFrame.NORMAL);
+            frame.setSize(originalWidth, originalHeight);
+            frame.setLocationRelativeTo(null);
+        }
+        
+        frame.setVisible(true);
     }
 }

@@ -9,6 +9,8 @@ import j3d.geometry.Triangle;
 import j3d.geometry.Vertex;
 import j3d.lighting.PointLight;
 import java.awt.Color;
+import java.nio.ByteBuffer;
+import org.lwjgl.BufferUtils;
 
 /**
  * OpenGLRenderer class implementing the IRenderer interface, responsible for
@@ -18,6 +20,7 @@ public class OpenGLRenderer implements IRenderer {
 
     private int width = 0;
     private int height = 0;
+    private int hudTextureId = -1; // Cache for the HUD texture ID
 
     /**
      * Constructor for OpenGLRenderer.
@@ -26,6 +29,11 @@ public class OpenGLRenderer implements IRenderer {
      * @param height
      */
     public OpenGLRenderer(int width, int height) {
+        this.width = width;
+        this.height = height;
+    }
+
+    public void setWidthHeight(int width, int height) {
         this.width = width;
         this.height = height;
     }
@@ -175,10 +183,66 @@ public class OpenGLRenderer implements IRenderer {
      */
     @Override
     public void drawSprite(int[] spritePixels, int spriteW, int spriteH, int x, int y) {
-        // Drawing 2D sprites in OpenGL usually requires textures and Ortho projection.
-        // For now, we will leave this empty as we are focusing on 3D geometry first.
-        // The HUD will disappear temporarily until we implement a Text/Texture
-        // renderer.
+        // 1. Prepare Texture Data
+        // We assume input is ARGB, we need RGBA for OpenGL
+        ByteBuffer buffer = BufferUtils.createByteBuffer(spriteW * spriteH * 4);
+        for (int pixel : spritePixels) {
+            buffer.put((byte) ((pixel >> 16) & 0xFF)); // R
+            buffer.put((byte) ((pixel >> 8) & 0xFF));  // G
+            buffer.put((byte) (pixel & 0xFF));         // B
+            buffer.put((byte) ((pixel >> 24) & 0xFF)); // A
+        }
+        buffer.flip();
+
+        // Create texture ID if not exists
+        if (hudTextureId == -1) {
+            hudTextureId = glGenTextures();
+        }
+
+        // 2. Setup GL State for 2D Overlay
+        glDisable(GL_DEPTH_TEST);       // HUD should draw over everything
+        glDisable(GL_CULL_FACE);        // Disable culling for 2D
+        glDisable(GL_LIGHTING);         // Disable lighting for 2D (use texture colors)
+        glEnable(GL_BLEND);             // Enable Transparency
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glEnable(GL_TEXTURE_2D);
+
+        // Switch to Orthographic Projection (2D Screen Coordinates)
+        glMatrixMode(GL_PROJECTION);
+        glPushMatrix();
+        glLoadIdentity();
+        glOrtho(0, width, height, 0, -1, 1); // Top-left is (0,0)
+
+        glMatrixMode(GL_MODELVIEW);
+        glPushMatrix();
+        glLoadIdentity();
+        glTranslated(x, y, 0); // Position the sprite
+
+        // 3. Upload and Draw Texture
+        glBindTexture(GL_TEXTURE_2D, hudTextureId);
+        // Nearest filter keeps the pixel-art look of your software renderer
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, spriteW, spriteH, 0, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
+
+        glColor4f(1, 1, 1, 1); // White tint to draw texture as-is
+        glBegin(GL_QUADS);
+            glTexCoord2f(0, 0); glVertex2f(0, 0);
+            glTexCoord2f(1, 0); glVertex2f(spriteW, 0);
+            glTexCoord2f(1, 1); glVertex2f(spriteW, spriteH);
+            glTexCoord2f(0, 1); glVertex2f(0, spriteH);
+        glEnd();
+
+        // 4. Restore State
+        glPopMatrix();
+        glMatrixMode(GL_PROJECTION);
+        glPopMatrix();
+        glMatrixMode(GL_MODELVIEW);
+
+        glEnable(GL_DEPTH_TEST);
+        glEnable(GL_CULL_FACE); // Restore Culling for 3D
+        glDisable(GL_BLEND);
+        glDisable(GL_TEXTURE_2D);
     }
 
     /**
@@ -186,11 +250,6 @@ public class OpenGLRenderer implements IRenderer {
      */
     @Override
     public int[] getFrameBuffer() {
-        // OpenGL renders directly to the GPU buffer.
-        // We return null because we don't need to pass an int[] to the AWT Window
-        // anymore.
-        // NOTE: This will break the current Game.java loop until we switch the Window
-        // system.
         return new int[0];
     }
 

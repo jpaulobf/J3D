@@ -106,6 +106,42 @@ public class LwjglWindow implements IGameWindow {
         }
     }
 
+    // --- FULLSCREEN HANDLING ---
+
+    private boolean isFullscreen = false;
+    private int windowedX = 0, windowedY = 0, windowedW = 1280, windowedH = 720;
+
+    @Override
+    public void toggleFullscreen() {
+        isFullscreen = !isFullscreen;
+        long monitor = glfwGetPrimaryMonitor();
+        GLFWVidMode mode = glfwGetVideoMode(monitor);
+
+        if (isFullscreen) {
+            // Store current window position and size before switching
+            try (MemoryStack stack = MemoryStack.stackPush()) {
+                IntBuffer x = stack.mallocInt(1);
+                IntBuffer y = stack.mallocInt(1);
+                IntBuffer w = stack.mallocInt(1);
+                IntBuffer h = stack.mallocInt(1);
+
+                glfwGetWindowPos(windowHandle, x, y);
+                glfwGetWindowSize(windowHandle, w, h);
+
+                windowedX = x.get(0);
+                windowedY = y.get(0);
+                windowedW = w.get(0);
+                windowedH = h.get(0);
+            }
+            // Switch to fullscreen
+            glfwSetWindowMonitor(windowHandle, monitor, 0, 0, mode.width(), mode.height(), mode.refreshRate());
+        } else {
+            // Restore windowed mode
+            glfwSetWindowMonitor(windowHandle, NULL, windowedX, windowedY, windowedW, windowedH, 0);
+        }
+        glfwSwapInterval(1); // Re-enable V-Sync
+    }
+
     // --- INPUT HANDLING ---
 
     public void captureCursor() {
@@ -170,6 +206,7 @@ public class LwjglWindow implements IGameWindow {
             case KeyEvent.VK_F5: return GLFW_KEY_F5;
             case KeyEvent.VK_F6: return GLFW_KEY_F6;
             case KeyEvent.VK_F10: return GLFW_KEY_F10;
+            case KeyEvent.VK_F12: return GLFW_KEY_F12;
             // Light controls
             case KeyEvent.VK_U: return GLFW_KEY_U;
             case KeyEvent.VK_O: return GLFW_KEY_O;

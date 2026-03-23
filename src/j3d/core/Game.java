@@ -8,7 +8,6 @@ import j3d.physics.PhysicsEngine;
 import j3d.geometry.Mesh;
 import j3d.input.InputManager;
 import j3d.io.ObjLoader;
-
 import java.awt.Color;
 import java.awt.Point;
 import java.awt.Robot;
@@ -27,8 +26,8 @@ import j3d.ui.HUD;
 public class Game implements Runnable {
 
     // Window resolution constants
-    private static final int WIDTH = 1600;
-    private static final int HEIGHT = 900;
+    private static final int WIDTH = 1920;
+    private static final int HEIGHT = 1080;
 
     // Game state variables
     private boolean running = true;
@@ -273,6 +272,9 @@ public class Game implements Runnable {
             GameObject.scanline = !GameObject.scanline;
             System.out.println("Scanline Rasterization: " + (GameObject.scanline ? "ON" : "OFF"));
         }
+
+        if (isKeyPressed(KeyEvent.VK_F12))
+            window.toggleFullscreen();
 
         if (isKeyPressed(KeyEvent.VK_ESCAPE))
             System.exit(0);

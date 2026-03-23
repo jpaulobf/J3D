@@ -14,4 +14,5 @@ public interface IGameWindow {
     void makeContextCurrent();
     boolean isFocused();
     Point getLocationOnScreen();
+    void toggleFullscreen();
 }
