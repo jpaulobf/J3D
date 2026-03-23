@@ -105,4 +105,14 @@ public class Window implements IGameWindow {
     public void makeContextCurrent() {
         //do nothing
     }
+
+    @Override
+    public boolean isFocused() {
+        return frame.isFocusOwner();
+    }
+
+    @Override
+    public Point getLocationOnScreen() {
+        return frame.getLocationOnScreen();
+    }
 }

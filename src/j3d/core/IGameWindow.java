@@ -1,5 +1,6 @@
 package j3d.core;
 
+import java.awt.Point;
 import javax.swing.JFrame;
 
 public interface IGameWindow {
@@ -11,4 +12,6 @@ public interface IGameWindow {
     JFrame getFrame();
     void releaseContext();
     void makeContextCurrent();
+    boolean isFocused();
+    Point getLocationOnScreen();
 }

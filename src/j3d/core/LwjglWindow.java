@@ -4,7 +4,8 @@ import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.glfw.GLFWVidMode;
 import org.lwjgl.system.MemoryStack;
 import javax.swing.JFrame;
-
+import java.awt.Point;
+import java.awt.event.KeyEvent;
 import java.nio.IntBuffer;
 
 import static org.lwjgl.glfw.GLFW.*;
@@ -88,5 +89,97 @@ public class LwjglWindow implements IGameWindow {
 
     public void makeContextCurrent() {
         glfwMakeContextCurrent(windowHandle);
+    }
+
+    @Override
+    public boolean isFocused() {
+        return glfwGetWindowAttrib(windowHandle, GLFW_FOCUSED) == GLFW_TRUE;
+    }
+
+    @Override
+    public Point getLocationOnScreen() {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            IntBuffer x = stack.mallocInt(1);
+            IntBuffer y = stack.mallocInt(1);
+            glfwGetWindowPos(windowHandle, x, y);
+            return new Point(x.get(0), y.get(0));
+        }
+    }
+
+    // --- INPUT HANDLING ---
+
+    public void captureCursor() {
+        glfwSetInputMode(windowHandle, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    }
+
+    // Mouse state for delta calculation
+    private double lastX = 0, lastY = 0;
+    private boolean firstMouse = true;
+
+    public Point getMouseDelta() {
+        double[] x = new double[1];
+        double[] y = new double[1];
+        glfwGetCursorPos(windowHandle, x, y);
+
+        if (firstMouse) {
+            lastX = x[0];
+            lastY = y[0];
+            firstMouse = false;
+            return new Point(0, 0);
+        }
+
+        int dx = (int) (x[0] - lastX);
+        int dy = (int) (y[0] - lastY);
+
+        lastX = x[0];
+        lastY = y[0];
+
+        return new Point(dx, dy);
+    }
+
+    public boolean isKeyDown(int awtKeyCode) {
+        int glfwKey = mapAwtToGlfw(awtKeyCode);
+        if (glfwKey == -1) return false;
+        return glfwGetKey(windowHandle, glfwKey) == GLFW_PRESS;
+    }
+
+    private boolean[] keyState = new boolean[GLFW_KEY_LAST + 1];
+
+    public boolean isKeyPressedOnce(int awtKeyCode) {
+        int glfwKey = mapAwtToGlfw(awtKeyCode);
+        if (glfwKey == -1) return false;
+
+        boolean isDown = glfwGetKey(windowHandle, glfwKey) == GLFW_PRESS;
+        boolean wasDown = keyState[glfwKey];
+        keyState[glfwKey] = isDown; // Update state
+
+        return isDown && !wasDown; // Rising edge (trigger once)
+    }
+
+    private int mapAwtToGlfw(int awtCode) {
+        switch (awtCode) {
+            case KeyEvent.VK_W: return GLFW_KEY_W;
+            case KeyEvent.VK_S: return GLFW_KEY_S;
+            case KeyEvent.VK_A: return GLFW_KEY_A;
+            case KeyEvent.VK_D: return GLFW_KEY_D;
+            case KeyEvent.VK_SPACE: return GLFW_KEY_SPACE;
+            case KeyEvent.VK_ESCAPE: return GLFW_KEY_ESCAPE;
+            case KeyEvent.VK_F2: return GLFW_KEY_F2;
+            case KeyEvent.VK_F3: return GLFW_KEY_F3;
+            case KeyEvent.VK_F4: return GLFW_KEY_F4;
+            case KeyEvent.VK_F5: return GLFW_KEY_F5;
+            case KeyEvent.VK_F6: return GLFW_KEY_F6;
+            case KeyEvent.VK_F10: return GLFW_KEY_F10;
+            // Light controls
+            case KeyEvent.VK_U: return GLFW_KEY_U;
+            case KeyEvent.VK_O: return GLFW_KEY_O;
+            case KeyEvent.VK_J: return GLFW_KEY_J;
+            case KeyEvent.VK_L: return GLFW_KEY_L;
+            case KeyEvent.VK_I: return GLFW_KEY_I;
+            case KeyEvent.VK_K: return GLFW_KEY_K;
+            // Map CapsLock to Left Shift for Sprinting in GLFW
+            case KeyEvent.VK_CAPS_LOCK: return GLFW_KEY_LEFT_SHIFT;
+            default: return -1;
+        }
     }
 }

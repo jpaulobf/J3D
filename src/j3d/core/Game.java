@@ -75,6 +75,7 @@ public class Game implements Runnable {
         // Factory: Create Window based on Renderer type
         if (renderer instanceof OpenGLRenderer) {
             window = new LwjglWindow("Engine 3D - OpenGL", WIDTH, HEIGHT);
+            ((LwjglWindow) window).captureCursor(); // Hides and locks cursor for FPS view
         } else {
             window = new Window("Engine 3D - Software", WIDTH, HEIGHT);
         }
@@ -98,8 +99,7 @@ public class Game implements Runnable {
                     new BufferedImage(1, 1, 2), new Point(0, 0), ""));
         }
 
-        // Release the OpenGL context from the Main thread so the Game thread can claim
-        // it later
+        // Release the OpenGL context from the Main thread so the Game thread can claim it later
         window.releaseContext();
 
         // Initial scene object configuration
@@ -115,7 +115,7 @@ public class Game implements Runnable {
             window.getFrame().addKeyListener(input);
             window.getFrame().addMouseMotionListener(input);
             window.getFrame().addMouseWheelListener(input);
-
+            
             // Ensures window gets keyboard focus immediately upon starting
             window.getFrame().requestFocus();
         }
@@ -249,14 +249,14 @@ public class Game implements Runnable {
         double speedCorrection = deltaTime * 60.0;
 
         // Toggle rendering and visualization modes
-        if (input.isKeyPressed(KeyEvent.VK_F2))
+        if (isKeyPressed(KeyEvent.VK_F2))
             wireframe = !wireframe;
-        if (input.isKeyPressed(KeyEvent.VK_F3))
+        if (isKeyPressed(KeyEvent.VK_F3))
             showLightGizmo = !showLightGizmo;
-        if (input.isKeyPressed(KeyEvent.VK_F4))
+        if (isKeyPressed(KeyEvent.VK_F4))
             GameObject.gouraud = !GameObject.gouraud;
 
-        if (input.isKeyPressed(KeyEvent.VK_F5)) {
+        if (isKeyPressed(KeyEvent.VK_F5)) {
             // Assuming you cast if your renderer variable is an interface
             if (renderer instanceof SoftwareRenderer) {
                 SoftwareRenderer sr = (SoftwareRenderer) renderer;
@@ -265,29 +265,40 @@ public class Game implements Runnable {
             }
         }
 
-        if (input.isKeyPressed(KeyEvent.VK_F6))
+        if (isKeyPressed(KeyEvent.VK_F6))
             hud.setVisible(!hud.isVisible());
 
-        if (input.isKeyPressed(KeyEvent.VK_F10)) {
+        if (isKeyPressed(KeyEvent.VK_F10)) {
             GameObject.scanline = !GameObject.scanline;
             System.out.println("Scanline Rasterization: " + (GameObject.scanline ? "ON" : "OFF"));
         }
 
-        if (input.isKeyPressed(KeyEvent.VK_ESCAPE))
+        if (isKeyPressed(KeyEvent.VK_ESCAPE))
             System.exit(0);
 
         // Camera movement with mouse
-        if (window.getFrame() != null && window.getFrame().isFocusOwner()) {
+        if (window.isFocused()) {
 
-            // Calculates mouse displacement from window center
-            int dx = input.getMouseX() - windowCenterX;
-            int dy = input.getMouseY() - windowCenterY;
+            int dx = 0;
+            int dy = 0;
+
+            if (window instanceof LwjglWindow) {
+                Point delta = ((LwjglWindow) window).getMouseDelta();
+                dx = delta.x;
+                dy = delta.y;
+            } else {
+                // Calculates mouse displacement from window center (Legacy AWT)
+                dx = input.getMouseX() - windowCenterX;
+                dy = input.getMouseY() - windowCenterY;
+                if (dx != 0 || dy != 0) {
+                    robot.mouseMove(windowCenterX, windowCenterY);
+                }
+            }
 
             if (dx != 0 || dy != 0) {
                 camera.yaw += dx * 0.003;
                 camera.pitch += dy * 0.003;
                 camera.pitch = Math.max(-1.5, Math.min(1.5, camera.pitch));
-                robot.mouseMove(windowCenterX, windowCenterY);
             }
         }
 
@@ -297,7 +308,7 @@ public class Game implements Runnable {
         verticalVelocity += GRAVITY * deltaTime;
 
         // Jump (only if grounded)
-        if (input.isKeyPressed(KeyEvent.VK_SPACE) && isGrounded) {
+        if (isKeyPressed(KeyEvent.VK_SPACE) && isGrounded) {
             verticalVelocity = JUMP_FORCE;
             isGrounded = false;
         }
@@ -322,10 +333,7 @@ public class Game implements Runnable {
         // Camera movement with keyboard (WASD)
         double baseSpeed = 0.3;
         try {
-            // Doubles speed if Caps Lock is active ("sprint" mode)
-            if (Toolkit.getDefaultToolkit().getLockingKeyState(KeyEvent.VK_CAPS_LOCK)) {
-                baseSpeed *= 2; // Doubles speed
-            }
+            if (isSprintActive()) baseSpeed *= 2;
         } catch (Exception e) {
         }
 
@@ -336,19 +344,19 @@ public class Game implements Runnable {
         double dx = 0;
         double dz = 0;
 
-        if (input.isKeyHeld(KeyEvent.VK_W)) {
+        if (isKeyHeld(KeyEvent.VK_W)) {
             dx += sY * camSp;
             dz -= cY * camSp;
         }
-        if (input.isKeyHeld(KeyEvent.VK_S)) {
+        if (isKeyHeld(KeyEvent.VK_S)) {
             dx -= sY * camSp;
             dz += cY * camSp;
         }
-        if (input.isKeyHeld(KeyEvent.VK_A)) {
+        if (isKeyHeld(KeyEvent.VK_A)) {
             dx -= cY * camSp;
             dz -= sY * camSp;
         }
-        if (input.isKeyHeld(KeyEvent.VK_D)) {
+        if (isKeyHeld(KeyEvent.VK_D)) {
             dx += cY * camSp;
             dz += sY * camSp;
         }
@@ -372,17 +380,17 @@ public class Game implements Runnable {
 
         // Manual light controls (optional, kept for debug)
         double lSp = 0.3 * speedCorrection;
-        if (input.isKeyHeld(KeyEvent.VK_U))
+        if (isKeyHeld(KeyEvent.VK_U))
             spot.pos.z -= lSp;
-        if (input.isKeyHeld(KeyEvent.VK_O))
+        if (isKeyHeld(KeyEvent.VK_O))
             spot.pos.z += lSp;
-        if (input.isKeyHeld(KeyEvent.VK_J))
+        if (isKeyHeld(KeyEvent.VK_J))
             spot.pos.x -= lSp;
-        if (input.isKeyHeld(KeyEvent.VK_L))
+        if (isKeyHeld(KeyEvent.VK_L))
             spot.pos.x += lSp;
-        if (input.isKeyHeld(KeyEvent.VK_I))
+        if (isKeyHeld(KeyEvent.VK_I))
             spot.pos.y += lSp;
-        if (input.isKeyHeld(KeyEvent.VK_K))
+        if (isKeyHeld(KeyEvent.VK_K))
             spot.pos.y -= lSp;
 
         lightGizmo.transform.x = spot.pos.x;
@@ -390,6 +398,34 @@ public class Game implements Runnable {
         lightGizmo.transform.z = spot.pos.z;
 
     }
+
+    // --- INPUT HELPERS (Abstraction for AWT vs GLFW) ---
+
+    private boolean isKeyHeld(int keyCode) {
+        if (window instanceof LwjglWindow) {
+            return ((LwjglWindow) window).isKeyDown(keyCode);
+        }
+        return input.isKeyHeld(keyCode);
+    }
+
+    private boolean isKeyPressed(int keyCode) {
+        if (window instanceof LwjglWindow) {
+            return ((LwjglWindow) window).isKeyPressedOnce(keyCode);
+        }
+        return input.isKeyPressed(keyCode);
+    }
+
+    private boolean isSprintActive() {
+        try {
+            if (window instanceof LwjglWindow) {
+                // GLFW: Use Shift as sprint (mapped from VK_CAPS_LOCK in LwjglWindow)
+                return ((LwjglWindow) window).isKeyDown(KeyEvent.VK_CAPS_LOCK);
+            }
+            // AWT: Use Caps Lock State
+            return Toolkit.getDefaultToolkit().getLockingKeyState(KeyEvent.VK_CAPS_LOCK);
+        } catch (Exception e) { return false; }
+    }
+    // ---------------------------------------------------
 
     @Override
     public void run() {
@@ -406,7 +442,7 @@ public class Game implements Runnable {
 
         long lastTime = System.nanoTime();
         double delta = 0;
-
+        
         long timer = System.currentTimeMillis();
         int framesCount = 0; // Local variable to count frames
 
@@ -442,17 +478,17 @@ public class Game implements Runnable {
                 } catch (InterruptedException e) {
                 }
             }
-
+            
             // FPS counter update (1 second)
             if (System.currentTimeMillis() - timer >= 1000) {
                 fps = framesCount;
                 framesCount = 0;
                 timer += 1000;
-
+                
                 // Recalculates window center (in case user moves it)
                 try {
-                    if (window.getFrame() != null) {
-                        Point loc = window.getFrame().getLocationOnScreen();
+                    if (window.isFocused()) {
+                        Point loc = window.getLocationOnScreen();
                         windowCenterX = loc.x + window.getWidth() / 2;
                         windowCenterY = loc.y + window.getHeight() / 2;
                     }
