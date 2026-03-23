@@ -16,14 +16,8 @@ import java.awt.Color;
  */
 public class OpenGLRenderer implements IRenderer {
 
-    private int width = 1600; // Default resolution, will be updated by window
-    private int height = 900;
-
-    /**
-     * Constructor for OpenGLRenderer.
-     */
-    public OpenGLRenderer() {
-    }
+    private int width = 0;
+    private int height = 0;
 
     /**
      * Constructor for OpenGLRenderer.
@@ -36,6 +30,9 @@ public class OpenGLRenderer implements IRenderer {
         this.height = height;
     }
 
+    /**
+     * Initializes OpenGL capabilities.
+     */
     @Override
     public void init() {
         // IMPORTANT: This line allows LWJGL to detect the OpenGL context created by
@@ -55,18 +52,30 @@ public class OpenGLRenderer implements IRenderer {
         glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
     }
 
+    /**
+     * Clears the frame buffer and depth buffer.
+     */
     @Override
     public void clear() {
         glClearColor(0.529f, 0.808f, 0.922f, 1.0f); // Sky Blue (matching SoftwareRenderer gradient logic)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
 
+    /**
+     * Draws a 3D scene using OpenGL.
+     *
+     * @param cam
+     * @param objects
+     * @param lights
+     * @param wireframe
+     */
     @Override
     public void draw(Camera cam, List<GameObject> objects, List<PointLight> lights, boolean wireframe) {
         // 1. Setup Projection Matrix
         glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
         double aspect = (double) width / height;
+
         // Simple gluPerspective equivalent
         double fovY = 90.0;
         double zNear = 0.1;
@@ -78,9 +87,10 @@ public class OpenGLRenderer implements IRenderer {
         // 2. Setup View Matrix (Camera)
         glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();
-        // Rotate negative pitch/yaw and translate negative position
-        glRotated(Math.toDegrees(-cam.pitch), 1, 0, 0);
-        glRotated(Math.toDegrees(-cam.yaw), 0, 1, 0);
+
+        // Align rotation direction with SoftwareRenderer (Positive Angles)
+        glRotated(Math.toDegrees(cam.pitch), 1, 0, 0);
+        glRotated(Math.toDegrees(cam.yaw), 0, 1, 0);
         glTranslated(-cam.transform.x, -cam.transform.y, -cam.transform.z);
 
         // 3. Setup Lights
@@ -154,6 +164,15 @@ public class OpenGLRenderer implements IRenderer {
         }
     }
 
+    /**
+     * Draws a 2D sprite using OpenGL.
+     *
+     * @param spritePixels
+     * @param spriteW
+     * @param spriteH
+     * @param x
+     * @param y
+     */
     @Override
     public void drawSprite(int[] spritePixels, int spriteW, int spriteH, int x, int y) {
         // Drawing 2D sprites in OpenGL usually requires textures and Ortho projection.
@@ -162,6 +181,9 @@ public class OpenGLRenderer implements IRenderer {
         // renderer.
     }
 
+    /**
+     * return the framebuffer
+     */
     @Override
     public int[] getFrameBuffer() {
         // OpenGL renders directly to the GPU buffer.
@@ -172,6 +194,9 @@ public class OpenGLRenderer implements IRenderer {
         return new int[0];
     }
 
+    /**
+     * ssaa (disable for now)
+     */
     @Override
     public boolean isSsaaEnabled() {
         // Hardware MSAA (Multisample Anti-Aliasing) is handled by the window context
