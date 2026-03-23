@@ -9,10 +9,11 @@ import java.awt.image.DataBufferInt;
  * Window class responsible for creating the game window, managing the canvas
  * for rendering, and displaying the FPS counter.
  */
-public class Window {
+public class Window implements IGameWindow {
     private JFrame frame;
     private BufferedImage canvas;
     private int[] canvasPixels;
+    private boolean closeRequested = false;
 
     /**
      * Constructor for the Window class, where we initialize the JFrame, set it to
@@ -53,6 +54,14 @@ public class Window {
         frame.setExtendedState(JFrame.MAXIMIZED_BOTH); // Maximizes the window
         frame.setLocationRelativeTo(null);
         frame.setVisible(true);
+        
+        // Adapts closing event
+        frame.addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override
+            public void windowClosing(java.awt.event.WindowEvent windowEvent) {
+                closeRequested = true;
+            }
+        });
     }
 
     /**
@@ -61,6 +70,7 @@ public class Window {
      * 
      * @param rendererPixels
      */
+    @Override
     public void update(int[] rendererPixels) {
         System.arraycopy(rendererPixels, 0, canvasPixels, 0, rendererPixels.length);
         frame.repaint();
@@ -74,4 +84,17 @@ public class Window {
     public JFrame getFrame() {
         return frame;
     }
+
+    @Override
+    public boolean shouldClose() {
+        return closeRequested;
+    }
+
+    @Override
+    public void destroy() {
+        frame.dispose();
+    }
+    
+    public int getWidth() { return frame.getWidth(); }
+    public int getHeight() { return frame.getHeight(); }
 }

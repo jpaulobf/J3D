@@ -2,6 +2,7 @@ package j3d.core;
 
 import j3d.render.IRenderer;
 import j3d.render.SoftwareRenderer;
+import j3d.render.OpenGLRenderer;
 import j3d.lighting.PointLight;
 import j3d.physics.PhysicsEngine;
 import j3d.geometry.Mesh;
@@ -35,7 +36,7 @@ public class Game implements Runnable {
     private boolean showLightGizmo = false;
 
     // Game components
-    private Window window;
+    private IGameWindow window;
     private IRenderer renderer;
     private InputManager input;
     private Robot robot;
@@ -67,13 +68,22 @@ public class Game implements Runnable {
      */
     public Game() {
         // Game initialization
-        window = new Window("Engine 3D - J3D Game", WIDTH, HEIGHT);
+        // Select Renderer Here:
+        // renderer = new SoftwareRenderer(WIDTH, HEIGHT);
+        renderer = new OpenGLRenderer(WIDTH, HEIGHT);
+
+        // Factory: Create Window based on Renderer type
+        if (renderer instanceof OpenGLRenderer) {
+            window = new LwjglWindow("Engine 3D - OpenGL", WIDTH, HEIGHT);
+        } else {
+            window = new Window("Engine 3D - Software", WIDTH, HEIGHT);
+        }
+
         input = new InputManager();
         camera = new Camera();
         objects = new ArrayList<>();
         lights = new ArrayList<>();
         gizmoList = new ArrayList<>();
-        renderer = new SoftwareRenderer(WIDTH, HEIGHT);
         physics = new PhysicsEngine();
         hud = new HUD(WIDTH, HEIGHT);
 
@@ -86,8 +96,10 @@ public class Game implements Runnable {
         }
 
         // Hides the cursor
-        window.getFrame().setCursor(window.getFrame().getToolkit().createCustomCursor(
-                new BufferedImage(1, 1, 2), new Point(0, 0), ""));
+        if (window.getFrame() != null) {
+            window.getFrame().setCursor(window.getFrame().getToolkit().createCustomCursor(
+                    new BufferedImage(1, 1, 2), new Point(0, 0), ""));
+        }
 
         // Initial scene object configuration
         this.getSceneInitialObjets();
@@ -96,12 +108,16 @@ public class Game implements Runnable {
         this.initialSceneCameraConfiguration();
 
         // Input listener configuration
-        window.getFrame().addKeyListener(input);
-        window.getFrame().addMouseMotionListener(input);
-        window.getFrame().addMouseWheelListener(input);
-
-        // Ensures window gets keyboard focus immediately upon starting
-        window.getFrame().requestFocus();
+        // NOTE: Currently InputManager only supports AWT (Software Render).
+        // OpenGL Input needs to be implemented via GLFW callbacks.
+        if (window.getFrame() != null) {
+            window.getFrame().addKeyListener(input);
+            window.getFrame().addMouseMotionListener(input);
+            window.getFrame().addMouseWheelListener(input);
+            
+            // Ensures window gets keyboard focus immediately upon starting
+            window.getFrame().requestFocus();
+        }
     }
 
     /**
@@ -260,7 +276,7 @@ public class Game implements Runnable {
             System.exit(0);
 
         // Camera movement with mouse
-        if (window.getFrame().isFocusOwner()) {
+        if (window.getFrame() != null && window.getFrame().isFocusOwner()) {
 
             // Calculates mouse displacement from window center
             int dx = input.getMouseX() - windowCenterX;
@@ -386,7 +402,7 @@ public class Game implements Runnable {
         long timer = System.currentTimeMillis();
         int framesCount = 0; // Local variable to count frames
 
-        while (running) {
+        while (running && !window.shouldClose()) {
             long now = System.nanoTime();
             delta += (now - lastTime) / nsPerTick;
             lastTime = now;
@@ -427,12 +443,15 @@ public class Game implements Runnable {
                 
                 // Recalculates window center (in case user moves it)
                 try {
-                    Point loc = window.getFrame().getLocationOnScreen();
-                    windowCenterX = loc.x + window.getFrame().getWidth() / 2;
-                    windowCenterY = loc.y + window.getFrame().getHeight() / 2;
+                    if (window.getFrame() != null) {
+                        Point loc = window.getFrame().getLocationOnScreen();
+                        windowCenterX = loc.x + window.getWidth() / 2;
+                        windowCenterY = loc.y + window.getHeight() / 2;
+                    }
                 } catch (Exception e) {
                 }
             }
         }
+        window.destroy();
     }
 }
