@@ -81,4 +81,12 @@ public class LwjglWindow implements IGameWindow {
     public JFrame getFrame() {
         return null;
     }
+
+    public void releaseContext() {
+        glfwMakeContextCurrent(NULL);
+    }
+
+    public void makeContextCurrent() {
+        glfwMakeContextCurrent(windowHandle);
+    }
 }

@@ -87,9 +87,6 @@ public class Game implements Runnable {
         physics = new PhysicsEngine();
         hud = new HUD(WIDTH, HEIGHT);
 
-        // Renderer initialization
-        renderer.init();
-
         try {
             robot = new Robot();
         } catch (Exception e) {
@@ -99,6 +96,11 @@ public class Game implements Runnable {
         if (window.getFrame() != null) {
             window.getFrame().setCursor(window.getFrame().getToolkit().createCustomCursor(
                     new BufferedImage(1, 1, 2), new Point(0, 0), ""));
+        }
+
+        // Release the OpenGL context from the Main thread so the Game thread can claim it later
+        if (window instanceof LwjglWindow) {
+            ((LwjglWindow) window).releaseContext();
         }
 
         // Initial scene object configuration
@@ -392,6 +394,15 @@ public class Game implements Runnable {
 
     @Override
     public void run() {
+        // Claim the OpenGL context on the rendering thread (Game Thread)
+        if (window instanceof LwjglWindow) {
+            ((LwjglWindow) window).makeContextCurrent();
+        }
+
+        // Initialize renderer resources (Buffers, OpenGL Capabilities, etc.)
+        // Must be called on the thread that owns the context
+        renderer.init();
+
         // Fixed time step for logic updates
         // For 60 FPS, this is approximately 16.66ms
         final double nsPerTick = 1000000000.0 / TARGET_FPS;
