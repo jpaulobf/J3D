@@ -99,9 +99,7 @@ public class Game implements Runnable {
         }
 
         // Release the OpenGL context from the Main thread so the Game thread can claim it later
-        if (window instanceof LwjglWindow) {
-            ((LwjglWindow) window).releaseContext();
-        }
+        window.releaseContext();
 
         // Initial scene object configuration
         this.getSceneInitialObjets();
@@ -395,9 +393,7 @@ public class Game implements Runnable {
     @Override
     public void run() {
         // Claim the OpenGL context on the rendering thread (Game Thread)
-        if (window instanceof LwjglWindow) {
-            ((LwjglWindow) window).makeContextCurrent();
-        }
+        window.makeContextCurrent();
 
         // Initialize renderer resources (Buffers, OpenGL Capabilities, etc.)
         // Must be called on the thread that owns the context

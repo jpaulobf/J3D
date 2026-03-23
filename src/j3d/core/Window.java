@@ -97,4 +97,12 @@ public class Window implements IGameWindow {
     
     public int getWidth() { return frame.getWidth(); }
     public int getHeight() { return frame.getHeight(); }
+
+    public void releaseContext() {
+        //do nothing
+    }
+
+    public void makeContextCurrent() {
+        //do nothing
+    }
 }

@@ -9,4 +9,6 @@ public interface IGameWindow {
     int getWidth();
     int getHeight();
     JFrame getFrame();
+    void releaseContext();
+    void makeContextCurrent();
 }
