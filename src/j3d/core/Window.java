@@ -137,4 +137,14 @@ public class Window implements IGameWindow {
         
         frame.setVisible(true);
     }
+
+    @Override
+    public int getMouseDeltaX() {
+        return 0;
+    }
+
+    @Override
+    public int getMouseDeltaY() {
+        return 0;
+    }
 }
