@@ -263,4 +263,9 @@ public class OpenGLRenderer implements IRenderer {
         // not manually by the renderer like in SoftwareRenderer.
         return false;
     }
+
+    @Override
+    public void toggleSsaa() {
+        // do nothing
+    }  
 }
