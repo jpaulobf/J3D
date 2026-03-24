@@ -1,10 +1,10 @@
 package j3d.core;
 
 import j3d.render.IRenderer;
-import j3d.render.SoftwareRenderer;
-import j3d.render.OpenGLRenderer;
 import j3d.lighting.PointLight;
 import j3d.physics.PhysicsEngine;
+import j3d.enums.RenderType;
+import j3d.factory.RenderFactory;
 import j3d.geometry.Mesh;
 import j3d.input.InputManager;
 import j3d.io.ObjLoader;
@@ -45,6 +45,7 @@ public class Game implements Runnable {
     private GameObject lightGizmo;
     private List<GameObject> gizmoList;
     private PhysicsEngine physics;
+    private RenderType renderType = RenderType.OPENGL;
 
     // UI / HUD
     private HUD hud;
@@ -69,10 +70,10 @@ public class Game implements Runnable {
         // Game initialization
         // Select Renderer Here:
         // renderer = new SoftwareRenderer(WIDTH, HEIGHT);
-        renderer = new OpenGLRenderer(WIDTH, HEIGHT);
+        renderer = RenderFactory.createRenderer(renderType, 1600, 900);
 
         // Factory: Create Window based on Renderer type
-        if (renderer instanceof OpenGLRenderer) {
+        if (renderType == RenderType.OPENGL) {
             window = new LwjglWindow("Engine 3D - OpenGL", WIDTH, HEIGHT);
             ((LwjglWindow) window).captureCursor(); // Hides and locks cursor for FPS view
         } else {
@@ -257,12 +258,8 @@ public class Game implements Runnable {
             GameObject.gouraud = !GameObject.gouraud;
 
         if (isKeyPressed(KeyEvent.VK_F5)) {
-            // Assuming you cast if your renderer variable is an interface
-            if (renderer instanceof SoftwareRenderer) {
-                SoftwareRenderer sr = (SoftwareRenderer) renderer;
-                sr.ssaaEnabled = !sr.ssaaEnabled;
-                System.out.println("SSAA 2x: " + (sr.ssaaEnabled ? "ON" : "OFF"));
-            }
+            renderer.toggleSsaa();
+            System.out.println("SSAA 2x: " + (renderer.isSsaaEnabled() ? "ON" : "OFF"));
         }
 
         if (isKeyPressed(KeyEvent.VK_F6))
@@ -282,17 +279,14 @@ public class Game implements Runnable {
         // Camera movement with mouse
         if (window.isFocused()) {
 
-            int dx = 0;
-            int dy = 0;
+            int dx = window.getMouseDeltaX();
+            int dy = window.getMouseDeltaY();
 
-            if (window instanceof LwjglWindow) {
-                Point delta = ((LwjglWindow) window).getMouseDelta();
-                dx = delta.x;
-                dy = delta.y;
-            } else {
+            if (renderType != RenderType.OPENGL) {
                 // Calculates mouse displacement from window center (Legacy AWT)
                 dx = input.getMouseX() - windowCenterX;
                 dy = input.getMouseY() - windowCenterY;
+
                 if (dx != 0 || dy != 0) {
                     robot.mouseMove(windowCenterX, windowCenterY);
                 }
