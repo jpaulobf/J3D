@@ -42,4 +42,9 @@ public interface IRenderer {
      * @return
      */
     boolean isSsaaEnabled();
+
+    /**
+     * Toggle SSAA
+     */
+    void toggleSsaa();
 }
