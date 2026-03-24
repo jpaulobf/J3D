@@ -219,4 +219,16 @@ public class LwjglWindow implements IGameWindow {
             default: return -1;
         }
     }
+
+    @Override
+    public int getMouseDeltaX() {
+        Point delta = this.getMouseDelta();
+        return (delta.x);
+    }
+
+    @Override
+    public int getMouseDeltaY() {
+        Point delta = this.getMouseDelta();
+        return (delta.y);
+    }
 }
