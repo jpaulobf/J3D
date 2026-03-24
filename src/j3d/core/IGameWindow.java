@@ -15,4 +15,6 @@ public interface IGameWindow {
     boolean isFocused();
     Point getLocationOnScreen();
     void toggleFullscreen();
+    int getMouseDeltaX();
+    int getMouseDeltaY();
 }
