@@ -2,6 +2,7 @@ package j3d.core;
 
 import j3d.lighting.PointLight;
 import j3d.physics.PhysicsEngine;
+import j3d.player.PlayerController;
 import j3d.enums.RenderType;
 import j3d.geometry.Mesh;
 import j3d.input.InputManager;
@@ -36,7 +37,7 @@ public class Game extends AbstractGame {
     private List<GameObject> gizmoList;
     private PhysicsEngine physics;
     private static final RenderType RENDER_TYPE = RenderType.SOFTWARE;
-    private FirstPersonController playerController;
+    private PlayerController playerController;
 
     // UI / HUD
     private HUD hud;
@@ -88,7 +89,7 @@ public class Game extends AbstractGame {
         }
         
         // Initialize Player Controller
-        playerController = new FirstPersonController(camera, input, window, physics);
+        playerController = new PlayerController(camera, input, window, physics);
     }
 
     /**
