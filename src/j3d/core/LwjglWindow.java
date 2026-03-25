@@ -87,6 +87,7 @@ public class LwjglWindow implements IGameWindow {
         glfwSwapInterval(1); // Enable v-sync
         glfwShowWindow(windowHandle);
 
+        captureCursor(); // Lock cursor for FPS style immediately
         toggleFullscreen(); // Start in Fullscreen mode (like Software Renderer)
     }
 
@@ -340,14 +341,16 @@ public class LwjglWindow implements IGameWindow {
      */
     @Override
     public int getMouseDeltaY(int mouseY, int windowCenterY) {
-        double[] x = new double[1];
         double[] y = new double[1];
-        glfwGetCursorPos(windowHandle, x, y);
+        glfwGetCursorPos(windowHandle, null, y);
 
-        // Note: firstMouse handled in X usually, but strictly speaking we should check
-        // here too
-        // However, assuming X is called first or initialization happens once, we just
-        // calc delta.
+        if (firstMouse) {
+            lastY = y[0];
+            // Do not set firstMouse = false here, let X handle the flag flip 
+            // or strictly handle it if we want independent axes safety.
+            return 0;
+        }
+
         int dy = (int) (y[0] - lastY);
         lastY = y[0];
         return dy;
