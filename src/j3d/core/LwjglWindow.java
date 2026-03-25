@@ -26,8 +26,8 @@ public class LwjglWindow implements IGameWindow {
     private boolean isFullscreen = false;
     private int windowedX = 0; 
     private int windowedY = 0; 
-    private int windowedW = 1280;
-    private int windowedH = 720;
+    private int windowedW = 0;
+    private int windowedH = 0;
     private double lastX = 0;
     private double lastY = 0;
     private boolean firstMouse = true;
@@ -43,6 +43,8 @@ public class LwjglWindow implements IGameWindow {
     public LwjglWindow(String title, int width, int height) {
         this.width = width;
         this.height = height;
+        this.windowedW = width;
+        this.windowedH = height;
 
         // Setup an error callback
         GLFWErrorCallback.createPrint(System.err).set();
