@@ -20,7 +20,7 @@ public abstract class AbstractGame implements Runnable {
     protected boolean running = true;
     protected int width;
     protected int height;
-    protected int targetFps = 120;
+    protected int targetFps = 1000;
     protected List<GameObject> objects;
     protected InputManager input;
 
@@ -66,24 +66,18 @@ public abstract class AbstractGame implements Runnable {
             delta += (now - lastTime) / nsPerTick;
             lastTime = now;
 
-            boolean shouldRender = false;
-
+            // 1. Fixed Update: Mantém a física e lógica constantes (ex: 60 ou 100hz)
             while (delta >= 1) {
-                // Fixed Update
                 input();
                 update(1.0 / targetFps);
                 delta--;
-                shouldRender = true;
             }
 
-            if (shouldRender) {
-                render();
-                // Swap Buffers / Copy to Screen
-                window.update(renderer.getFrameBuffer());
-                framesCount++;
-            } else {
-                try { Thread.sleep(1); } catch (InterruptedException e) {}
-            }
+            // 2. Variable Render: Renderiza o mais rápido que a GPU permitir
+            render();
+            // Swap Buffers / Copy to Screen
+            window.update(renderer.getFrameBuffer());
+            framesCount++;
 
             // FPS Timer
             if (System.currentTimeMillis() - timer >= 1000) {
