@@ -36,7 +36,7 @@ public class Game extends AbstractGame {
     private GameObject lightGizmo;
     private List<GameObject> gizmoList;
     private PhysicsEngine physics;
-    private static final RenderType RENDER_TYPE = RenderType.SOFTWARE;
+    private static final RenderType RENDER_TYPE = RenderType.OPENGL;
     private PlayerController playerController;
 
     // UI / HUD
