@@ -177,75 +177,7 @@ public class LwjglWindow implements IGameWindow {
         glfwSwapInterval(1); // Re-enable V-Sync
     }
 
-    /**
-     * Capture the cursor
-     */
-    public void captureCursor() {
-        glfwSetInputMode(windowHandle, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-    }
-
-    /**
-     * Verify if the window is focused
-     */
-    @Override
-    public boolean isFocused() {
-        return glfwGetWindowAttrib(windowHandle, GLFW_FOCUSED) == GLFW_TRUE;
-    }
-
-    @Override
-    public Point getLocationOnScreen() {
-        try (MemoryStack stack = MemoryStack.stackPush()) {
-            IntBuffer x = stack.mallocInt(1);
-            IntBuffer y = stack.mallocInt(1);
-            glfwGetWindowPos(windowHandle, x, y);
-            return new Point(x.get(0), y.get(0));
-        }
-    }
-
-    /**
-     * Get the mouse delta in axis X
-     * @param mouseX
-     * @param windowCenterX
-     * @return
-     */
-    @Override
-    public int getMouseDeltaX(int mouseX, int windowCenterX) {
-        double[] x = new double[1];
-        double[] y = new double[1];
-        glfwGetCursorPos(windowHandle, x, y);
-
-        if (firstMouse) {
-            lastX = x[0];
-            lastY = y[0];
-            firstMouse = false;
-            return 0;
-        }
-
-        int dx = (int) (x[0] - lastX);
-        lastX = x[0];
-        return dx;
-    }
-
-    /**
-     * Get the mouse delta in axis Y
-     * @param mouseY
-     * @param windowCenterY
-     * @return
-     */
-    @Override
-    public int getMouseDeltaY(int mouseY, int windowCenterY) {
-        double[] x = new double[1];
-        double[] y = new double[1];
-        glfwGetCursorPos(windowHandle, x, y);
-
-        // Note: firstMouse handled in X usually, but strictly speaking we should check
-        // here too
-        // However, assuming X is called first or initialization happens once, we just
-        // calc delta.
-        int dy = (int) (y[0] - lastY);
-        lastY = y[0];
-        return dy;
-    }
+    //------ Keyboard ------
 
     /**
      * Verify if a key is pressed
@@ -349,6 +281,78 @@ public class LwjglWindow implements IGameWindow {
         }
     }
 
+    //------ Mouse -----
+
+    /**
+     * Capture the cursor
+     */
+    public void captureCursor() {
+        glfwSetInputMode(windowHandle, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    }
+
+    /**
+     * Verify if the window is focused
+     */
+    @Override
+    public boolean isFocused() {
+        return glfwGetWindowAttrib(windowHandle, GLFW_FOCUSED) == GLFW_TRUE;
+    }
+
+    @Override
+    public Point getLocationOnScreen() {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            IntBuffer x = stack.mallocInt(1);
+            IntBuffer y = stack.mallocInt(1);
+            glfwGetWindowPos(windowHandle, x, y);
+            return new Point(x.get(0), y.get(0));
+        }
+    }
+
+    /**
+     * Get the mouse delta in axis X
+     * @param mouseX
+     * @param windowCenterX
+     * @return
+     */
+    @Override
+    public int getMouseDeltaX(int mouseX, int windowCenterX) {
+        double[] x = new double[1];
+        double[] y = new double[1];
+        glfwGetCursorPos(windowHandle, x, y);
+
+        if (firstMouse) {
+            lastX = x[0];
+            lastY = y[0];
+            firstMouse = false;
+            return 0;
+        }
+
+        int dx = (int) (x[0] - lastX);
+        lastX = x[0];
+        return dx;
+    }
+
+    /**
+     * Get the mouse delta in axis Y
+     * @param mouseY
+     * @param windowCenterY
+     * @return
+     */
+    @Override
+    public int getMouseDeltaY(int mouseY, int windowCenterY) {
+        double[] x = new double[1];
+        double[] y = new double[1];
+        glfwGetCursorPos(windowHandle, x, y);
+
+        // Note: firstMouse handled in X usually, but strictly speaking we should check
+        // here too
+        // However, assuming X is called first or initialization happens once, we just
+        // calc delta.
+        int dy = (int) (y[0] - lastY);
+        lastY = y[0];
+        return dy;
+    }
+
     @Override
     public void requestFocus() {
         glfwFocusWindow(windowHandle);
@@ -364,7 +368,8 @@ public class LwjglWindow implements IGameWindow {
         // Do nothing
     }  
 
-    // Getters
+    //---------- Getters ------
+    
     public int getWidth() {
         return width;
     }
