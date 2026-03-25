@@ -3,8 +3,15 @@ package j3d.core;
 import j3d.enums.RenderType;
 import j3d.factory.RenderFactory;
 import j3d.factory.WindowFactory;
+import j3d.geometry.Mesh;
+import j3d.input.InputManager;
 import j3d.render.IRenderer;
+
+import java.awt.Color;
 import java.awt.Point;
+import java.awt.Toolkit;
+import java.awt.event.KeyEvent;
+import java.util.List;
 
 public abstract class AbstractGame implements Runnable {
 
@@ -14,7 +21,9 @@ public abstract class AbstractGame implements Runnable {
     protected int width;
     protected int height;
     protected int targetFps = 60;
-    
+    protected List<GameObject> objects;
+    protected InputManager input;
+
     // FPS Counters
     protected int fps = 0;
     protected int windowCenterX;
@@ -110,5 +119,42 @@ public abstract class AbstractGame implements Runnable {
 
     public IRenderer getRenderer() {
         return renderer;
+    }
+
+    /**
+     * Helper to create solid blocks (Walls, Floors, Steps).
+     * Uses standard cube and adjusts scale and position.
+     */
+    protected void createBlock(double x, double y, double z, double sX, double sY, double sZ, Color color) {
+        // Creates base cube
+        Mesh m = Mesh.createCube();
+
+        if (color != null) {
+            for (j3d.geometry.Triangle t : m.triangles) {
+                t.baseColor = color;
+            }
+        }
+
+        GameObject obj = new GameObject(m);
+        obj.transform.x = x;
+        obj.transform.y = y;
+        obj.transform.z = z;
+        obj.transform.scaleX = sX;
+        obj.transform.scaleY = sY;
+        obj.transform.scaleZ = sZ;
+
+        objects.add(obj);
+    }
+
+    protected boolean isKeyHeld(int keyCode) {
+        return window.isKeyDown(input, keyCode);
+    }
+
+    protected boolean isKeyPressed(int keyCode) {
+        return window.isKeyPressedOnce(input, keyCode);
+    }
+
+    protected boolean isSprintActive() {
+        return (window.isKeyDown(Toolkit.getDefaultToolkit(), KeyEvent.VK_CAPS_LOCK));
     }
 }
