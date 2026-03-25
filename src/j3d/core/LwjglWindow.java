@@ -256,4 +256,15 @@ public class LwjglWindow implements IGameWindow {
     public void centerMouse() {
         // GLFW handles mouse locking via InputMode, no manual recenter needed.
     }
+
+    @Override
+    public void addInputListener(InputManager input) {
+        // GLFW Input is handled via polling in update(), or callbacks handled internally.
+        // We do not use AWT Listeners here.
+    }
+
+    @Override
+    public void requestFocus() {
+        glfwFocusWindow(windowHandle);
+    }
 }

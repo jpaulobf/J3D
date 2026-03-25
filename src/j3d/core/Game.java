@@ -32,7 +32,7 @@ public class Game extends AbstractGame {
     // Game components
     private Camera camera;
     private PhysicsEngine physics;
-    private static final RenderType RENDER_TYPE = RenderType.SOFTWARE;
+    private static final RenderType RENDER_TYPE = RenderType.OPENGL;
     private PlayerController playerController;
     private LightController lightController;
 
@@ -74,14 +74,9 @@ public class Game extends AbstractGame {
         // Input listener configuration
         // NOTE: Currently InputManager only supports AWT (Software Render).
         // OpenGL Input needs to be implemented via GLFW callbacks.
-        if (window.getFrame() != null) {
-            window.getFrame().addKeyListener(input);
-            window.getFrame().addMouseMotionListener(input);
-            window.getFrame().addMouseWheelListener(input);
-
-            // Ensures window gets keyboard focus immediately upon starting
-            window.getFrame().requestFocus();
-        }
+        window.addInputListener(input);
+        // Ensures window/panel gets keyboard focus immediately upon starting
+        window.requestFocus();
         
         // Initialize Player Controller
         playerController = new PlayerController(camera, input, window, physics);

@@ -18,6 +18,7 @@ public class Window implements IGameWindow {
     private int originalWidth;
     private int originalHeight;
     private Robot robot;
+    private JPanel panel; // Promoted to field to access dimensions
 
     /**
      * Constructor for the Window class, where we initialize the JFrame, set it to
@@ -41,7 +42,7 @@ public class Window implements IGameWindow {
             e.printStackTrace();
         }
 
-        JPanel panel = new JPanel() {
+        this.panel = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
                 // We don't call super.paintComponent(g) to avoid clearing screen unnecessarily
@@ -60,6 +61,7 @@ public class Window implements IGameWindow {
             }
         };
         panel.setPreferredSize(new Dimension(width, height));
+        panel.setFocusable(true); // Allows panel to receive KeyEvents
         frame.add(panel);
         frame.pack();
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -107,8 +109,8 @@ public class Window implements IGameWindow {
         frame.dispose();
     }
     
-    public int getWidth() { return frame.getWidth(); }
-    public int getHeight() { return frame.getHeight(); }
+    public int getWidth() { return panel.getWidth(); }
+    public int getHeight() { return panel.getHeight(); }
 
     public void releaseContext() {
         //do nothing
@@ -120,7 +122,8 @@ public class Window implements IGameWindow {
 
     @Override
     public boolean isFocused() {
-        return frame.isFocusOwner();
+        // Retorna true se a janela (ou qualquer componente dela, como o painel) estiver ativa pelo usuário
+        return frame.isActive();
     }
 
     @Override
@@ -144,16 +147,32 @@ public class Window implements IGameWindow {
         }
         
         frame.setVisible(true);
+        panel.requestFocus(); // Focus on the component that has the listeners
+        
+        // Use invokeLater to ensure window layout/insets are updated before centering
+        SwingUtilities.invokeLater(this::centerMouse);
     }
 
     @Override
     public int getMouseDeltaX(int mouseX, int windowCenterX) {
-        return (mouseX - windowCenterX);
+        // Converte o centro relativo (ex: 400) para absoluto da tela (ex: 960)
+        // para comparar corretamente com o mouseX (que é absoluto)
+        if (panel != null && panel.isShowing()) {
+            Point center = new Point(windowCenterX, 0);
+            SwingUtilities.convertPointToScreen(center, panel);
+            return mouseX - center.x;
+        }
+        return 0;
     }
 
     @Override
     public int getMouseDeltaY(int mouseY, int windowCenterY) {
-        return (mouseY - windowCenterY);
+        if (panel != null && panel.isShowing()) {
+            Point center = new Point(0, windowCenterY);
+            SwingUtilities.convertPointToScreen(center, panel);
+            return mouseY - center.y;
+        }
+        return 0;
     }
 
     @Override
@@ -178,10 +197,30 @@ public class Window implements IGameWindow {
     @Override
     public void centerMouse() {
         if (robot != null && isFocused()) {
-            Point loc = frame.getLocationOnScreen();
-            int cx = loc.x + getWidth() / 2;
-            int cy = loc.y + getHeight() / 2;
-            robot.mouseMove(cx, cy);
+            // Calculates the center relative to the Panel (Content Area)
+            // This ensures alignment with MouseEvents which originate from the Panel source
+            int centerX = panel.getWidth() / 2;
+            int centerY = panel.getHeight() / 2;
+            Point dest = new Point(centerX, centerY);
+            
+            // Converts local point (Panel) to absolute screen coordinates
+            SwingUtilities.convertPointToScreen(dest, panel);
+            
+            robot.mouseMove(dest.x, dest.y);
         }
+    }
+
+    @Override
+    public void addInputListener(InputManager input) {
+        // Add listeners to PANEL (Content), not Frame.
+        // This ensures mouse coordinates exclude window borders/title bar.
+        panel.addKeyListener(input);
+        panel.addMouseMotionListener(input);
+        panel.addMouseWheelListener(input);
+    }
+
+    @Override
+    public void requestFocus() {
+        if (panel != null) panel.requestFocus();
     }
 }
