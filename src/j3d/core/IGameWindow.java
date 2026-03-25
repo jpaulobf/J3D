@@ -22,4 +22,5 @@ public interface IGameWindow {
     boolean isKeyDown(InputManager input, int keyCode);
     boolean isKeyPressedOnce(InputManager input, int keyCode);
     boolean isKeyDown(Toolkit defaultToolkit, int vkCapsLock);
+    void centerMouse();
 }
