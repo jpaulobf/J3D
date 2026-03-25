@@ -84,11 +84,13 @@ public class LwjglWindow implements IGameWindow {
             glViewport(0, 0, w, h); // Maps the Normalized Device Coordinates to the new screen size
         });
 
-        glfwSwapInterval(1); // Enable v-sync
         glfwShowWindow(windowHandle);
 
         captureCursor(); // Lock cursor for FPS style immediately
         toggleFullscreen(); // Start in Fullscreen mode (like Software Renderer)
+        
+        //vsync off
+        glfwSwapInterval(0); 
     }
 
     /**
@@ -175,7 +177,9 @@ public class LwjglWindow implements IGameWindow {
             // Restore windowed mode
             glfwSetWindowMonitor(windowHandle, NULL, windowedX, windowedY, windowedW, windowedH, 0);
         }
-        glfwSwapInterval(1); // Re-enable V-Sync
+        
+        //vsync off
+        glfwSwapInterval(0); 
     }
 
     //------ Keyboard ------

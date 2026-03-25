@@ -250,7 +250,7 @@ public class OpenGLRenderer implements IRenderer {
      */
     @Override
     public int[] getFrameBuffer() {
-        return new int[0];
+        return null;
     }
 
     /**
