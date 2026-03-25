@@ -6,7 +6,8 @@ O **J3D** é um motor de renderização 3D híbrido desenvolvido em Java. Ele po
 
 O projeto segue padrões de design modulares para facilitar a manutenção e expansão:
 
-* **`core`**: O núcleo da aplicação. Contém o `Launcher` (ponto de entrada) e o `GameObject`, que encapsula a lógica dos objetos.
+* **`core`**: O núcleo da aplicação. Contém o `Launcher`, a classe base `AbstractGame` (Game Loop) e interfaces centrais.
+* **`player`**: Responsável pela lógica de controle do jogador (`PlayerController`), integrando input e física.
 * **`render`**: Gerencia o pipeline de renderização (`SoftwareRenderer`), a `Camera`, o loop principal e os buffers (Imagem e Z-Buffer).
 * **`math`**: Biblioteca matemática contendo `Matrix4` e `Transform` para cálculos de álgebra linear e transformações.
 * **`geometry`**: Define as formas geométricas (`Mesh`), que podem ser geradas ou carregadas de arquivos, e suas primitivas de construção (`Vertex`, `Triangle`).
