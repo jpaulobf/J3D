@@ -165,9 +165,13 @@ public class OpenGLRenderer implements IRenderer {
                 double nx = (v2.y - v1.y) * (v3.z - v1.z) - (v2.z - v1.z) * (v3.y - v1.y);
                 double ny = (v2.z - v1.z) * (v3.x - v1.x) - (v2.x - v1.x) * (v3.z - v1.z);
                 double nz = (v2.x - v1.x) * (v3.y - v1.y) - (v2.y - v1.y) * (v3.x - v1.x);
-                
+
                 double len = Math.sqrt(nx * nx + ny * ny + nz * nz);
-                if (len > 0) { nx /= len; ny /= len; nz /= len; }
+                if (len > 0) {
+                    nx /= len;
+                    ny /= len;
+                    nz /= len;
+                }
                 glNormal3d(nx, ny, nz);
 
                 // 4. Draw Vertices with UVs
@@ -200,14 +204,15 @@ public class OpenGLRenderer implements IRenderer {
         ByteBuffer buffer = BufferUtils.createByteBuffer(pixels.length * 4);
         for (int pixel : pixels) {
             buffer.put((byte) ((pixel >> 16) & 0xFF)); // R
-            buffer.put((byte) ((pixel >> 8) & 0xFF));  // G
-            buffer.put((byte) (pixel & 0xFF));         // B
+            buffer.put((byte) ((pixel >> 8) & 0xFF)); // G
+            buffer.put((byte) (pixel & 0xFF)); // B
             buffer.put((byte) ((pixel >> 24) & 0xFF)); // A
         }
         buffer.flip();
 
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texture.getWidth(), texture.getHeight(), 0, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
-        
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texture.getWidth(), texture.getHeight(), 0, GL_RGBA, GL_UNSIGNED_BYTE,
+                buffer);
+
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -233,8 +238,8 @@ public class OpenGLRenderer implements IRenderer {
         ByteBuffer buffer = BufferUtils.createByteBuffer(spriteW * spriteH * 4);
         for (int pixel : spritePixels) {
             buffer.put((byte) ((pixel >> 16) & 0xFF)); // R
-            buffer.put((byte) ((pixel >> 8) & 0xFF));  // G
-            buffer.put((byte) (pixel & 0xFF));         // B
+            buffer.put((byte) ((pixel >> 8) & 0xFF)); // G
+            buffer.put((byte) (pixel & 0xFF)); // B
             buffer.put((byte) ((pixel >> 24) & 0xFF)); // A
         }
         buffer.flip();
@@ -245,10 +250,10 @@ public class OpenGLRenderer implements IRenderer {
         }
 
         // 2. Setup GL State for 2D Overlay
-        glDisable(GL_DEPTH_TEST);       // HUD should draw over everything
-        glDisable(GL_CULL_FACE);        // Disable culling for 2D
-        glDisable(GL_LIGHTING);         // Disable lighting for 2D (use texture colors)
-        glEnable(GL_BLEND);             // Enable Transparency
+        glDisable(GL_DEPTH_TEST); // HUD should draw over everything
+        glDisable(GL_CULL_FACE); // Disable culling for 2D
+        glDisable(GL_LIGHTING); // Disable lighting for 2D (use texture colors)
+        glEnable(GL_BLEND); // Enable Transparency
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glEnable(GL_TEXTURE_2D);
 
@@ -272,10 +277,14 @@ public class OpenGLRenderer implements IRenderer {
 
         glColor4f(1, 1, 1, 1); // White tint to draw texture as-is
         glBegin(GL_QUADS);
-            glTexCoord2f(0, 0); glVertex2f(0, 0);
-            glTexCoord2f(1, 0); glVertex2f(spriteW, 0);
-            glTexCoord2f(1, 1); glVertex2f(spriteW, spriteH);
-            glTexCoord2f(0, 1); glVertex2f(0, spriteH);
+        glTexCoord2f(0, 0);
+        glVertex2f(0, 0);
+        glTexCoord2f(1, 0);
+        glVertex2f(spriteW, 0);
+        glTexCoord2f(1, 1);
+        glVertex2f(spriteW, spriteH);
+        glTexCoord2f(0, 1);
+        glVertex2f(0, spriteH);
         glEnd();
 
         // 4. Restore State
@@ -312,5 +321,5 @@ public class OpenGLRenderer implements IRenderer {
     @Override
     public void toggleSsaa() {
         // do nothing
-    }  
+    }
 }
