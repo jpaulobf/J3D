@@ -1,11 +1,8 @@
 package j3d.core;
 
-import j3d.render.IRenderer;
 import j3d.lighting.PointLight;
 import j3d.physics.PhysicsEngine;
 import j3d.enums.RenderType;
-import j3d.factory.RenderFactory;
-import j3d.factory.WindowFactory;
 import j3d.geometry.Mesh;
 import j3d.input.InputManager;
 import j3d.io.ObjLoader;
@@ -24,20 +21,17 @@ import j3d.ui.HUD;
  * loop, processing user input, updating the game state, and rendering the
  * scene.
  */
-public class Game implements Runnable {
+public class Game extends AbstractGame {
 
     // Window resolution constants
     private static final int WIDTH = 1600;
     private static final int HEIGHT = 900;
 
     // Game state variables
-    private boolean running = true;
     private boolean wireframe = false;
     private boolean showLightGizmo = false;
 
     // Game components
-    private IGameWindow window;
-    private IRenderer renderer;
     private InputManager input;
     private Robot robot;
     private Camera camera;
@@ -46,16 +40,10 @@ public class Game implements Runnable {
     private GameObject lightGizmo;
     private List<GameObject> gizmoList;
     private PhysicsEngine physics;
-    private RenderType renderType = RenderType.OPENGL;
+    private static final RenderType RENDER_TYPE = RenderType.OPENGL;
 
     // UI / HUD
     private HUD hud;
-
-    // FPS Control
-    private int TARGET_FPS = 60;
-    private int fps = 0;
-    private int windowCenterX = WIDTH / 2;
-    private int windowCenterY = HEIGHT / 2;
 
     // Player Physics
     private double verticalVelocity = 0;
@@ -68,14 +56,11 @@ public class Game implements Runnable {
      * objects, and lights.
      */
     public Game() {
-        // Game initialization
-        // Select Renderer Here:
-        // renderer = new SoftwareRenderer(WIDTH, HEIGHT);
-        renderer = RenderFactory.createRenderer(renderType, 1600, 900);
+        super("Engine 3D", WIDTH, HEIGHT, RENDER_TYPE);
+    }
 
-        // Factory: Create Window based on Renderer type
-        window = WindowFactory.createWindow(renderType, "Engine 3D", WIDTH, HEIGHT);
-
+    @Override
+    public void init() {
         //game objects
         input = new InputManager();
         camera = new Camera();
@@ -95,10 +80,6 @@ public class Game implements Runnable {
             window.getFrame().setCursor(window.getFrame().getToolkit().createCustomCursor(
                     new BufferedImage(1, 1, 2), new Point(0, 0), ""));
         }
-
-        // Release the OpenGL context from the Main thread so the Game thread can claim
-        // it later
-        window.releaseContext();
 
         // Initial scene object configuration
         this.getSceneInitialObjets();
@@ -242,10 +223,8 @@ public class Game implements Runnable {
      * and updating object rotation. Also calculates current FPS and updates
      * window title with this information.
      */
-    private void update(double deltaTime) {
-        // Speed correction based on FPS to ensure consistent movement
-        double speedCorrection = deltaTime * 60.0;
-
+    @Override
+    public void input() {
         // Toggle rendering and visualization modes
         if (isKeyPressed(KeyEvent.VK_F2))
             wireframe = !wireframe;
@@ -272,6 +251,12 @@ public class Game implements Runnable {
 
         if (isKeyPressed(KeyEvent.VK_ESCAPE))
             System.exit(0);
+    }
+
+    @Override
+    public void update(double deltaTime) {
+        // Speed correction based on FPS to ensure consistent movement
+        double speedCorrection = deltaTime * 60.0;
 
         // Camera movement with mouse
         if (window.isFocused()) {
@@ -279,7 +264,7 @@ public class Game implements Runnable {
             int dx = window.getMouseDeltaX(input.getMouseX(), windowCenterX);
             int dy = window.getMouseDeltaY(input.getMouseY(), windowCenterY);
 
-            if (renderType != RenderType.OPENGL) {
+            if (RENDER_TYPE != RenderType.OPENGL) {
                 if (dx != 0 || dy != 0) {
                     robot.mouseMove(windowCenterX, windowCenterY);
                 }
@@ -291,8 +276,6 @@ public class Game implements Runnable {
                 camera.pitch = Math.max(-1.5, Math.min(1.5, camera.pitch));
             }
         }
-
-        // --- VERTICAL PHYSICS (Gravity and Jump) ---
 
         // Applies gravity to vertical velocity
         verticalVelocity += GRAVITY * deltaTime;
@@ -405,74 +388,17 @@ public class Game implements Runnable {
     // ---------------------------------------------------
 
     @Override
-    public void run() {
-        // Claim the OpenGL context on the rendering thread (Game Thread)
-        window.makeContextCurrent();
-
-        // Initialize renderer resources (Buffers, OpenGL Capabilities, etc.)
-        // Must be called on the thread that owns the context
-        renderer.init();
-
-        // Fixed time step for logic updates
-        // For 60 FPS, this is approximately 16.66ms
-        final double nsPerTick = 1000000000.0 / TARGET_FPS;
-
-        long lastTime = System.nanoTime();
-        double delta = 0;
-
-        long timer = System.currentTimeMillis();
-        int framesCount = 0; // Local variable to count frames
-
-        while (running && !window.shouldClose()) {
-            long now = System.nanoTime();
-            delta += (now - lastTime) / nsPerTick;
-            lastTime = now;
-
-            boolean shouldRender = false;
-
-            // Logic update loop (Physics/Game Logic)
-            // Ensures the game runs at the correct speed regardless of framerate
-            // If the PC lags, this while loop runs multiple times to catch up to real time
-            while (delta >= 1) {
-                update(1.0 / TARGET_FPS); // Pass a constant and stable delta time
-                delta--;
-                shouldRender = true;
-            }
-
-            if (shouldRender) {
-                renderer.clear();
-                renderer.draw(camera, objects, lights, wireframe);
-                if (showLightGizmo) {
-                    renderer.draw(camera, gizmoList, null, true);
-                }
-                hud.draw(renderer, WIDTH, HEIGHT, fps);
-                window.update(renderer.getFrameBuffer());
-                framesCount++;
-            } else {
-                // If no update or render needed, sleep a bit to save CPU
-                try {
-                    Thread.sleep(1);
-                } catch (InterruptedException e) {
-                }
-            }
-
-            // FPS counter update (1 second)
-            if (System.currentTimeMillis() - timer >= 1000) {
-                fps = framesCount;
-                framesCount = 0;
-                timer += 1000;
-
-                // Recalculates window center (in case user moves it)
-                try {
-                    if (window.isFocused()) {
-                        Point loc = window.getLocationOnScreen();
-                        windowCenterX = loc.x + window.getWidth() / 2;
-                        windowCenterY = loc.y + window.getHeight() / 2;
-                    }
-                } catch (Exception e) {
-                }
-            }
+    public void render() {
+        renderer.clear();
+        renderer.draw(camera, objects, lights, wireframe);
+        if (showLightGizmo) {
+            renderer.draw(camera, gizmoList, null, true);
         }
-        window.destroy();
+        hud.draw(renderer, WIDTH, HEIGHT, fps);
+    }
+
+    @Override
+    public void shutdown() {
+        // Release specific resources if needed
     }
 }
