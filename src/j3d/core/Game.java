@@ -8,7 +8,6 @@ import j3d.input.InputManager;
 import j3d.io.ObjLoader;
 import java.awt.Color;
 import java.awt.Point;
-import java.awt.Robot;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.util.List;
@@ -31,22 +30,16 @@ public class Game extends AbstractGame {
     private boolean showLightGizmo = false;
 
     // Game components
-    private Robot robot;
     private Camera camera;
     private List<PointLight> lights;
     private GameObject lightGizmo;
     private List<GameObject> gizmoList;
     private PhysicsEngine physics;
-    private static final RenderType RENDER_TYPE = RenderType.OPENGL;
+    private static final RenderType RENDER_TYPE = RenderType.SOFTWARE;
+    private FirstPersonController playerController;
 
     // UI / HUD
     private HUD hud;
-
-    // Player Physics
-    private double verticalVelocity = 0;
-    private boolean isGrounded = false;
-    private static final double GRAVITY = -25.0; // Gravity acceleration
-    private static final double JUMP_FORCE = 10.0; // Jump force
 
     /**
      * Game constructor, where we initialize the window, renderer, camera,
@@ -69,11 +62,6 @@ public class Game extends AbstractGame {
         gizmoList = new ArrayList<>();
         physics = new PhysicsEngine();
         hud = new HUD(WIDTH, HEIGHT);
-
-        try {
-            robot = new Robot();
-        } catch (Exception e) {
-        }
 
         // Hides the cursor
         if (window.getFrame() != null) {
@@ -98,6 +86,9 @@ public class Game extends AbstractGame {
             // Ensures window gets keyboard focus immediately upon starting
             window.getFrame().requestFocus();
         }
+        
+        // Initialize Player Controller
+        playerController = new FirstPersonController(camera, input, window, physics);
     }
 
     /**
@@ -233,95 +224,14 @@ public class Game extends AbstractGame {
      */
     @Override
     public void update(double deltaTime) {
-        // Speed correction based on FPS to ensure consistent movement
         double speedCorrection = deltaTime * 60.0;
 
-        // Camera movement with mouse
-        if (window.isFocused()) {
+        // Update Player Logic (Movement, Physics, Input)
+        // Now the Game class doesn't need to know HOW the player moves, just that it needs to update.
+        playerController.update(deltaTime, objects);
 
-            int dx = window.getMouseDeltaX(input.getMouseX(), windowCenterX);
-            int dy = window.getMouseDeltaY(input.getMouseY(), windowCenterY);
-
-            if (RENDER_TYPE != RenderType.OPENGL) {
-                if (dx != 0 || dy != 0) {
-                    robot.mouseMove(windowCenterX, windowCenterY);
-                }
-            }
-
-            if (dx != 0 || dy != 0) {
-                camera.yaw += dx * 0.003;
-                camera.pitch += dy * 0.003;
-                camera.pitch = Math.max(-1.5, Math.min(1.5, camera.pitch));
-            }
-        }
-
-        // Applies gravity to vertical velocity
-        verticalVelocity += GRAVITY * deltaTime;
-
-        // Jump (only if grounded)
-        if (isKeyPressed(KeyEvent.VK_SPACE) && isGrounded) {
-            verticalVelocity = JUMP_FORCE;
-            isGrounded = false;
-        }
-
-        // Applies vertical velocity and resolves collision
-        double dy = verticalVelocity * deltaTime;
-        double nextY = camera.transform.y + dy;
-
-        if (physics.checkPlayerCollision(camera.transform.x, nextY, camera.transform.z, objects)) {
-            if (verticalVelocity < 0) {
-                isGrounded = true; // Collided falling -> Floor
-                verticalVelocity = 0;
-            } else if (verticalVelocity > 0) {
-                verticalVelocity = 0; // Collided rising -> Ceiling
-            }
-            // If collided, do not update Y (prevents clipping)
-        } else {
-            camera.transform.y = nextY;
-            isGrounded = false; // Moved freely in Y, is in air (or falling)
-        }
-
-        // Camera movement with keyboard (WASD)
-        double baseSpeed = 0.3;
-        try {
-            if (isSprintActive())
-                baseSpeed *= 2;
-        } catch (Exception e) {
-        }
-
-        double camSp = baseSpeed * speedCorrection;
-        double sY = Math.sin(camera.yaw);
-        double cY = Math.cos(camera.yaw);
-
-        double dx = 0;
-        double dz = 0;
-
-        if (isKeyHeld(KeyEvent.VK_W)) {
-            dx += sY * camSp;
-            dz -= cY * camSp;
-        }
-        if (isKeyHeld(KeyEvent.VK_S)) {
-            dx -= sY * camSp;
-            dz += cY * camSp;
-        }
-        if (isKeyHeld(KeyEvent.VK_A)) {
-            dx -= cY * camSp;
-            dz -= sY * camSp;
-        }
-        if (isKeyHeld(KeyEvent.VK_D)) {
-            dx += cY * camSp;
-            dz += sY * camSp;
-        }
-
-        // Applies movement on X axis if no collision
-        if (!physics.checkPlayerCollision(camera.transform.x + dx, camera.transform.y, camera.transform.z, objects)) {
-            camera.transform.x += dx;
-        }
-
-        // Applies movement on Z axis if no collision (allows sliding on walls)
-        if (!physics.checkPlayerCollision(camera.transform.x, camera.transform.y, camera.transform.z + dz, objects)) {
-            camera.transform.z += dz;
-        }
+        // Handles legacy Robot mouse re-centering for Software Render (if strictly needed)
+        // Note: The Controller now handles mouse look calculation, but re-centering logic can stay here or move there.
 
         // Light Logic (Flashlight)
         // Light follows camera position, but slightly ahead
@@ -348,7 +258,6 @@ public class Game extends AbstractGame {
         lightGizmo.transform.x = spot.pos.x;
         lightGizmo.transform.y = spot.pos.y;
         lightGizmo.transform.z = spot.pos.z;
-
     }
 
     /**
