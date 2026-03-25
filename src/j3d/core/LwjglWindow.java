@@ -14,12 +14,32 @@ import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.system.MemoryUtil.NULL;
 import static org.lwjgl.opengl.GL11.glViewport;
 
+/**
+ * Window class responsible for creating the game window, managing the canvas
+ * for rendering, and displaying the FPS counter.
+ */
 public class LwjglWindow implements IGameWindow {
 
     private long windowHandle;
     private int width;
     private int height;
+    private boolean isFullscreen = false;
+    private int windowedX = 0; 
+    private int windowedY = 0; 
+    private int windowedW = 1280;
+    private int windowedH = 720;
+    private double lastX = 0;
+    private double lastY = 0;
+    private boolean firstMouse = true;
+    private boolean[] keyState = new boolean[GLFW_KEY_LAST + 1];
 
+    /**
+     * Constructor for the Window class, where we initialize the JFrame, set it to
+     * fullscreen, and prepare the canvas for rendering.
+     * @param title
+     * @param width
+     * @param height
+     */
     public LwjglWindow(String title, int width, int height) {
         this.width = width;
         this.height = height;
@@ -47,12 +67,14 @@ public class LwjglWindow implements IGameWindow {
             IntBuffer pHeight = stack.mallocInt(1);
             glfwGetWindowSize(windowHandle, pWidth, pHeight);
             GLFWVidMode vidmode = glfwGetVideoMode(glfwGetPrimaryMonitor());
-            glfwSetWindowPos(windowHandle, (vidmode.width() - pWidth.get(0)) / 2, (vidmode.height() - pHeight.get(0)) / 2);
+            glfwSetWindowPos(windowHandle, (vidmode.width() - pWidth.get(0)) / 2,
+                    (vidmode.height() - pHeight.get(0)) / 2);
         }
 
         glfwMakeContextCurrent(windowHandle);
-        GL.createCapabilities(); // Inicializa o OpenGL na Thread Principal para permitir chamadas como glViewport
-        
+        GL.createCapabilities(); // Inicializa o OpenGL na Thread Principal para permitir chamadas como
+                                 // glViewport
+
         // Detect window resize (Manual or Fullscreen toggle) and update OpenGL Viewport
         glfwSetFramebufferSizeCallback(windowHandle, (window, w, h) -> {
             this.width = w;
@@ -66,6 +88,11 @@ public class LwjglWindow implements IGameWindow {
         toggleFullscreen(); // Start in Fullscreen mode (like Software Renderer)
     }
 
+    /**
+     * Updates canvas pixels with renderer data and current FPS, and requests screen
+     * repaint.
+     * @param pixelBuffer
+     */
     @Override
     public void update(int[] pixelBuffer) {
         // In OpenGL, we don't copy a CPU pixel buffer to screen.
@@ -74,57 +101,49 @@ public class LwjglWindow implements IGameWindow {
         glfwPollEvents();
     }
 
+    /**
+     * Getter for JFrame, necessary to capture input events and get mouse position.
+     * @return
+     */
     @Override
     public boolean shouldClose() {
         return glfwWindowShouldClose(windowHandle);
     }
 
+    /**
+     * Destroyer
+     */
     @Override
     public void destroy() {
         glfwDestroyWindow(windowHandle);
         glfwTerminate();
     }
-    
+
+    /**
+     * Return the Window Handle
+     * @return
+     */
     public long getHandle() {
         return windowHandle;
     }
 
-    public int getWidth() { return width; }
-    public int getHeight() { return height; }
-
-    @Override
-    public JFrame getFrame() {
-        return null;
-    }
-
+    /**
+     * Release the Context
+     */
     public void releaseContext() {
         glfwMakeContextCurrent(NULL);
     }
 
+    /**
+     * Make the Context Current
+     */
     public void makeContextCurrent() {
         glfwMakeContextCurrent(windowHandle);
     }
 
-    @Override
-    public boolean isFocused() {
-        return glfwGetWindowAttrib(windowHandle, GLFW_FOCUSED) == GLFW_TRUE;
-    }
-
-    @Override
-    public Point getLocationOnScreen() {
-        try (MemoryStack stack = MemoryStack.stackPush()) {
-            IntBuffer x = stack.mallocInt(1);
-            IntBuffer y = stack.mallocInt(1);
-            glfwGetWindowPos(windowHandle, x, y);
-            return new Point(x.get(0), y.get(0));
-        }
-    }
-
-    // --- FULLSCREEN HANDLING ---
-
-    private boolean isFullscreen = false;
-    private int windowedX = 0, windowedY = 0, windowedW = 1280, windowedH = 720;
-
+    /**
+     * Toggle Fullscreen
+     */
     @Override
     public void toggleFullscreen() {
         isFullscreen = !isFullscreen;
@@ -156,16 +175,37 @@ public class LwjglWindow implements IGameWindow {
         glfwSwapInterval(1); // Re-enable V-Sync
     }
 
-    // --- INPUT HANDLING ---
-
+    /**
+     * Capture the cursor
+     */
     public void captureCursor() {
         glfwSetInputMode(windowHandle, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     }
 
-    // Mouse state for delta calculation
-    private double lastX = 0, lastY = 0;
-    private boolean firstMouse = true;
+    /**
+     * Verify if the window is focused
+     */
+    @Override
+    public boolean isFocused() {
+        return glfwGetWindowAttrib(windowHandle, GLFW_FOCUSED) == GLFW_TRUE;
+    }
 
+    @Override
+    public Point getLocationOnScreen() {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            IntBuffer x = stack.mallocInt(1);
+            IntBuffer y = stack.mallocInt(1);
+            glfwGetWindowPos(windowHandle, x, y);
+            return new Point(x.get(0), y.get(0));
+        }
+    }
+
+    /**
+     * Get the mouse delta in axis X
+     * @param mouseX
+     * @param windowCenterX
+     * @return
+     */
     @Override
     public int getMouseDeltaX(int mouseX, int windowCenterX) {
         double[] x = new double[1];
@@ -184,30 +224,48 @@ public class LwjglWindow implements IGameWindow {
         return dx;
     }
 
+    /**
+     * Get the mouse delta in axis Y
+     * @param mouseY
+     * @param windowCenterY
+     * @return
+     */
     @Override
     public int getMouseDeltaY(int mouseY, int windowCenterY) {
         double[] x = new double[1];
         double[] y = new double[1];
         glfwGetCursorPos(windowHandle, x, y);
 
-        // Note: firstMouse handled in X usually, but strictly speaking we should check here too
-        // However, assuming X is called first or initialization happens once, we just calc delta.
+        // Note: firstMouse handled in X usually, but strictly speaking we should check
+        // here too
+        // However, assuming X is called first or initialization happens once, we just
+        // calc delta.
         int dy = (int) (y[0] - lastY);
         lastY = y[0];
         return dy;
     }
 
+    /**
+     * Verify if a key is pressed
+     * @param awtKeyCode
+     * @return
+     */
     public boolean isKeyDown(int awtKeyCode) {
         int glfwKey = mapAwtToGlfw(awtKeyCode);
-        if (glfwKey == -1) return false;
+        if (glfwKey == -1)
+            return false;
         return glfwGetKey(windowHandle, glfwKey) == GLFW_PRESS;
     }
 
-    private boolean[] keyState = new boolean[GLFW_KEY_LAST + 1];
-
+    /**
+     * Verify if any key was pressed once
+     * @param awtKeyCode
+     * @return
+     */
     public boolean isKeyPressedOnce(int awtKeyCode) {
         int glfwKey = mapAwtToGlfw(awtKeyCode);
-        if (glfwKey == -1) return false;
+        if (glfwKey == -1)
+            return false;
 
         boolean isDown = glfwGetKey(windowHandle, glfwKey) == GLFW_PRESS;
         boolean wasDown = keyState[glfwKey];
@@ -216,31 +274,57 @@ public class LwjglWindow implements IGameWindow {
         return isDown && !wasDown; // Rising edge (trigger once)
     }
 
+    /**
+     * Map the AWT Keys to GLFW Keys.
+     * @param awtCode
+     * @return
+     */
     private int mapAwtToGlfw(int awtCode) {
         switch (awtCode) {
-            case KeyEvent.VK_W: return GLFW_KEY_W;
-            case KeyEvent.VK_S: return GLFW_KEY_S;
-            case KeyEvent.VK_A: return GLFW_KEY_A;
-            case KeyEvent.VK_D: return GLFW_KEY_D;
-            case KeyEvent.VK_SPACE: return GLFW_KEY_SPACE;
-            case KeyEvent.VK_ESCAPE: return GLFW_KEY_ESCAPE;
-            case KeyEvent.VK_F2: return GLFW_KEY_F2;
-            case KeyEvent.VK_F3: return GLFW_KEY_F3;
-            case KeyEvent.VK_F4: return GLFW_KEY_F4;
-            case KeyEvent.VK_F5: return GLFW_KEY_F5;
-            case KeyEvent.VK_F6: return GLFW_KEY_F6;
-            case KeyEvent.VK_F10: return GLFW_KEY_F10;
-            case KeyEvent.VK_F12: return GLFW_KEY_F12;
+            case KeyEvent.VK_W:
+                return GLFW_KEY_W;
+            case KeyEvent.VK_S:
+                return GLFW_KEY_S;
+            case KeyEvent.VK_A:
+                return GLFW_KEY_A;
+            case KeyEvent.VK_D:
+                return GLFW_KEY_D;
+            case KeyEvent.VK_SPACE:
+                return GLFW_KEY_SPACE;
+            case KeyEvent.VK_ESCAPE:
+                return GLFW_KEY_ESCAPE;
+            case KeyEvent.VK_F2:
+                return GLFW_KEY_F2;
+            case KeyEvent.VK_F3:
+                return GLFW_KEY_F3;
+            case KeyEvent.VK_F4:
+                return GLFW_KEY_F4;
+            case KeyEvent.VK_F5:
+                return GLFW_KEY_F5;
+            case KeyEvent.VK_F6:
+                return GLFW_KEY_F6;
+            case KeyEvent.VK_F10:
+                return GLFW_KEY_F10;
+            case KeyEvent.VK_F12:
+                return GLFW_KEY_F12;
             // Light controls
-            case KeyEvent.VK_U: return GLFW_KEY_U;
-            case KeyEvent.VK_O: return GLFW_KEY_O;
-            case KeyEvent.VK_J: return GLFW_KEY_J;
-            case KeyEvent.VK_L: return GLFW_KEY_L;
-            case KeyEvent.VK_I: return GLFW_KEY_I;
-            case KeyEvent.VK_K: return GLFW_KEY_K;
+            case KeyEvent.VK_U:
+                return GLFW_KEY_U;
+            case KeyEvent.VK_O:
+                return GLFW_KEY_O;
+            case KeyEvent.VK_J:
+                return GLFW_KEY_J;
+            case KeyEvent.VK_L:
+                return GLFW_KEY_L;
+            case KeyEvent.VK_I:
+                return GLFW_KEY_I;
+            case KeyEvent.VK_K:
+                return GLFW_KEY_K;
             // Map CapsLock to Left Shift for Sprinting in GLFW
-            case KeyEvent.VK_CAPS_LOCK: return GLFW_KEY_LEFT_SHIFT;
-            default: return -1;
+            case KeyEvent.VK_CAPS_LOCK:
+                return GLFW_KEY_LEFT_SHIFT;
+            default:
+                return -1;
         }
     }
 
@@ -264,18 +348,31 @@ public class LwjglWindow implements IGameWindow {
     }
 
     @Override
+    public void requestFocus() {
+        glfwFocusWindow(windowHandle);
+    }
+
+    @Override
     public void centerMouse() {
-        // GLFW handles mouse locking via InputMode, no manual recenter needed.
+        // Do nothing
     }
 
     @Override
     public void addInputListener(InputManager input) {
-        // GLFW Input is handled via polling in update(), or callbacks handled internally.
-        // We do not use AWT Listeners here.
+        // Do nothing
+    }  
+
+    // Getters
+    public int getWidth() {
+        return width;
+    }
+
+    public int getHeight() {
+        return height;
     }
 
     @Override
-    public void requestFocus() {
-        glfwFocusWindow(windowHandle);
+    public JFrame getFrame() {
+        return null;
     }
 }
