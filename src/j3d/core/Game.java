@@ -9,7 +9,6 @@ import j3d.io.ObjLoader;
 import java.awt.Color;
 import java.awt.Point;
 import java.awt.Robot;
-import java.awt.Toolkit;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.util.List;
@@ -32,10 +31,8 @@ public class Game extends AbstractGame {
     private boolean showLightGizmo = false;
 
     // Game components
-    private InputManager input;
     private Robot robot;
     private Camera camera;
-    private List<GameObject> objects;
     private List<PointLight> lights;
     private GameObject lightGizmo;
     private List<GameObject> gizmoList;
@@ -59,6 +56,9 @@ public class Game extends AbstractGame {
         super("Engine 3D", WIDTH, HEIGHT, RENDER_TYPE);
     }
 
+    /**
+     * Initialize the game.
+     */
     @Override
     public void init() {
         //game objects
@@ -115,32 +115,6 @@ public class Game extends AbstractGame {
         // Validated orientation
         camera.yaw = 0;
         camera.pitch = 0;
-    }
-
-    /**
-     * Helper to create solid blocks (Walls, Floors, Steps).
-     * Uses standard cube and adjusts scale and position.
-     */
-    private void createBlock(double x, double y, double z, double sX, double sY, double sZ, Color color) {
-        // Creates base cube
-        Mesh m = Mesh.createCube();
-
-        // Optional: Paint the cube a solid color to look better than standard rainbow
-        if (color != null) {
-            for (j3d.geometry.Triangle t : m.triangles) {
-                t.baseColor = color;
-            }
-        }
-
-        GameObject obj = new GameObject(m);
-        obj.transform.x = x;
-        obj.transform.y = y;
-        obj.transform.z = z;
-        obj.transform.scaleX = sX;
-        obj.transform.scaleY = sY;
-        obj.transform.scaleZ = sZ;
-
-        objects.add(obj);
     }
 
     /**
@@ -253,6 +227,10 @@ public class Game extends AbstractGame {
             System.exit(0);
     }
 
+    /**
+     * Update the game.
+     * @param deltaTime
+     */
     @Override
     public void update(double deltaTime) {
         // Speed correction based on FPS to ensure consistent movement
@@ -373,20 +351,9 @@ public class Game extends AbstractGame {
 
     }
 
-    // --- INPUT HELPERS (Abstraction for AWT vs GLFW) ---
-    private boolean isKeyHeld(int keyCode) {
-        return window.isKeyDown(input, keyCode);
-    }
-
-    private boolean isKeyPressed(int keyCode) {
-        return window.isKeyPressedOnce(input, keyCode);
-    }
-
-    private boolean isSprintActive() {
-        return (window.isKeyDown(Toolkit.getDefaultToolkit(), KeyEvent.VK_CAPS_LOCK));
-    }
-    // ---------------------------------------------------
-
+    /**
+     * Render the scene.
+     */
     @Override
     public void render() {
         renderer.clear();
@@ -397,6 +364,9 @@ public class Game extends AbstractGame {
         hud.draw(renderer, WIDTH, HEIGHT, fps);
     }
 
+    /**
+     * Shutdown the game.
+     */
     @Override
     public void shutdown() {
         // Release specific resources if needed
