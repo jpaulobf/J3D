@@ -1,6 +1,7 @@
 package j3d.core;
 
 import javax.swing.*;
+import j3d.input.InputManager;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
@@ -139,12 +140,31 @@ public class Window implements IGameWindow {
     }
 
     @Override
-    public int getMouseDeltaX() {
-        return 0;
+    public int getMouseDeltaX(int mouseX, int windowCenterX) {
+        return (mouseX - windowCenterX);
     }
 
     @Override
-    public int getMouseDeltaY() {
-        return 0;
+    public int getMouseDeltaY(int mouseY, int windowCenterY) {
+        return (mouseY - windowCenterY);
+    }
+
+    @Override
+    public boolean isKeyDown(InputManager input, int keyCode) {
+        return input.isKeyHeld(keyCode);
+    }
+
+    @Override
+    public boolean isKeyPressedOnce(InputManager input, int keyCode) {
+        return input.isKeyPressed(keyCode);
+    }
+
+    @Override
+    public boolean isKeyDown(Toolkit defaultToolkit, int vkCapsLock) {
+        try {
+            return defaultToolkit.getLockingKeyState(vkCapsLock);
+        } catch (Exception e) {
+            return false;
+        }
     }
 }
