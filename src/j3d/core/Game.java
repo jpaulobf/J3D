@@ -1,7 +1,7 @@
 package j3d.core;
 
-import j3d.lighting.PointLight;
 import j3d.physics.PhysicsEngine;
+import j3d.lighting.LightController;
 import j3d.player.PlayerController;
 import j3d.enums.RenderType;
 import j3d.geometry.Mesh;
@@ -28,16 +28,13 @@ public class Game extends AbstractGame {
 
     // Game state variables
     private boolean wireframe = false;
-    private boolean showLightGizmo = false;
 
     // Game components
     private Camera camera;
-    private List<PointLight> lights;
-    private GameObject lightGizmo;
-    private List<GameObject> gizmoList;
     private PhysicsEngine physics;
-    private static final RenderType RENDER_TYPE = RenderType.OPENGL;
+    private static final RenderType RENDER_TYPE = RenderType.SOFTWARE;
     private PlayerController playerController;
+    private LightController lightController;
 
     // UI / HUD
     private HUD hud;
@@ -59,8 +56,6 @@ public class Game extends AbstractGame {
         input = new InputManager();
         camera = new Camera();
         objects = new ArrayList<>();
-        lights = new ArrayList<>();
-        gizmoList = new ArrayList<>();
         physics = new PhysicsEngine();
         hud = new HUD(WIDTH, HEIGHT);
 
@@ -90,6 +85,7 @@ public class Game extends AbstractGame {
         
         // Initialize Player Controller
         playerController = new PlayerController(camera, input, window, physics);
+        lightController = new LightController(camera, input, window);
     }
 
     /**
@@ -177,11 +173,6 @@ public class Game extends AbstractGame {
             obj.transform.setScale(20);
             objects.add(obj);
         }
-
-        // Light configuration
-        lights.add(new PointLight(0, 0, 0, Color.WHITE, 2)); // "Flashlight" Light
-        lightGizmo = new GameObject(Mesh.createSphere(0.2, 8, 8));
-        gizmoList.add(lightGizmo);
     }
 
     /**
@@ -194,8 +185,6 @@ public class Game extends AbstractGame {
         // Toggle rendering and visualization modes
         if (isKeyPressed(KeyEvent.VK_F2))
             wireframe = !wireframe;
-        if (isKeyPressed(KeyEvent.VK_F3))
-            showLightGizmo = !showLightGizmo;
         if (isKeyPressed(KeyEvent.VK_F4))
             GameObject.gouraud = !GameObject.gouraud;
 
@@ -225,40 +214,12 @@ public class Game extends AbstractGame {
      */
     @Override
     public void update(double deltaTime) {
-        double speedCorrection = deltaTime * 60.0;
-
         // Update Player Logic (Movement, Physics, Input)
         // Now the Game class doesn't need to know HOW the player moves, just that it needs to update.
         playerController.update(deltaTime, objects);
 
-        // Handles legacy Robot mouse re-centering for Software Render (if strictly needed)
-        // Note: The Controller now handles mouse look calculation, but re-centering logic can stay here or move there.
-
-        // Light Logic (Flashlight)
-        // Light follows camera position, but slightly ahead
-        j3d.lighting.PointLight spot = lights.get(0);
-        spot.pos.x = camera.transform.x;
-        spot.pos.y = camera.transform.y;
-        spot.pos.z = camera.transform.z;
-
-        // Manual light controls (optional, kept for debug)
-        double lSp = 0.3 * speedCorrection;
-        if (isKeyHeld(KeyEvent.VK_U))
-            spot.pos.z -= lSp;
-        if (isKeyHeld(KeyEvent.VK_O))
-            spot.pos.z += lSp;
-        if (isKeyHeld(KeyEvent.VK_J))
-            spot.pos.x -= lSp;
-        if (isKeyHeld(KeyEvent.VK_L))
-            spot.pos.x += lSp;
-        if (isKeyHeld(KeyEvent.VK_I))
-            spot.pos.y += lSp;
-        if (isKeyHeld(KeyEvent.VK_K))
-            spot.pos.y -= lSp;
-
-        lightGizmo.transform.x = spot.pos.x;
-        lightGizmo.transform.y = spot.pos.y;
-        lightGizmo.transform.z = spot.pos.z;
+        // Update Light Logic
+        lightController.update(deltaTime);
     }
 
     /**
@@ -267,9 +228,9 @@ public class Game extends AbstractGame {
     @Override
     public void render() {
         renderer.clear();
-        renderer.draw(camera, objects, lights, wireframe);
-        if (showLightGizmo) {
-            renderer.draw(camera, gizmoList, null, true);
+        renderer.draw(camera, objects, lightController.getLights(), wireframe);
+        if (lightController.isShowGizmos()) {
+            renderer.draw(camera, lightController.getGizmos(), null, true);
         }
         hud.draw(renderer, WIDTH, HEIGHT, fps);
     }
