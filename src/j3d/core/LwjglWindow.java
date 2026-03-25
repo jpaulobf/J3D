@@ -3,11 +3,12 @@ package j3d.core;
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.glfw.GLFWVidMode;
 import org.lwjgl.system.MemoryStack;
+import j3d.input.InputManager;
 import javax.swing.JFrame;
 import java.awt.Point;
+import java.awt.Toolkit;
 import java.awt.event.KeyEvent;
 import java.nio.IntBuffer;
-
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.system.MemoryUtil.NULL;
 
@@ -221,14 +222,33 @@ public class LwjglWindow implements IGameWindow {
     }
 
     @Override
-    public int getMouseDeltaX() {
+    public int getMouseDeltaX(int mouseX, int windowCenterX) {
         Point delta = this.getMouseDelta();
         return (delta.x);
     }
 
     @Override
-    public int getMouseDeltaY() {
+    public int getMouseDeltaY(int mouseY, int windowCenterY) {
         Point delta = this.getMouseDelta();
         return (delta.y);
+    }
+
+    @Override
+    public boolean isKeyDown(InputManager input, int keyCode) {
+        return this.isKeyDown(keyCode);
+    }
+
+    @Override
+    public boolean isKeyPressedOnce(InputManager input, int keyCode) {
+        return this.isKeyPressedOnce(keyCode);
+    }
+
+    @Override
+    public boolean isKeyDown(Toolkit defaultToolkit, int vkCapsLock) {
+        try {
+            return this.isKeyDown(KeyEvent.VK_CAPS_LOCK);
+        } catch (Exception e) {
+            return false;
+        }
     }
 }
