@@ -17,6 +17,7 @@ public class Window implements IGameWindow {
     private boolean closeRequested = false;
     private int originalWidth;
     private int originalHeight;
+    private Robot robot;
 
     /**
      * Constructor for the Window class, where we initialize the JFrame, set it to
@@ -33,6 +34,12 @@ public class Window implements IGameWindow {
         frame.setUndecorated(true); // Removes borders and title bar
         canvas = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
         canvasPixels = ((DataBufferInt) canvas.getRaster().getDataBuffer()).getData();
+
+        try {
+            robot = new Robot();
+        } catch (AWTException e) {
+            e.printStackTrace();
+        }
 
         JPanel panel = new JPanel() {
             @Override
@@ -165,6 +172,16 @@ public class Window implements IGameWindow {
             return defaultToolkit.getLockingKeyState(vkCapsLock);
         } catch (Exception e) {
             return false;
+        }
+    }
+
+    @Override
+    public void centerMouse() {
+        if (robot != null && isFocused()) {
+            Point loc = frame.getLocationOnScreen();
+            int cx = loc.x + getWidth() / 2;
+            int cy = loc.y + getHeight() / 2;
+            robot.mouseMove(cx, cy);
         }
     }
 }
