@@ -11,6 +11,8 @@ import j3d.lighting.PointLight;
 import java.awt.Color;
 import java.nio.ByteBuffer;
 import org.lwjgl.BufferUtils;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * OpenGLRenderer class implementing the IRenderer interface, responsible for
@@ -21,6 +23,7 @@ public class OpenGLRenderer implements IRenderer {
     private int width = 0;
     private int height = 0;
     private int hudTextureId = -1; // Cache for the HUD texture ID
+    private final Map<j3d.graphics.Texture, Integer> textureCache = new HashMap<>();
 
     /**
      * Constructor for OpenGLRenderer.
@@ -137,39 +140,81 @@ public class OpenGLRenderer implements IRenderer {
 
             glBegin(GL_TRIANGLES);
             for (Triangle t : obj.mesh.triangles) {
-                // Set Color
+                // 1. Handle Texture
+                if (t.texture != null) {
+                    int texId = getOrCreateTexture(t.texture);
+                    glEnd(); // Must end current primitive to change state
+                    glEnable(GL_TEXTURE_2D);
+                    glBindTexture(GL_TEXTURE_2D, texId);
+                    glBegin(GL_TRIANGLES);
+                } else {
+                    glEnd();
+                    glDisable(GL_TEXTURE_2D);
+                    glBegin(GL_TRIANGLES);
+                }
+
+                // 2. Set Color (Modulates with texture if active)
                 Color c = t.baseColor;
                 glColor3f(c.getRed() / 255f, c.getGreen() / 255f, c.getBlue() / 255f);
 
-                // Send Vertices
-                // Note: We should calculate normals per vertex for smooth lighting,
-                // but flat normals per triangle is acceptable for now.
                 Vertex v1 = obj.mesh.vertices.get(t.v1);
                 Vertex v2 = obj.mesh.vertices.get(t.v2);
                 Vertex v3 = obj.mesh.vertices.get(t.v3);
 
-                // Calculate simple flat normal
+                // 3. Normal Calculation (Flat)
                 double nx = (v2.y - v1.y) * (v3.z - v1.z) - (v2.z - v1.z) * (v3.y - v1.y);
                 double ny = (v2.z - v1.z) * (v3.x - v1.x) - (v2.x - v1.x) * (v3.z - v1.z);
                 double nz = (v2.x - v1.x) * (v3.y - v1.y) - (v2.y - v1.y) * (v3.x - v1.x);
-                // Normalize
+                
                 double len = Math.sqrt(nx * nx + ny * ny + nz * nz);
-                if (len > 0) {
-                    nx /= len;
-                    ny /= len;
-                    nz /= len;
-                }
-
+                if (len > 0) { nx /= len; ny /= len; nz /= len; }
                 glNormal3d(nx, ny, nz);
 
-                // Draw Vertices
+                // 4. Draw Vertices with UVs
+                glTexCoord2d(v1.u, v1.v);
                 glVertex3d(v1.x, v1.y, v1.z);
+                glTexCoord2d(v2.u, v2.v);
                 glVertex3d(v2.x, v2.y, v2.z);
+                glTexCoord2d(v3.u, v3.v);
                 glVertex3d(v3.x, v3.y, v3.z);
             }
             glEnd();
+            glDisable(GL_TEXTURE_2D); // Reset state for next object
             glPopMatrix();
         }
+    }
+
+    /**
+     * Helper to load J3D Texture into OpenGL ID with caching.
+     */
+    private int getOrCreateTexture(j3d.graphics.Texture texture) {
+        if (textureCache.containsKey(texture)) {
+            return textureCache.get(texture);
+        }
+
+        int id = glGenTextures();
+        glBindTexture(GL_TEXTURE_2D, id);
+
+        // J3D Texture uses ARGB, OpenGL expects RGBA
+        int[] pixels = texture.getPixels();
+        ByteBuffer buffer = BufferUtils.createByteBuffer(pixels.length * 4);
+        for (int pixel : pixels) {
+            buffer.put((byte) ((pixel >> 16) & 0xFF)); // R
+            buffer.put((byte) ((pixel >> 8) & 0xFF));  // G
+            buffer.put((byte) (pixel & 0xFF));         // B
+            buffer.put((byte) ((pixel >> 24) & 0xFF)); // A
+        }
+        buffer.flip();
+
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texture.getWidth(), texture.getHeight(), 0, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
+        
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+        textureCache.put(texture, id);
+        return id;
     }
 
     /**
