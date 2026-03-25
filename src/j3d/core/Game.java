@@ -5,6 +5,7 @@ import j3d.lighting.PointLight;
 import j3d.physics.PhysicsEngine;
 import j3d.enums.RenderType;
 import j3d.factory.RenderFactory;
+import j3d.factory.WindowFactory;
 import j3d.geometry.Mesh;
 import j3d.input.InputManager;
 import j3d.io.ObjLoader;
@@ -73,13 +74,9 @@ public class Game implements Runnable {
         renderer = RenderFactory.createRenderer(renderType, 1600, 900);
 
         // Factory: Create Window based on Renderer type
-        if (renderType == RenderType.OPENGL) {
-            window = new LwjglWindow("Engine 3D - OpenGL", WIDTH, HEIGHT);
-            ((LwjglWindow) window).captureCursor(); // Hides and locks cursor for FPS view
-        } else {
-            window = new Window("Engine 3D - Software", WIDTH, HEIGHT);
-        }
+        window = WindowFactory.createWindow(renderType, "Engine 3D", WIDTH, HEIGHT);
 
+        //game objects
         input = new InputManager();
         camera = new Camera();
         objects = new ArrayList<>();
@@ -279,14 +276,10 @@ public class Game implements Runnable {
         // Camera movement with mouse
         if (window.isFocused()) {
 
-            int dx = window.getMouseDeltaX();
-            int dy = window.getMouseDeltaY();
+            int dx = window.getMouseDeltaX(input.getMouseX(), windowCenterX);
+            int dy = window.getMouseDeltaY(input.getMouseY(), windowCenterY);
 
             if (renderType != RenderType.OPENGL) {
-                // Calculates mouse displacement from window center (Legacy AWT)
-                dx = input.getMouseX() - windowCenterX;
-                dy = input.getMouseY() - windowCenterY;
-
                 if (dx != 0 || dy != 0) {
                     robot.mouseMove(windowCenterX, windowCenterY);
                 }
@@ -398,32 +391,16 @@ public class Game implements Runnable {
     }
 
     // --- INPUT HELPERS (Abstraction for AWT vs GLFW) ---
-
     private boolean isKeyHeld(int keyCode) {
-        if (window instanceof LwjglWindow) {
-            return ((LwjglWindow) window).isKeyDown(keyCode);
-        }
-        return input.isKeyHeld(keyCode);
+        return window.isKeyDown(input, keyCode);
     }
 
     private boolean isKeyPressed(int keyCode) {
-        if (window instanceof LwjglWindow) {
-            return ((LwjglWindow) window).isKeyPressedOnce(keyCode);
-        }
-        return input.isKeyPressed(keyCode);
+        return window.isKeyPressedOnce(input, keyCode);
     }
 
     private boolean isSprintActive() {
-        try {
-            if (window instanceof LwjglWindow) {
-                // GLFW: Use Shift as sprint (mapped from VK_CAPS_LOCK in LwjglWindow)
-                return ((LwjglWindow) window).isKeyDown(KeyEvent.VK_CAPS_LOCK);
-            }
-            // AWT: Use Caps Lock State
-            return Toolkit.getDefaultToolkit().getLockingKeyState(KeyEvent.VK_CAPS_LOCK);
-        } catch (Exception e) {
-            return false;
-        }
+        return (window.isKeyDown(Toolkit.getDefaultToolkit(), KeyEvent.VK_CAPS_LOCK));
     }
     // ---------------------------------------------------
 
