@@ -4,6 +4,7 @@ import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.glfw.GLFWVidMode;
 import org.lwjgl.system.MemoryStack;
 import j3d.input.InputManager;
+import org.lwjgl.opengl.GL;
 import javax.swing.JFrame;
 import java.awt.Point;
 import java.awt.Toolkit;
@@ -11,6 +12,7 @@ import java.awt.event.KeyEvent;
 import java.nio.IntBuffer;
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.system.MemoryUtil.NULL;
+import static org.lwjgl.opengl.GL11.glViewport;
 
 public class LwjglWindow implements IGameWindow {
 
@@ -49,8 +51,19 @@ public class LwjglWindow implements IGameWindow {
         }
 
         glfwMakeContextCurrent(windowHandle);
+        GL.createCapabilities(); // Inicializa o OpenGL na Thread Principal para permitir chamadas como glViewport
+        
+        // Detect window resize (Manual or Fullscreen toggle) and update OpenGL Viewport
+        glfwSetFramebufferSizeCallback(windowHandle, (window, w, h) -> {
+            this.width = w;
+            this.height = h;
+            glViewport(0, 0, w, h); // Maps the Normalized Device Coordinates to the new screen size
+        });
+
         glfwSwapInterval(1); // Enable v-sync
         glfwShowWindow(windowHandle);
+
+        toggleFullscreen(); // Start in Fullscreen mode (like Software Renderer)
     }
 
     @Override
