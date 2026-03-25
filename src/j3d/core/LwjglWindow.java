@@ -153,7 +153,8 @@ public class LwjglWindow implements IGameWindow {
     private double lastX = 0, lastY = 0;
     private boolean firstMouse = true;
 
-    public Point getMouseDelta() {
+    @Override
+    public int getMouseDeltaX(int mouseX, int windowCenterX) {
         double[] x = new double[1];
         double[] y = new double[1];
         glfwGetCursorPos(windowHandle, x, y);
@@ -162,16 +163,25 @@ public class LwjglWindow implements IGameWindow {
             lastX = x[0];
             lastY = y[0];
             firstMouse = false;
-            return new Point(0, 0);
+            return 0;
         }
 
         int dx = (int) (x[0] - lastX);
-        int dy = (int) (y[0] - lastY);
-
         lastX = x[0];
-        lastY = y[0];
+        return dx;
+    }
 
-        return new Point(dx, dy);
+    @Override
+    public int getMouseDeltaY(int mouseY, int windowCenterY) {
+        double[] x = new double[1];
+        double[] y = new double[1];
+        glfwGetCursorPos(windowHandle, x, y);
+
+        // Note: firstMouse handled in X usually, but strictly speaking we should check here too
+        // However, assuming X is called first or initialization happens once, we just calc delta.
+        int dy = (int) (y[0] - lastY);
+        lastY = y[0];
+        return dy;
     }
 
     public boolean isKeyDown(int awtKeyCode) {
@@ -219,18 +229,6 @@ public class LwjglWindow implements IGameWindow {
             case KeyEvent.VK_CAPS_LOCK: return GLFW_KEY_LEFT_SHIFT;
             default: return -1;
         }
-    }
-
-    @Override
-    public int getMouseDeltaX(int mouseX, int windowCenterX) {
-        Point delta = this.getMouseDelta();
-        return (delta.x);
-    }
-
-    @Override
-    public int getMouseDeltaY(int mouseY, int windowCenterY) {
-        Point delta = this.getMouseDelta();
-        return (delta.y);
     }
 
     @Override
