@@ -81,6 +81,21 @@ public class GameObject {
     }
 
     /**
+     * Retorna a coordenada Y máxima do objeto no espaço do mundo.
+     */
+    public double getWorldMaxY() {
+        // Considera o centro do objeto + (o limite local * escala)
+        return transform.y + (maxY * transform.scaleY);
+    }
+
+    /**
+     * Retorna a coordenada Y mínima do objeto no espaço do mundo.
+     */
+    public double getWorldMinY() {
+        return transform.y + (minY * transform.scaleY);
+    }
+
+    /**
      * Draw method to render the game object using the provided pixels, z-buffer,
      * camera, scene lights, and dimensions.
      * 

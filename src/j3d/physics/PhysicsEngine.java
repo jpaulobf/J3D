@@ -11,7 +11,7 @@ public class PhysicsEngine {
 
     public static final double PLAYER_RADIUS = 0.5;
     public static final double PLAYER_HEIGHT = 4.0;
-    public static final double PLAYER_EYE_HEIGHT = 3.7;
+    public static final double PLAYER_EYE_HEIGHT = 4;
 
     /**
      * Checks if a future player position collides with world geometry.

@@ -6,6 +6,7 @@ import j3d.core.IGameWindow;
 import j3d.input.InputManager;
 import j3d.physics.PhysicsEngine;
 import java.awt.event.KeyEvent;
+import java.util.Collections;
 import java.util.List;
 
 public class PlayerController {
@@ -21,6 +22,8 @@ public class PlayerController {
     private final double GRAVITY = -25.0;
     private final double JUMP_FORCE = 10.0;
     private final double WALK_SPEED = 0.3;
+    private final double STEP_HEIGHT = 1.3;
+    private final double EYE_HEIGHT = PhysicsEngine.PLAYER_EYE_HEIGHT;
     private final double RUN_MULTIPLIER = 2.0;
 
     public PlayerController(Camera camera, InputManager input, IGameWindow window, PhysicsEngine physics) {
@@ -86,13 +89,54 @@ public class PlayerController {
         if (window.isKeyDown(input, KeyEvent.VK_A)) { moveX -= cY * speed; moveZ -= sY * speed; }
         if (window.isKeyDown(input, KeyEvent.VK_D)) { moveX += cY * speed; moveZ += sY * speed; }
 
-        // Apply X
-        if (!physics.checkPlayerCollision(camera.transform.x + moveX, camera.transform.y, camera.transform.z, worldObjects)) {
-            camera.transform.x += moveX;
+        // 4. Apply Horizontal Movement with Step Offset
+        applyHorizontalMovement(moveX, 0, worldObjects);
+        applyHorizontalMovement(0, moveZ, worldObjects);
+    }
+
+    /**
+     * Tenta mover o jogador e sobe degraus automaticamente se necessário.
+     */
+    private void applyHorizontalMovement(double mx, double mz, List<GameObject> worldObjects) {
+        double nextX = camera.transform.x + mx;
+        double nextZ = camera.transform.z + mz;
+
+        // Se não houver colisão, move normalmente
+        if (!physics.checkPlayerCollision(nextX, camera.transform.y, nextZ, worldObjects)) {
+            camera.transform.x = nextX;
+            camera.transform.z = nextZ;
+            return;
         }
-        // Apply Z
-        if (!physics.checkPlayerCollision(camera.transform.x, camera.transform.y, camera.transform.z + moveZ, worldObjects)) {
-            camera.transform.z += moveZ;
+
+        // Se houver colisão, procuramos se algum objeto colidido é um degrau escalável
+        double bestStepY = -Double.MAX_VALUE;
+        boolean canStepUp = false;
+
+        for (GameObject obj : worldObjects) {
+            if (obj.hasCollision && physics.checkPlayerCollision(nextX, camera.transform.y, nextZ, Collections.singletonList(obj))) {
+                double objectTop = obj.getWorldMaxY();
+                double currentFeetY = camera.transform.y - EYE_HEIGHT;
+                double heightDiff = objectTop - currentFeetY;
+
+                // Adicionamos uma pequena margem (0.05) para lidar com erros de precisão (1.0 vs 1.00001)
+                if (heightDiff > 0 && heightDiff <= (STEP_HEIGHT + 0.05)) {
+                    // Antes de subir, verificamos se o espaço acima do degrau está livre de outros objetos (tetos)
+                    if (!physics.checkPlayerCollision(nextX, objectTop + EYE_HEIGHT, nextZ, worldObjects)) {
+                        if (objectTop > bestStepY) {
+                            bestStepY = objectTop;
+                            canStepUp = true;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (canStepUp) {
+            camera.transform.y = bestStepY + EYE_HEIGHT;
+            camera.transform.x = nextX;
+            camera.transform.z = nextZ;
+            verticalVelocity = 0;
+            isGrounded = true;
         }
     }
 }
