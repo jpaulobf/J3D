@@ -11,6 +11,12 @@ Todas as alterações notáveis neste projeto serão documentadas neste arquivo.
 - **Input GLFW**: Abstração de entrada para suportar teclado e mouse via GLFW (fixação de cursor para FPS), mantendo compatibilidade com AWT.
 - **Renderização de Sprites OpenGL**: Suporte a HUD e elementos 2D desenhados sobre a cena 3D no modo OpenGL.
 
+### Refatoração e Arquitetura
+- **AbstractGame**: Implementação do padrão *Template Method*, movendo o loop de jogo e gerenciamento de janela para uma classe base, deixando a classe `Game` focada apenas na lógica de cena.
+- **Controllers**: Separação de responsabilidades com `PlayerController` (física e input do jogador) e `LightController` (gerenciamento de luzes e gizmos).
+- **Factories**: Introdução de `WindowFactory` e `RenderFactory` para encapsular a criação de instâncias baseadas no `RenderType`.
+- **Pacote Player**: Novo pacote `j3d.player` para organizar a lógica de controle de entidades.
+
 ## [1.0.0] - Software Renderer Foundation
 ### Funcionalidades (Legado - Detalhes Técnicos)
 *(Funcionalidades originais implementadas no motor via Software)*
