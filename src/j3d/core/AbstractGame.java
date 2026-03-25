@@ -66,14 +66,14 @@ public abstract class AbstractGame implements Runnable {
             delta += (now - lastTime) / nsPerTick;
             lastTime = now;
 
-            // 1. Fixed Update: Mantém a física e lógica constantes (ex: 60 ou 100hz)
+            // 1. Fixed Update
             while (delta >= 1) {
                 input();
                 update(1.0 / targetFps);
                 delta--;
             }
 
-            // 2. Variable Render: Renderiza o mais rápido que a GPU permitir
+            // 2. Variable Render: Render as fast as possible
             render();
             // Swap Buffers / Copy to Screen
             window.update(renderer.getFrameBuffer());
