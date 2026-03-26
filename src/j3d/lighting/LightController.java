@@ -2,9 +2,9 @@ package j3d.lighting;
 
 import j3d.core.Camera;
 import j3d.core.GameObject;
-import j3d.core.IGameWindow;
 import j3d.geometry.Mesh;
 import j3d.input.InputManager;
+import j3d.window.IGameWindow;
 import java.awt.Color;
 import java.awt.event.KeyEvent;
 import java.util.ArrayList;
