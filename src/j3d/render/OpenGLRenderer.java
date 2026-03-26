@@ -60,6 +60,11 @@ public class OpenGLRenderer implements IRenderer {
         glEnable(GL_COLOR_MATERIAL); // Objects use their own color (glColor) for ambient/diffuse
         glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
         glShadeModel(GL_SMOOTH); // Gouraud Shading: Interpola a iluminação suavemente entre os vértices
+
+        // 1. Define a luz ambiente global para coincidir com o SoftwareRenderer (0.15)
+        float[] globalAmbient = { 0.15f, 0.15f, 0.15f, 1.0f };
+        glLightModelfv(GL_LIGHT_MODEL_AMBIENT, globalAmbient);
+
         glEnable(GL_NORMALIZE); // Ensures normals are unit length after scaling
 
         glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
@@ -124,6 +129,15 @@ public class OpenGLRenderer implements IRenderer {
                 float g = l.color.getGreen() / 255f * (float) l.intensity;
                 float b = l.color.getBlue() / 255f * (float) l.intensity;
                 glLightfv(lightId, GL_DIFFUSE, new float[] { r, g, b, 1.0f });
+                
+                // 2. Sincroniza a Atenuação com a fórmula do SoftwareRenderer: 1.0 / (1.0 + 0.01 * d * d)
+                glLightf(lightId, GL_CONSTANT_ATTENUATION, 1.0f);
+                glLightf(lightId, GL_LINEAR_ATTENUATION, 0.0f);
+                glLightf(lightId, GL_QUADRATIC_ATTENUATION, 0.01f);
+                
+                // 3. Desativa o brilho especular padrão (para evitar o aspecto "lavado/plástico")
+                // Isso mantém o visual Lambertiano simples do Software
+                glLightfv(lightId, GL_SPECULAR, new float[] { 0.0f, 0.0f, 0.0f, 1.0f });
             }
         }
 
