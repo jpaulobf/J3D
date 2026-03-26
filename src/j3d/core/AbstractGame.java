@@ -51,9 +51,6 @@ public abstract class AbstractGame implements Runnable {
         // 4. Initialize Renderer (Buffers, GL Capabilities)
         renderer.init();
 
-        // Inform the renderer about the target
-        renderer.setTargetFps(targetFps);
-
         // 5. Initialize Child Game Logic (Scene, Objects, etc)
         init();
 

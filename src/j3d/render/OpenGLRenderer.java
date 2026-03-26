@@ -24,7 +24,6 @@ public class OpenGLRenderer implements IRenderer {
     private int width = 0;
     private int height = 0;
     private int hudTextureId = -1; // Cache for the HUD texture ID
-    private int targetFps = 60;
     private final Map<j3d.graphics.Texture, Integer> textureCache = new HashMap<>();
 
     /**
@@ -332,10 +331,5 @@ public class OpenGLRenderer implements IRenderer {
     @Override
     public void toggleSsaa() {
         // do nothing
-    }
-
-    @Override
-    public void setTargetFps(int targetFps) {
-        this.targetFps = targetFps;
     }
 }

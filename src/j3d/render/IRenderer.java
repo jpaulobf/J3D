@@ -47,9 +47,4 @@ public interface IRenderer {
      * Toggle SSAA
      */
     void toggleSsaa();
-
-    /**
-     * Sets the target FPS for the renderer.
-     */
-    void setTargetFps(int targetFps);
 }
