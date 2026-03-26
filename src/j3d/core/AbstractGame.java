@@ -80,6 +80,8 @@ public abstract class AbstractGame implements Runnable {
                 render();
                 window.update(renderer.getFrameBuffer());
                 framesCount++;
+            } else {
+                Thread.onSpinWait();
             }
 
             // FPS Timer
