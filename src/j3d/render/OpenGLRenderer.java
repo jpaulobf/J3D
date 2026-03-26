@@ -3,6 +3,7 @@ package j3d.render;
 import java.util.List;
 import org.lwjgl.opengl.GL;
 import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.opengl.GL12.GL_CLAMP_TO_EDGE;
 import j3d.core.Camera;
 import j3d.core.GameObject;
 import j3d.geometry.Triangle;
@@ -23,6 +24,7 @@ public class OpenGLRenderer implements IRenderer {
     private int width = 0;
     private int height = 0;
     private int hudTextureId = -1; // Cache for the HUD texture ID
+    private int targetFps = 60;
     private final Map<j3d.graphics.Texture, Integer> textureCache = new HashMap<>();
 
     /**
@@ -61,7 +63,7 @@ public class OpenGLRenderer implements IRenderer {
         glShadeModel(GL_SMOOTH); // Gouraud Shading: Interpola a iluminação suavemente entre os vértices
         glEnable(GL_NORMALIZE); // Ensures normals are unit length after scaling
 
-        glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE); // Garante que a textura interaja com a luz
+        glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
         // Adjusts perspective correction quality
         glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
     }
@@ -226,8 +228,8 @@ public class OpenGLRenderer implements IRenderer {
 
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
         textureCache.put(texture, id);
         return id;
@@ -330,5 +332,10 @@ public class OpenGLRenderer implements IRenderer {
     @Override
     public void toggleSsaa() {
         // do nothing
+    }
+
+    @Override
+    public void setTargetFps(int targetFps) {
+        this.targetFps = targetFps;
     }
 }

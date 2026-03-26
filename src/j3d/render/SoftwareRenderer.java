@@ -261,5 +261,10 @@ public class SoftwareRenderer implements IRenderer {
     @Override
     public void toggleSsaa() {
         this.ssaaEnabled = !this.ssaaEnabled;
-    }   
+    }
+
+    @Override
+    public void setTargetFps(int targetFps) {
+        // Software renderer is naturally limited by CPU speed
+    }
 }

@@ -20,7 +20,7 @@ public abstract class AbstractGame implements Runnable {
     protected boolean running = true;
     protected int width;
     protected int height;
-    protected int targetFps = 60;
+    protected int targetFps = 120;
     protected List<GameObject> objects;
     protected InputManager input;
 
@@ -51,6 +51,9 @@ public abstract class AbstractGame implements Runnable {
         // 4. Initialize Renderer (Buffers, GL Capabilities)
         renderer.init();
 
+        // Inform the renderer about the target
+        renderer.setTargetFps(targetFps);
+
         // 5. Initialize Child Game Logic (Scene, Objects, etc)
         init();
 
@@ -66,18 +69,21 @@ public abstract class AbstractGame implements Runnable {
             delta += (now - lastTime) / nsPerTick;
             lastTime = now;
 
-            // 1. Fixed Update
+            boolean shouldRender = false;
+            // 1. Fixed Update (UPS - Updates Per Second)
             while (delta >= 1) {
                 input();
                 update(1.0 / targetFps);
                 delta--;
+                shouldRender = true;
             }
 
-            // 2. Variable Render: Render as fast as possible
-            render();
-            // Swap Buffers / Copy to Screen
-            window.update(renderer.getFrameBuffer());
-            framesCount++;
+            // 2. Capped Render: Somente renderiza se um tick aconteceu
+            if (shouldRender) {
+                render();
+                window.update(renderer.getFrameBuffer());
+                framesCount++;
+            }
 
             // FPS Timer
             if (System.currentTimeMillis() - timer >= 1000) {
