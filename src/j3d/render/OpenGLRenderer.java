@@ -58,7 +58,7 @@ public class OpenGLRenderer implements IRenderer {
         glEnable(GL_LIGHTING);
         glEnable(GL_COLOR_MATERIAL); // Objects use their own color (glColor) for ambient/diffuse
         glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
-        glShadeModel(GL_SMOOTH); // Gouraud Shading
+        glShadeModel(GL_SMOOTH); // Gouraud Shading: Interpola a iluminação suavemente entre os vértices
         glEnable(GL_NORMALIZE); // Ensures normals are unit length after scaling
 
         glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE); // Garante que a textura interaja com a luz
@@ -225,10 +225,10 @@ public class OpenGLRenderer implements IRenderer {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texture.getWidth(), texture.getHeight(), 0, GL_RGBA, GL_UNSIGNED_BYTE,
                 buffer);
 
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
 
         textureCache.put(texture, id);
         return id;
@@ -324,9 +324,7 @@ public class OpenGLRenderer implements IRenderer {
      */
     @Override
     public boolean isSsaaEnabled() {
-        // Hardware MSAA (Multisample Anti-Aliasing) is handled by the window context
-        // setup,
-        // not manually by the renderer like in SoftwareRenderer.
+        // do nothing (return false for now)
         return false;
     }
 
