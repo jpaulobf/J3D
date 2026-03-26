@@ -2,7 +2,18 @@
 
 Todas as alterações notáveis neste projeto serão documentadas neste arquivo.
 
-## [Unreleased] - OpenGL & Hybrid Update
+## [1.1.0] - High-Performance & Visual Parity Update
+### Adicionado
+- **Otimização de Loop (High Precision)**: Implementação de *busy-wait* com `Thread.onSpinWait()` no `AbstractGame`, garantindo latência mínima e respeito ao `targetFps` sem as limitações do timer do Windows.
+- **Paridade de Iluminação**: Sincronização do modelo de iluminação OpenGL com o Software Renderer (Atenuação Quadrática, Luz Ambiente de 0.15 e remoção de brilho especular).
+- **Correção de Texturas OpenGL**: Implementação de filtragem `GL_NEAREST`, inversão de coordenadas UV e suporte a `GL_CLAMP_TO_EDGE` para visual pixel-perfect.
+- **PlayerPhysics**: Nova classe dedicada para gerenciar gravidade, pulos e *Step Offset*, desacoplando a lógica de entidade da `PhysicsEngine` genérica.
+
+### Corrigido
+- **FPS Cap**: Identificação e correção de trava de 60 FPS causada por configurações de VSync no driver da GPU e no GLFW.
+- **Artefatos de Gradiente**: Correção de interpolação indesejada de cores em faces texturizadas no OpenGL através do ajuste de modulação de cor (`glColor3f(1,1,1)`).
+
+## [1.0.1] - OpenGL & Hybrid Update
 ### Adicionado
 - **Renderizador OpenGL**: Implementação de um pipeline de renderização acelerado por hardware utilizando LWJGL e GLFW.
 - **Sistema Híbrido**: Arquitetura desacoplada permitindo alternar entre renderização via Software (CPU) e Hardware (GPU) através da interface `IRenderer`.
