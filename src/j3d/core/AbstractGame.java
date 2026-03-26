@@ -66,6 +66,10 @@ public abstract class AbstractGame implements Runnable {
             delta += (now - lastTime) / nsPerTick;
             lastTime = now;
 
+            // Proteção contra "Spiral of Death": 
+            // Se o jogo travar, ele não tentará processar mais de 10 ticks de uma vez.
+            if (delta > 10) delta = 10;
+
             boolean shouldRender = false;
             // 1. Fixed Update (UPS - Updates Per Second)
             while (delta >= 1) {
