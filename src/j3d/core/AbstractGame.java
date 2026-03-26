@@ -6,7 +6,7 @@ import j3d.factory.WindowFactory;
 import j3d.geometry.Mesh;
 import j3d.input.InputManager;
 import j3d.render.IRenderer;
-
+import j3d.window.IGameWindow;
 import java.awt.Color;
 import java.awt.Point;
 import java.awt.Toolkit;
@@ -20,7 +20,7 @@ public abstract class AbstractGame implements Runnable {
     protected boolean running = true;
     protected int width;
     protected int height;
-    protected int targetFps = 1000;
+    protected int targetFps = 60;
     protected List<GameObject> objects;
     protected InputManager input;
 
