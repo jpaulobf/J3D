@@ -159,7 +159,6 @@ public class OpenGLRenderer implements IRenderer {
 
                 // 2. Set Color (Modulates with texture if active)
                 if (t.texture != null) {
-                    // Usamos branco para não criar gradientes indesejados sobre a textura
                     glColor3f(1.0f, 1.0f, 1.0f);
                 } else {
                     Color c = t.baseColor;
