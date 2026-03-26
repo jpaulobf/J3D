@@ -57,8 +57,11 @@ public class OpenGLRenderer implements IRenderer {
         // Lighting Configuration
         glEnable(GL_LIGHTING);
         glEnable(GL_COLOR_MATERIAL); // Objects use their own color (glColor) for ambient/diffuse
+        glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
         glShadeModel(GL_SMOOTH); // Gouraud Shading
+        glEnable(GL_NORMALIZE); // Ensures normals are unit length after scaling
 
+        glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE); // Garante que a textura interaja com a luz
         // Adjusts perspective correction quality
         glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
     }
@@ -138,24 +141,30 @@ public class OpenGLRenderer implements IRenderer {
             glTranslated(obj.transform.x, obj.transform.y, obj.transform.z);
             glScaled(obj.transform.scaleX, obj.transform.scaleY, obj.transform.scaleZ);
 
+            j3d.graphics.Texture lastBoundTexture = null;
             glBegin(GL_TRIANGLES);
             for (Triangle t : obj.mesh.triangles) {
-                // 1. Handle Texture
-                if (t.texture != null) {
-                    int texId = getOrCreateTexture(t.texture);
-                    glEnd(); // Must end current primitive to change state
-                    glEnable(GL_TEXTURE_2D);
-                    glBindTexture(GL_TEXTURE_2D, texId);
-                    glBegin(GL_TRIANGLES);
-                } else {
-                    glEnd();
-                    glDisable(GL_TEXTURE_2D);
+                // 1. Optimized Texture Switching
+                if (t.texture != lastBoundTexture) {
+                    glEnd(); // End current triangle batch to change texture state
+                    if (t.texture != null) {
+                        glEnable(GL_TEXTURE_2D);
+                        glBindTexture(GL_TEXTURE_2D, getOrCreateTexture(t.texture));
+                    } else {
+                        glDisable(GL_TEXTURE_2D);
+                    }
+                    lastBoundTexture = t.texture;
                     glBegin(GL_TRIANGLES);
                 }
 
                 // 2. Set Color (Modulates with texture if active)
-                Color c = t.baseColor;
-                glColor3f(c.getRed() / 255f, c.getGreen() / 255f, c.getBlue() / 255f);
+                if (t.texture != null) {
+                    // Usamos branco para não criar gradientes indesejados sobre a textura
+                    glColor3f(1.0f, 1.0f, 1.0f);
+                } else {
+                    Color c = t.baseColor;
+                    glColor3f(c.getRed() / 255f, c.getGreen() / 255f, c.getBlue() / 255f);
+                }
 
                 Vertex v1 = obj.mesh.vertices.get(t.v1);
                 Vertex v2 = obj.mesh.vertices.get(t.v2);
@@ -174,12 +183,12 @@ public class OpenGLRenderer implements IRenderer {
                 }
                 glNormal3d(nx, ny, nz);
 
-                // 4. Draw Vertices with UVs
-                glTexCoord2d(v1.u, v1.v);
+                // 4. Draw Vertices with UVs (Inverting V for OpenGL standard)
+                glTexCoord2d(v1.u, 1.0 - v1.v);
                 glVertex3d(v1.x, v1.y, v1.z);
-                glTexCoord2d(v2.u, v2.v);
+                glTexCoord2d(v2.u, 1.0 - v2.v);
                 glVertex3d(v2.x, v2.y, v2.z);
-                glTexCoord2d(v3.u, v3.v);
+                glTexCoord2d(v3.u, 1.0 - v3.v);
                 glVertex3d(v3.x, v3.y, v3.z);
             }
             glEnd();
@@ -198,6 +207,9 @@ public class OpenGLRenderer implements IRenderer {
 
         int id = glGenTextures();
         glBindTexture(GL_TEXTURE_2D, id);
+
+        // Crucial for textures with widths not multiple of 4
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
         // J3D Texture uses ARGB, OpenGL expects RGBA
         int[] pixels = texture.getPixels();

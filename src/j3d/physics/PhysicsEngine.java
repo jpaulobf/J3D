@@ -1,6 +1,5 @@
 package j3d.physics;
 
-import java.util.List;
 import j3d.core.GameObject;
 
 /**
@@ -8,29 +7,6 @@ import j3d.core.GameObject;
  * physics-related calculations in the game.
  */
 public class PhysicsEngine {
-
-    public static final double PLAYER_RADIUS = 0.5;
-    public static final double PLAYER_HEIGHT = 4.0;
-    public static final double PLAYER_EYE_HEIGHT = 4;
-
-    /**
-     * Checks if a future player position collides with world geometry.
-     */
-    public boolean checkPlayerCollision(double targetX, double targetY, double targetZ, List<GameObject> worldObjects) {
-        double feetY = targetY - PLAYER_EYE_HEIGHT;
-        double headY = feetY + PLAYER_HEIGHT;
-
-        for (GameObject obj : worldObjects) {
-            // Ignore objects without collision (like your floor)
-            if (!obj.hasCollision)
-                continue;
-
-            if (this.checkCollision(targetX, targetZ, feetY, headY, PLAYER_RADIUS, obj)) {
-                return true;
-            }
-        }
-        return false;
-    }
 
     /**
      * Checks if a position (usually the camera) collides with this object.
