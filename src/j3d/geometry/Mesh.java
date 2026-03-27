@@ -39,6 +39,32 @@ public class Mesh {
     }
 
     /**
+     * Factory method to create a wedge (ramp) mesh.
+     */
+    public static Mesh createWedge() {
+        Mesh m = new Mesh();
+        // Vertices (Base inferior e topo superior na parte de trás)
+        m.vertices.add(new Vertex(-1, -1, -1)); // 0: Bottom Front Left
+        m.vertices.add(new Vertex( 1, -1, -1)); // 1: Bottom Front Right
+        m.vertices.add(new Vertex( 1, -1,  1)); // 2: Bottom Back Right
+        m.vertices.add(new Vertex(-1, -1,  1)); // 3: Bottom Back Left
+        m.vertices.add(new Vertex(-1,  1,  1)); // 4: Top Back Left
+        m.vertices.add(new Vertex( 1,  1,  1)); // 5: Top Back Right
+
+        Color c = Color.GRAY;
+        // Triângulos com Winding Order corrigido para apontar para fora
+        m.triangles.add(new Triangle(0, 1, 2, c)); // Bottom 1
+        m.triangles.add(new Triangle(0, 2, 3, c)); // Bottom 2
+        m.triangles.add(new Triangle(2, 3, 4, c)); // Back 1
+        m.triangles.add(new Triangle(2, 4, 5, c)); // Back 2
+        m.triangles.add(new Triangle(0, 5, 1, c)); // Slope 1 (Corrigido para o centro não sumir)
+        m.triangles.add(new Triangle(0, 4, 5, c)); // Slope 2 (Corrigido para o centro não sumir)
+        m.triangles.add(new Triangle(0, 3, 4, c)); // Left Side
+        m.triangles.add(new Triangle(1, 5, 2, c)); // Right Side
+        return m;
+    }
+
+    /**
      * Factory method to create a pyramid mesh.
      * 
      * @return
