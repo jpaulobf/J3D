@@ -128,7 +128,7 @@ public abstract class AbstractGame implements Runnable {
      * Helper to create solid blocks (Walls, Floors, Steps).
      * Uses standard cube and adjusts scale and position.
      */
-    protected void createBlock(double x, double y, double z, double sX, double sY, double sZ, Color color) {
+    protected GameObject createBlock(double x, double y, double z, double sX, double sY, double sZ, Color color) {
         // Creates base cube
         Mesh m = Mesh.createCube();
 
@@ -147,6 +147,31 @@ public abstract class AbstractGame implements Runnable {
         obj.transform.scaleZ = sZ;
 
         objects.add(obj);
+        return obj;
+    }
+
+    /**
+     * Helper to create inclined ramps (Wedges).
+     */
+    protected GameObject createRamp(double x, double y, double z, double sX, double sY, double sZ, Color color) {
+        Mesh m = Mesh.createWedge();
+
+        if (color != null) {
+            for (j3d.geometry.Triangle t : m.triangles) {
+                t.baseColor = color;
+            }
+        }
+
+        GameObject obj = new GameObject(m);
+        obj.transform.x = x;
+        obj.transform.y = y;
+        obj.transform.z = z;
+        obj.transform.scaleX = sX;
+        obj.transform.scaleY = sY;
+        obj.transform.scaleZ = sZ;
+
+        objects.add(obj);
+        return obj;
     }
 
     protected boolean isKeyHeld(int keyCode) {
