@@ -55,8 +55,8 @@ public class Mesh {
         // Triângulos com Winding Order corrigido para apontar para fora
         m.triangles.add(new Triangle(0, 1, 2, c)); // Bottom 1
         m.triangles.add(new Triangle(0, 2, 3, c)); // Bottom 2
-        m.triangles.add(new Triangle(2, 3, 4, c)); // Back 1
-        m.triangles.add(new Triangle(2, 4, 5, c)); // Back 2
+        m.triangles.add(new Triangle(2, 5, 4, c)); // Back 1 (Corrigido para ser visível de trás)
+        m.triangles.add(new Triangle(2, 4, 3, c)); // Back 2 (Corrigido para ser visível de trás)
         m.triangles.add(new Triangle(0, 5, 1, c)); // Slope 1 (Corrigido para o centro não sumir)
         m.triangles.add(new Triangle(0, 4, 5, c)); // Slope 2 (Corrigido para o centro não sumir)
         m.triangles.add(new Triangle(0, 3, 4, c)); // Left Side
