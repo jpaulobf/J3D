@@ -180,13 +180,13 @@ public class Game extends AbstractGame {
         }
 
         // ramp in 3d model
-        List<GameObject> ramp = ObjLoader.loadScene("res/rampa.obj", Color.YELLOW);
+        List<GameObject> ramp = ObjLoader.loadScene("res/rampa.obj", Color.LIGHT_GRAY);
         for (GameObject obj : ramp) {
             obj.transform.y = -0.5;
             obj.transform.x = 20;
             obj.transform.z = -25;
-            // Aumentamos a escala pois o modelo rampa.obj é ~16x menor que os cubos nativos
-            obj.transform.setScale(30); 
+            obj.isMeshCollision = true;
+            obj.transform.setScale(30);
             objects.add(obj);
         }
     }
