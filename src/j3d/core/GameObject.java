@@ -25,7 +25,7 @@ public class GameObject {
     // Collision Properties
     public boolean hasCollision = true;
     public boolean isVisible = true;
-    public boolean isMeshCollision = false; // Se true, ignora o bloqueio horizontal da AABB
+    public boolean isMeshCollision = false; // if true, ignores the horizontal collision of AABB
     public double minX = 0, maxX = 0, minZ = 0, maxZ = 0;
     public double minY = 0, maxY = 0;
 
@@ -83,16 +83,19 @@ public class GameObject {
     }
 
     /**
-     * Calcula a altura real (Y) do objeto em uma posição específica do mundo (X, Z).
-     * Isso permite subir rampas e modelos complexos sem "blocões" invisíveis.
+     * Get the world height at a given position.
+     * 
+     * @param worldX
+     * @param worldZ
+     * @return
      */
     public double getWorldHeightAt(double worldX, double worldZ) {
-        // 1. Converte a posição do mundo para o espaço local do objeto
+        // 1. Converts world position to object local space
         double localX = (worldX - transform.x) / transform.scaleX;
         double localZ = (worldZ - transform.z) / transform.scaleZ;
 
-        // 2. Checagem rápida com margem (Epsilon)
-        // Aumentamos a margem para 0.1 para garantir que o pé do jogador encontre o triângulo
+        // 2. Fast check with margin (Epsilon)
+        // Increased margin to 0.1 to ensure the player's feet find the triangle
         double eps = 0.1;
         if (localX < minX - eps || localX > maxX + eps || localZ < minZ - eps || localZ > maxZ + eps) {
             return -Double.MAX_VALUE;
@@ -101,42 +104,46 @@ public class GameObject {
         double highestY = -Double.MAX_VALUE;
         boolean hit = false;
 
-        // 3. Narrow phase: Testar contra cada triângulo da malha
+        // 3. Narrow phase: Test against each triangle of the mesh
         for (Triangle t : mesh.triangles) {
             Vertex v1 = mesh.vertices.get(t.v1);
             Vertex v2 = mesh.vertices.get(t.v2);
             Vertex v3 = mesh.vertices.get(t.v3);
 
-            // Testamos se o ponto (localX, localZ) está dentro do triângulo projetado no plano XZ
+            // Test if the point (localX, localZ) is inside the triangle projected on the XZ
+            // plane
             Double y = getTriangleY(localX, localZ, v1, v2, v3);
             if (y != null) {
-                // Se o triângulo for plano (como o topo de um degrau), 
-                // garantimos que ele tenha prioridade sobre faces internas.
+                // If the triangle is flat (like the top of a step),
+                // we ensure it has priority over internal faces.
                 highestY = Math.max(highestY, y);
                 hit = true;
             }
         }
 
-        // Se não houver hit direto, mas estamos dentro da AABB, retornamos o topo da AABB 
-        // apenas se o objeto for um bloco simples, para evitar quedas.
-        if (!hit) return -Double.MAX_VALUE;
+        // If there is no direct hit, but we are inside the AABB, we return the top of
+        // the AABB
+        // only if the object is a simple block, to avoid falls.
+        if (!hit)
+            return -Double.MAX_VALUE;
 
-        // 4. Converte a altura local de volta para o espaço do mundo
+        // 4. Converts local height back to world space
         return transform.y + (highestY * transform.scaleY);
     }
 
     /**
-     * Calcula o Y de um ponto dentro de um triângulo usando coordenadas baricêntricas.
+     * Calculates the Y of a point inside a triangle using barycentric coordinates.
      */
     private Double getTriangleY(double px, double pz, Vertex a, Vertex b, Vertex c) {
         double det = (b.z - c.z) * (a.x - c.x) + (c.x - b.x) * (a.z - c.z);
-        if (Math.abs(det) < 1e-12) return null; // Triângulo vertical ou degenerado
+        if (Math.abs(det) < 1e-12)
+            return null; // Vertical or degenerate triangle
 
         double w1 = ((b.z - c.z) * (px - c.x) + (c.x - b.x) * (pz - c.z)) / det;
         double w2 = ((c.z - a.z) * (px - c.x) + (a.x - c.x) * (pz - c.z)) / det;
         double w3 = 1.0 - w1 - w2;
 
-        // Slack para cobrir micro-frestas entre triângulos e quinas de degraus
+        // Slack to cover micro-gaps between triangles and step edges
         double slack = -0.05;
         if (w1 >= slack && w2 >= slack && w3 >= slack) {
             return w1 * a.y + w2 * b.y + w3 * c.y;
@@ -195,7 +202,7 @@ public class GameObject {
             modelView.multiply(mesh.vertices.get(t.v1), vCache1);
             modelView.multiply(mesh.vertices.get(t.v2), vCache2);
             modelView.multiply(mesh.vertices.get(t.v3), vCache3);
-            
+
             // Aliases for readability (pointing to cache)
             Vertex v1 = vCache1;
             Vertex v2 = vCache2;
@@ -236,7 +243,7 @@ public class GameObject {
                 proj.multiply(v1, pCache1);
                 proj.multiply(v2, pCache2);
                 proj.multiply(v3, pCache3);
-                
+
                 Vertex p1 = pCache1;
                 Vertex p2 = pCache2;
                 Vertex p3 = pCache3;
@@ -365,7 +372,7 @@ public class GameObject {
         out.x = (v.x * invW + 1) * w * 0.5;
         out.y = (1 - v.y * invW) * h * 0.5;
         out.z = invW; // Store 1/Z (or 1/W) for Z-Buffer
-        
+
         // Perspective Correction: Pre-divide U and V by W (original W, not invW)
         out.u = v.u * invW;
         out.v = v.v * invW;
@@ -682,13 +689,13 @@ public class GameObject {
         if (y2 > y1) {
             double invHeight1 = 1.0 / (vMid.y - vMin.y);
             double dx1 = (vMid.x - vMin.x) * invHeight1;
-            //double dz1 = (vMid.z - vMin.z) * invHeight1;
-            //double dr1 = (r2 - r1) * invHeight1;
-            //double dg1 = (g2 - g1) * invHeight1;
-            //double db1 = (b2 - b1) * invHeight1;
+            // double dz1 = (vMid.z - vMin.z) * invHeight1;
+            // double dr1 = (r2 - r1) * invHeight1;
+            // double dg1 = (g2 - g1) * invHeight1;
+            // double db1 = (b2 - b1) * invHeight1;
 
-            double x1_val = vMin.x;//, z1_val = vMin.z;
-            //double r1_val = r1, g1_val = g1, b1_val = b1;
+            double x1_val = vMin.x;// , z1_val = vMin.z;
+            // double r1_val = r1, g1_val = g1, b1_val = b1;
 
             for (int y = y1; y < y2; y++) {
                 if (y >= 0 && y < h) {
@@ -701,10 +708,10 @@ public class GameObject {
                 gLong += dgLong;
                 bLong += dbLong;
                 x1_val += dx1;
-                //z1_val += dz1;
-                //r1_val += dr1;
-                //g1_val += dg1;
-                //b1_val += db1;
+                // z1_val += dz1;
+                // r1_val += dr1;
+                // g1_val += dg1;
+                // b1_val += db1;
             }
         }
 
@@ -712,13 +719,13 @@ public class GameObject {
         if (y3 > y2) {
             double invHeight2 = 1.0 / (vMax.y - vMid.y);
             double dx2 = (vMax.x - vMid.x) * invHeight2;
-            //double dz2 = (vMax.z - vMid.z) * invHeight2;
-            //double dr2 = (r3 - r2) * invHeight2;
-            //double dg2 = (g3 - g2) * invHeight2;
-            //double db2 = (b3 - b2) * invHeight2;
+            // double dz2 = (vMax.z - vMid.z) * invHeight2;
+            // double dr2 = (r3 - r2) * invHeight2;
+            // double dg2 = (g3 - g2) * invHeight2;
+            // double db2 = (b3 - b2) * invHeight2;
 
-            double x2_val = vMid.x;//, z2_val = vMid.z;
-            //double r2_val = r2, g2_val = g2, b2_val = b2;
+            double x2_val = vMid.x;// , z2_val = vMid.z;
+            // double r2_val = r2, g2_val = g2, b2_val = b2;
 
             for (int y = y2; y < y3; y++) {
                 if (y >= 0 && y < h) {
@@ -731,10 +738,10 @@ public class GameObject {
                 gLong += dgLong;
                 bLong += dbLong;
                 x2_val += dx2;
-                //z2_val += dz2;
-                //r2_val += dr2;
-                //g2_val += dg2;
-                //b2_val += db2;
+                // z2_val += dz2;
+                // r2_val += dr2;
+                // g2_val += dg2;
+                // b2_val += db2;
             }
         }
     }
