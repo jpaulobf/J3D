@@ -82,6 +82,8 @@ public class SoftwareRenderer implements IRenderer {
             return;
 
         for (GameObject obj : objects) {
+            if (!obj.isVisible) continue;
+
             if (ssaaEnabled) {
                 // Sends GameObject to draw on giant buffer (2x)
                 obj.draw(hrPixels, hrZBuffer, cam, lights, width * 2, height * 2, wireframe);
