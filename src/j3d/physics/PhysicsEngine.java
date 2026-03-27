@@ -38,10 +38,14 @@ public class PhysicsEngine {
         double objMinZ = object.transform.z + object.minZ * object.transform.scaleZ;
         double objMaxZ = object.transform.z + object.maxZ * object.transform.scaleZ;
 
-        // 3. Check overlap on all 3 axes. Collision exists if all overlap.
-        return (playerMinX < objMaxX && playerMaxX > objMinX) &&
-                (entityMinY < objMaxY && entityMaxY > objMinY) &&
-                (playerMinZ < objMaxZ && playerMaxZ > objMinZ);
+        // 3. Check overlap with a small epsilon (Skin) to prevent snagging on edges
+        // This allows the player to "rub" against walls without getting stuck.
+        double eps = 0.01;
+        boolean overlapX = (playerMinX < objMaxX - eps && playerMaxX > objMinX + eps);
+        boolean overlapY = (entityMinY < objMaxY - eps && entityMaxY > objMinY + eps);
+        boolean overlapZ = (playerMinZ < objMaxZ - eps && playerMaxZ > objMinZ + eps);
+
+        return overlapX && overlapY && overlapZ;
     }
 
     /**
