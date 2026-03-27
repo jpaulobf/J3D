@@ -151,6 +151,8 @@ public class OpenGLRenderer implements IRenderer {
         }
 
         for (GameObject obj : objects) {
+            if (!obj.isVisible) continue;
+
             glPushMatrix();
             // Model Matrix: Translate -> Rotate (None in Transform yet) -> Scale
             glTranslated(obj.transform.x, obj.transform.y, obj.transform.z);
