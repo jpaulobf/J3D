@@ -126,37 +126,48 @@ public class Game extends AbstractGame {
         // 3. MEZZANINE (Second Floor)
         // An elevated platform at Y=10, occupying the back of the room
         double mezaninoY = 10.0;
+        // Mezanino em Y=10. Com escala 1, ele tem 2m de espessura (vai de 9 a 11).
         createBlock(0, mezaninoY, 30, 30, 1, 15, platformColor);
 
-        // Mezzanine support pillars (Visual)
-        createBlock(-25, 0, 40, 2, mezaninoY, 2, pillarColor);
-        createBlock(25, 0, 40, 2, mezaninoY, 2, pillarColor);
-        createBlock(-25, 0, 20, 2, mezaninoY, 2, pillarColor);
-        createBlock(25, 0, 20, 2, mezaninoY, 2, pillarColor);
+        // Pilares de suporte (Voltando ao tamanho "grande" original)
+        createBlock(-25, 1.5, 40, 2, 10, 2, pillarColor);
+        createBlock(25, 1.5, 40, 2, 10, 2, pillarColor);
+        createBlock(-25, 1.5, 20, 2, 10, 2, pillarColor);
+        createBlock(25, 1.5, 20, 2, 10, 2, pillarColor);
 
         // 4. CENTRAL STAIRCASE
         // Creates steps rising from floor to mezzanine
         double startZ = -3.0; // Starts a bit before mezzanine
         double startY = 0.0;
-        int steps = 10;
-        double stepHeight = mezaninoY / steps; // 1.0 height per step
+        int steps = 10; // Aumentado para chegar ao topo (11)
+        double stepHeight = 1.0; 
         double stepDepth = 2.0;
         double stepWidth = 8.0;
 
         for (int i = 0; i < steps; i++) {
             // Each step goes up in Y and forward in Z
-            double y = startY + (i * stepHeight);
+            double y = startY + (i * stepHeight); // O centro do degrau
             double z = startZ + (i * stepDepth);
 
-            // The Y in createBlock is the object center.
-            // If step has height 'stepHeight', center must be adjusted.
-            createBlock(0, y, z, stepWidth, stepHeight, stepDepth, stairColor);
+            // Voltando ao comportamento de escala 1:1 original
+            createBlock(0, y, z, stepWidth, stepHeight, stepDepth, stairColor).isMeshCollision = true;
         }
 
         // 5. UPPER WALKWAY (Bridge)
         // Connects mezzanine to a side balcony
         createBlock(-35, mezaninoY, 10, 5, 1, 20, platformColor); // Left side bridge
         createBlock(-45, mezaninoY, -10, 5, 1, 5, platformColor); // Small balcony
+
+        // 6. RAMPA LATERAL (Teste de superfície inclinada)
+        // Posicionada à direita da escada (X positivo)
+        double rampX = 18.0;
+        double rampWidth = 5.0;
+        double rampLength = 18.0;
+        double rampStartZ = -3.0;
+        double rampCenterZ = rampStartZ + (rampLength / 2.0);
+
+        // 1. Rampa Real e Única (Restaurando proporções originais)
+        createRamp(rampX, mezaninoY / 1.66, rampCenterZ, rampWidth / 2.0, mezaninoY / 2.0, rampLength / 2.0, stairColor).isMeshCollision = true;
 
         // read 3D scene model, with texture and color
         // Uses loadScene to separate furniture/walls into individual collision objects
