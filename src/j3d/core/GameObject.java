@@ -24,6 +24,8 @@ public class GameObject {
 
     // Collision Properties
     public boolean hasCollision = true;
+    public boolean isVisible = true;
+    public boolean isMeshCollision = false; // Se true, ignora o bloqueio horizontal da AABB
     public double minX = 0, maxX = 0, minZ = 0, maxZ = 0;
     public double minY = 0, maxY = 0;
 
@@ -81,18 +83,65 @@ public class GameObject {
     }
 
     /**
-     * Retorna a coordenada Y máxima do objeto no espaço do mundo.
+     * Calcula a altura real (Y) do objeto em uma posição específica do mundo (X, Z).
+     * Isso permite subir rampas e modelos complexos sem "blocões" invisíveis.
      */
-    public double getWorldMaxY() {
-        // Considera o centro do objeto + (o limite local * escala)
-        return transform.y + (maxY * transform.scaleY);
+    public double getWorldHeightAt(double worldX, double worldZ) {
+        // 1. Converte a posição do mundo para o espaço local do objeto
+        double localX = (worldX - transform.x) / transform.scaleX;
+        double localZ = (worldZ - transform.z) / transform.scaleZ;
+
+        // 2. Checagem rápida com margem (Epsilon)
+        // Aumentamos a margem para 0.1 para garantir que o pé do jogador encontre o triângulo
+        double eps = 0.1;
+        if (localX < minX - eps || localX > maxX + eps || localZ < minZ - eps || localZ > maxZ + eps) {
+            return -Double.MAX_VALUE;
+        }
+
+        double highestY = -Double.MAX_VALUE;
+        boolean hit = false;
+
+        // 3. Narrow phase: Testar contra cada triângulo da malha
+        for (Triangle t : mesh.triangles) {
+            Vertex v1 = mesh.vertices.get(t.v1);
+            Vertex v2 = mesh.vertices.get(t.v2);
+            Vertex v3 = mesh.vertices.get(t.v3);
+
+            // Testamos se o ponto (localX, localZ) está dentro do triângulo projetado no plano XZ
+            Double y = getTriangleY(localX, localZ, v1, v2, v3);
+            if (y != null) {
+                // Se o triângulo for plano (como o topo de um degrau), 
+                // garantimos que ele tenha prioridade sobre faces internas.
+                highestY = Math.max(highestY, y);
+                hit = true;
+            }
+        }
+
+        // Se não houver hit direto, mas estamos dentro da AABB, retornamos o topo da AABB 
+        // apenas se o objeto for um bloco simples, para evitar quedas.
+        if (!hit) return -Double.MAX_VALUE;
+
+        // 4. Converte a altura local de volta para o espaço do mundo
+        return transform.y + (highestY * transform.scaleY);
     }
 
     /**
-     * Retorna a coordenada Y mínima do objeto no espaço do mundo.
+     * Calcula o Y de um ponto dentro de um triângulo usando coordenadas baricêntricas.
      */
-    public double getWorldMinY() {
-        return transform.y + (minY * transform.scaleY);
+    private Double getTriangleY(double px, double pz, Vertex a, Vertex b, Vertex c) {
+        double det = (b.z - c.z) * (a.x - c.x) + (c.x - b.x) * (a.z - c.z);
+        if (Math.abs(det) < 1e-12) return null; // Triângulo vertical ou degenerado
+
+        double w1 = ((b.z - c.z) * (px - c.x) + (c.x - b.x) * (pz - c.z)) / det;
+        double w2 = ((c.z - a.z) * (px - c.x) + (a.x - c.x) * (pz - c.z)) / det;
+        double w3 = 1.0 - w1 - w2;
+
+        // Slack para cobrir micro-frestas entre triângulos e quinas de degraus
+        double slack = -0.05;
+        if (w1 >= slack && w2 >= slack && w3 >= slack) {
+            return w1 * a.y + w2 * b.y + w3 * c.y;
+        }
+        return null;
     }
 
     /**
