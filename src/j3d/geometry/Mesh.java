@@ -13,9 +13,18 @@ public class Mesh {
     public List<Vertex> vertices = new ArrayList<>();
     public List<Triangle> triangles = new ArrayList<>();
 
+    /**
+     * Constructor
+     */
     public Mesh() {
     }
 
+    /**
+     * Constructor
+     * 
+     * @param vertices
+     * @param triangles
+     */
     public Mesh(List<Vertex> vertices, List<Triangle> triangles) {
         this.vertices = vertices;
         this.triangles = triangles;
@@ -45,11 +54,11 @@ public class Mesh {
         Mesh m = new Mesh();
         // Vertices (Base inferior e topo superior na parte de trás)
         m.vertices.add(new Vertex(-1, -1, -1)); // 0: Bottom Front Left
-        m.vertices.add(new Vertex( 1, -1, -1)); // 1: Bottom Front Right
-        m.vertices.add(new Vertex( 1, -1,  1)); // 2: Bottom Back Right
-        m.vertices.add(new Vertex(-1, -1,  1)); // 3: Bottom Back Left
-        m.vertices.add(new Vertex(-1,  1,  1)); // 4: Top Back Left
-        m.vertices.add(new Vertex( 1,  1,  1)); // 5: Top Back Right
+        m.vertices.add(new Vertex(1, -1, -1)); // 1: Bottom Front Right
+        m.vertices.add(new Vertex(1, -1, 1)); // 2: Bottom Back Right
+        m.vertices.add(new Vertex(-1, -1, 1)); // 3: Bottom Back Left
+        m.vertices.add(new Vertex(-1, 1, 1)); // 4: Top Back Left
+        m.vertices.add(new Vertex(1, 1, 1)); // 5: Top Back Right
 
         Color c = Color.GRAY;
         // Triângulos com Winding Order corrigido para apontar para fora
