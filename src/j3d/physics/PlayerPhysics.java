@@ -45,14 +45,14 @@ public class PlayerPhysics {
      */
     public void handlePhysics(double deltaTime, Camera camera, double moveX, double moveZ, boolean jumpRequested,
             List<GameObject> worldObjects) {
-        // 1. Lógica de Pulo
+        // 1. Jump Logic
         if (jumpRequested && isGrounded) {
             verticalVelocity = JUMP_FORCE;
             isGrounded = false;
         }
 
-        // 2. Movimento Horizontal
-        // Processamos X e Z separadamente para permitir deslizar em quinas e paredes
+        // 2. Horizontal Movement
+        // We process X and Z separately to allow sliding on corners and walls
         if (moveX != 0) {
             applyHorizontalMovement(moveX, 0, camera, worldObjects);
         }
@@ -60,30 +60,33 @@ public class PlayerPhysics {
             applyHorizontalMovement(0, moveZ, camera, worldObjects);
         }
 
-        // 3. Lógica de Chão e Gravidade (Mesh Aware)
+        // 3. Ground and Gravity Logic (Mesh Aware)
         double currentFeetY = camera.transform.y - PLAYER_EYE_HEIGHT;
-        
-        // Encontra a altura do chão na posição exata (X, Z) do jogador
-        double groundY = -Double.MAX_VALUE; 
+
+        // Finds the ground height at the player's exact (X, Z) position
+        double groundY = -Double.MAX_VALUE;
         for (GameObject obj : worldObjects) {
-            if (!obj.hasCollision) continue;
-            
+            if (!obj.hasCollision)
+                continue;
+
             double h = obj.getWorldHeightAt(camera.transform.x, camera.transform.z);
-            
-            // Consideramos o chão se estiver abaixo de nós ou dentro do alcance do Step Height
+
+            // Consider the ground if it's below us or within the Step Height range
             if (h != -Double.MAX_VALUE && h <= (currentFeetY + STEP_HEIGHT + 0.01)) {
-                if (h > groundY) groundY = h;
+                if (h > groundY)
+                    groundY = h;
             }
         }
-        
-        if (groundY == -Double.MAX_VALUE) groundY = 0; // Piso base se nada for encontrado
 
-        // Aplica Gravidade
+        if (groundY == -Double.MAX_VALUE)
+            groundY = 0; // Base floor if nothing is found
+
+        // Apply Gravity
         verticalVelocity += GRAVITY * deltaTime;
         double nextFeetY = currentFeetY + (verticalVelocity * deltaTime);
 
-        // Colisão com o Chão (Piso, Escada ou Rampa)
-        // Aumentamos a tolerância de "Snap" para evitar o efeito de andar no ar ao descer
+        // Ground Collision (Floor, Stairs, or Ramp)
+        // Increase "Snap" tolerance to avoid the walking-on-air effect when descending
         boolean isFalling = verticalVelocity < 0;
         double snapThreshold = isGrounded ? STEP_HEIGHT : 0.05;
 
@@ -92,7 +95,7 @@ public class PlayerPhysics {
             verticalVelocity = 0;
             isGrounded = true;
         } else if (isGrounded && isFalling && (currentFeetY - groundY) < snapThreshold) {
-            // Força o personagem a "colar" na rampa ao descer (Sticky Feet)
+            // Forces the character to "stick" to the ramp when descending (Sticky Feet)
             camera.transform.y = groundY + PLAYER_EYE_HEIGHT;
             verticalVelocity = 0;
             isGrounded = true;
@@ -131,35 +134,37 @@ public class PlayerPhysics {
      */
     public boolean checkPlayerCollision(double targetX, double targetY, double targetZ, List<GameObject> worldObjects) {
         double feetY = targetY - PLAYER_EYE_HEIGHT;
-        
-        // Começamos a verificar colisões de PAREDE um pouco acima dos pés.
-        // Isso evita que o próprio chão (como o mezanino) nos trave horizontalmente.
-        double collisionStartHeight = feetY + 0.5; 
+
+        // We start checking for WALL collisions slightly above the feet.
+        // This prevents the ground itself (like the mezzanine) from locking us
+        // horizontally.
+        double collisionStartHeight = feetY + 0.5;
         double headY = feetY + PLAYER_HEIGHT;
 
         for (GameObject obj : worldObjects) {
-            if (!obj.hasCollision) continue;
+            if (!obj.hasCollision)
+                continue;
 
-            // Lógica para objetos escaláveis (Mesh Collision)
+            // Logic for scalable objects (Mesh Collision)
             if (obj.isMeshCollision) {
                 double groundH = obj.getWorldHeightAt(targetX, targetZ);
 
-                // Se o centro não está sobre o objeto (groundH == -MAX), verificamos se o TOP
-                // da caixa delimitadora é escalável. Isso resolve a subida de degraus (stairs).
+                // If the center is not over the object (groundH == -MAX), we check if the TOP
+                // of the bounding box is scalable. This resolves climbing stairs.
                 if (groundH == -Double.MAX_VALUE) {
                     double objMaxY = obj.transform.y + (obj.maxY * obj.transform.scaleY);
                     if (objMaxY <= feetY + STEP_HEIGHT) {
-                        continue; // Permite entrar no volume para subir
+                        continue; // Allows entering the volume to climb
                     }
                 }
 
-                // Se houver superfície mas for muito alta para os pés (parede)
+                // If there is a surface but it's too high for the feet (wall)
                 if (groundH == -Double.MAX_VALUE || groundH > feetY + STEP_HEIGHT) {
                     if (engine.checkCollision(targetX, targetZ, collisionStartHeight, headY, PLAYER_RADIUS, obj)) {
                         return true;
                     }
                 }
-                continue; // É uma parte da rampa/escada que podemos subir
+                continue; // It's part of the ramp/stairs we can climb
             }
 
             if (engine.checkCollision(targetX, targetZ, collisionStartHeight, headY, PLAYER_RADIUS, obj))
