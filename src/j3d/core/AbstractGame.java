@@ -20,7 +20,7 @@ public abstract class AbstractGame implements Runnable {
     protected boolean running = true;
     protected int width;
     protected int height;
-    protected int targetFps = 120;
+    protected int targetFps = 240;
     protected List<GameObject> objects;
     protected InputManager input;
 
