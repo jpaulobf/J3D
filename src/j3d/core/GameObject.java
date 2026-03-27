@@ -83,6 +83,20 @@ public class GameObject {
     }
 
     /**
+     * Returns the world space minimum Y (base) of the object.
+     */
+    public double getWorldMinY() {
+        return transform.y + (minY * transform.scaleY);
+    }
+
+    /**
+     * Returns the world space maximum Y (top) of the object.
+     */
+    public double getWorldMaxY() {
+        return transform.y + (maxY * transform.scaleY);
+    }
+
+    /**
      * Get the world height at a given position.
      * 
      * @param worldX
