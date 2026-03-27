@@ -66,8 +66,7 @@ public abstract class AbstractGame implements Runnable {
             delta += (now - lastTime) / nsPerTick;
             lastTime = now;
 
-            // Proteção contra "Spiral of Death": 
-            // Se o jogo travar, ele não tentará processar mais de 10 ticks de uma vez.
+            // "Spiral of Death" protection
             if (delta > 10) delta = 10;
 
             boolean shouldRender = false;
@@ -79,7 +78,7 @@ public abstract class AbstractGame implements Runnable {
                 shouldRender = true;
             }
 
-            // 2. Capped Render: Somente renderiza se um tick aconteceu
+            // 2. Capped Render: Only renders if a tick occurred
             if (shouldRender) {
                 render();
                 window.update(renderer.getFrameBuffer());
