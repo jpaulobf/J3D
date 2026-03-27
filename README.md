@@ -13,7 +13,7 @@ O projeto segue padrões de design modulares para facilitar a manutenção e exp
 * **`geometry`**: Define as formas geométricas (`Mesh`), que podem ser geradas ou carregadas de arquivos, e suas primitivas de construção (`Vertex`, `Triangle`).
 * **`lighting`**: Gerencia fontes de luz (`PointLight`) e materiais, aplicando cálculos de iluminação com base nas propriedades de superfície dos objetos (ex: cor difusa carregada de arquivos `.mtl`).
 * **`io`**: Responsável pela leitura e parsing de arquivos externos, como modelos `.obj` e seus respectivos materiais `.mtl`.
-* **`physics`**: Contém a `PhysicsEngine` (matemática AABB) e a `PlayerPhysics` (comportamento de gravidade, pulo e degraus).
+* **`physics`**: Gerencia colisões híbridas (AABB para paredes e Mesh/Triângulos para chão), permitindo navegação realista em rampas, escadas e terrenos complexos.
 
 ## Renderizadores Disponíveis
 
@@ -21,7 +21,7 @@ O projeto segue padrões de design modulares para facilitar a manutenção e exp
 Renderização clássica "old-school" feita inteiramente na CPU. Ideal para entender os fundamentos da Computação Gráfica (rasterização, projeção, clipping). Suporta SSAA e múltiplos algoritmos de rasterização.
 
 ### OpenGL Renderer
-Renderização acelerada por hardware (GPU). Alcança altíssima performance (4000+ FPS em hardware entusiasta) com paridade visual completa em relação ao modo Software, incluindo iluminação Lambertiana e filtragem de textura precisa.
+Renderização acelerada por hardware (GPU). Alcança performance extrema (4000+ FPS) com paridade visual completa em relação ao modo Software, incluindo atenuação de luz precisa e filtragem pixel-perfect.
 
 > Consulte o arquivo `CHANGELOG.md` para o histórico detalhado de funcionalidades e detalhes técnicos.
 

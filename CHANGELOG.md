@@ -8,10 +8,14 @@ Todas as alterações notáveis neste projeto serão documentadas neste arquivo.
 - **Paridade de Iluminação**: Sincronização do modelo de iluminação OpenGL com o Software Renderer (Atenuação Quadrática, Luz Ambiente de 0.15 e remoção de brilho especular).
 - **Correção de Texturas OpenGL**: Implementação de filtragem `GL_NEAREST`, inversão de coordenadas UV e suporte a `GL_CLAMP_TO_EDGE` para visual pixel-perfect.
 - **PlayerPhysics**: Nova classe dedicada para gerenciar gravidade, pulos e *Step Offset*, desacoplando a lógica de entidade da `PhysicsEngine` genérica.
+- **Colisão por Malha (Mesh Collision)**: Implementação de detecção de altura via coordenadas baricêntricas em `GameObject`, permitindo a navegação fluida em rampas e geometrias complexas (superando a limitação das AABBs).
+- **Geometria**: Nova primitiva `Wedge` (Cunha/Rampa) com suporte a volumes fechados (Prisma).
+- **Internacionalização**: Tradução integral de todos os comentários técnicos do código-fonte para Inglês.
 
 ### Corrigido
 - **FPS Cap**: Identificação e correção de trava de 60 FPS causada por configurações de VSync no driver da GPU e no GLFW.
 - **Artefatos de Gradiente**: Correção de interpolação indesejada de cores em faces texturizadas no OpenGL através do ajuste de modulação de cor (`glColor3f(1,1,1)`).
+- **Física de Deslize (Sliding)**: Correção de enroscos em quinas através do processamento independente de eixos (X/Z) e ajuste de altura de colisão (`collisionStartHeight`).
 
 ## [1.0.1] - OpenGL & Hybrid Update
 ### Adicionado
