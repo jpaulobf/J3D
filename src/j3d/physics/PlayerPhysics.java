@@ -150,10 +150,10 @@ public class PlayerPhysics {
                 double groundH = obj.getWorldHeightAt(targetX, targetZ);
 
                 // If the center is not over the object (groundH == -MAX), we check if the TOP
-                // of the bounding box is scalable. This resolves climbing stairs.
+                // of the bounding box is scalable. This resolves entering ramps and stairs.
                 if (groundH == -Double.MAX_VALUE) {
-                    double objMaxY = obj.transform.y + (obj.maxY * obj.transform.scaleY);
-                    if (objMaxY <= feetY + STEP_HEIGHT) {
+                    // We check the BASE (MinY) instead of MaxY to allow entering the ramp's volume
+                    if (obj.getWorldMinY() <= feetY + STEP_HEIGHT) {
                         continue; // Allows entering the volume to climb
                     }
                 }
