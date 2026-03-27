@@ -168,6 +168,7 @@ public class Game extends AbstractGame {
                 stairColor).isMeshCollision = true;
 
         // read 3D scene model, with texture and color
+
         // Uses loadScene to separate furniture/walls into individual collision objects
         List<GameObject> sceneObjects = ObjLoader.loadScene("res/sala.obj", Color.LIGHT_GRAY);
         for (GameObject obj : sceneObjects) {
@@ -175,6 +176,17 @@ public class Game extends AbstractGame {
             obj.transform.x = -6;
             obj.transform.z = -25;
             obj.transform.setScale(20);
+            objects.add(obj);
+        }
+
+        // ramp in 3d model
+        List<GameObject> ramp = ObjLoader.loadScene("res/rampa.obj", Color.YELLOW);
+        for (GameObject obj : ramp) {
+            obj.transform.y = -0.5;
+            obj.transform.x = 20;
+            obj.transform.z = -25;
+            // Aumentamos a escala pois o modelo rampa.obj é ~16x menor que os cubos nativos
+            obj.transform.setScale(30); 
             objects.add(obj);
         }
     }
