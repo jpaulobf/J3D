@@ -20,10 +20,11 @@ public class PlayerController {
     private IGameWindow window;
     private PlayerPhysics playerPhysics;
     private int stepSourceId;
+    private int jumpSourceId;
     private final double WALK_SPEED = 0.3;
     private final double RUN_MULTIPLIER = 2.0;
-
     private double footstepTimer = 0;
+    
 
     /**
      * Constructor for PlayerController.
@@ -33,14 +34,16 @@ public class PlayerController {
      * @param window
      * @param physics
      * @param stepSourceId The OpenAL source ID for the footstep sound
+     * @param jumpSourceId 
      */
     public PlayerController(Camera camera, InputManager input, IGameWindow window, PhysicsEngine physics,
-            int stepSourceId) {
+            int stepSourceId, int jumpSourceId) {
         this.camera = camera;
         this.input = input;
         this.window = window;
         this.playerPhysics = new PlayerPhysics(physics);
         this.stepSourceId = stepSourceId;
+        this.jumpSourceId = jumpSourceId;
     }
 
     /**
@@ -67,6 +70,9 @@ public class PlayerController {
 
         // 2. Collect Movement Intent
         boolean jumpRequested = window.isKeyPressedOnce(input, KeyEvent.VK_SPACE);
+        if (jumpRequested && playerPhysics.isGrounded()) {
+            OggSoundLoader.playSound(jumpSourceId);
+        }
 
         // 3. Horizontal Movement (WASD)
         double speed = WALK_SPEED * speedCorrection;
