@@ -57,6 +57,12 @@
             <artifactId>lwjgl-stb</artifactId>
             <version>${lwjgl.version}</version>
         </dependency>
+        <!-- LWJGL OpenAL (Audio) -->
+        <dependency>
+            <groupId>org.lwjgl</groupId>
+            <artifactId>lwjgl-openal</artifactId>
+            <version>${lwjgl.version}</version>
+        </dependency>
 
         <!-- LWJGL Natives (Detectado automaticamente pelo os-maven-plugin) -->
         <dependency>
@@ -80,6 +86,12 @@
         <dependency>
             <groupId>org.lwjgl</groupId>
             <artifactId>lwjgl-stb</artifactId>
+            <version>${lwjgl.version}</version>
+            <classifier>${lwjgl.natives}</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.lwjgl</groupId>
+            <artifactId>lwjgl-openal</artifactId>
             <version>${lwjgl.version}</version>
             <classifier>${lwjgl.natives}</classifier>
         </dependency>
