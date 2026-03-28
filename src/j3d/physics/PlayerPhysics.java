@@ -106,6 +106,15 @@ public class PlayerPhysics {
     }
 
     /**
+     * Returns whether the player is currently touching the ground.
+     * 
+     * @return true if grounded
+     */
+    public boolean isGrounded() {
+        return isGrounded;
+    }
+
+    /**
      * Apply horizontal movement to the player.
      *
      * @param mx
