@@ -38,6 +38,8 @@ public class Game extends AbstractGame {
     private LightController lightController;
     private int stepBufferId;
     private int stepSourceId;
+    private int jumpBufferId;
+    private int jumpSourceId;
 
     // UI / HUD
     private HUD hud;
@@ -85,9 +87,11 @@ public class Game extends AbstractGame {
         // Audio setup (must happen before PlayerController needs the IDs)
         stepBufferId = OggSoundLoader.loadOggSound("res/step.ogg");
         stepSourceId = OggSoundLoader.createSoundSource(stepBufferId, false);
+        jumpBufferId = OggSoundLoader.loadOggSound("res/jump.ogg");
+        jumpSourceId = OggSoundLoader.createSoundSource(jumpBufferId, false);
 
         // Initialize Player Controller with sound support
-        playerController = new PlayerController(camera, input, window, physics, stepSourceId);
+        playerController = new PlayerController(camera, input, window, physics, stepSourceId, jumpSourceId);
         lightController = new LightController(camera, input, window);
     }
 
