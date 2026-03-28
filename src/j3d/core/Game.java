@@ -3,6 +3,7 @@ package j3d.core;
 import j3d.physics.PhysicsEngine;
 import j3d.lighting.LightController;
 import j3d.player.PlayerController;
+import j3d.sound.OggSoundLoader;
 import j3d.enums.RenderType;
 import j3d.geometry.Mesh;
 import j3d.input.InputManager;
@@ -35,6 +36,8 @@ public class Game extends AbstractGame {
     private static final RenderType RENDER_TYPE = RenderType.OPENGL;
     private PlayerController playerController;
     private LightController lightController;
+    private int stepBufferId;
+    private int stepSourceId;
 
     // UI / HUD
     private HUD hud;
@@ -79,8 +82,12 @@ public class Game extends AbstractGame {
         // Ensures window/panel gets keyboard focus immediately upon starting
         window.requestFocus();
 
-        // Initialize Player Controller
-        playerController = new PlayerController(camera, input, window, physics);
+        // Audio setup (must happen before PlayerController needs the IDs)
+        stepBufferId = OggSoundLoader.loadOggSound("res/step.ogg");
+        stepSourceId = OggSoundLoader.createSoundSource(stepBufferId, false);
+
+        // Initialize Player Controller with sound support
+        playerController = new PlayerController(camera, input, window, physics, stepSourceId);
         lightController = new LightController(camera, input, window);
     }
 
@@ -258,6 +265,7 @@ public class Game extends AbstractGame {
      */
     @Override
     public void shutdown() {
-        // Release specific resources if needed
+        // Limpa os recursos de áudio carregados
+        OggSoundLoader.cleanup(stepSourceId, stepBufferId);
     }
 }
