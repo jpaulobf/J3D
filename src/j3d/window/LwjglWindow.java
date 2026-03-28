@@ -56,6 +56,7 @@ public class LwjglWindow implements IGameWindow {
         glfwDefaultWindowHints();
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
         glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+        glfwWindowHint(GLFW_SAMPLES, 4); 
 
         // Create the window
         windowHandle = glfwCreateWindow(width, height, title, NULL, NULL);
