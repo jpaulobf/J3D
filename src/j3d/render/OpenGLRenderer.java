@@ -3,6 +3,7 @@ package j3d.render;
 import java.util.List;
 import org.lwjgl.opengl.GL;
 import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.opengl.GL13.GL_MULTISAMPLE;
 import static org.lwjgl.opengl.GL12.GL_CLAMP_TO_EDGE;
 import j3d.core.Camera;
 import j3d.core.GameObject;
@@ -24,6 +25,7 @@ public class OpenGLRenderer implements IRenderer {
     private int width = 0;
     private int height = 0;
     private int hudTextureId = -1; // Cache for the HUD texture ID
+    private boolean msaaEnabled = true;
     private final Map<j3d.graphics.Texture, Integer> textureCache = new HashMap<>();
 
     /**
@@ -56,6 +58,7 @@ public class OpenGLRenderer implements IRenderer {
         glCullFace(GL_BACK);
 
         // Lighting Configuration
+        glEnable(GL_MULTISAMPLE); // Enable Multisample Anti-aliasing
         glEnable(GL_LIGHTING);
         glEnable(GL_COLOR_MATERIAL); // Objects use their own color (glColor) for ambient/diffuse
         glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
@@ -129,12 +132,13 @@ public class OpenGLRenderer implements IRenderer {
                 float g = l.color.getGreen() / 255f * (float) l.intensity;
                 float b = l.color.getBlue() / 255f * (float) l.intensity;
                 glLightfv(lightId, GL_DIFFUSE, new float[] { r, g, b, 1.0f });
-                
-                // 2. Synchronizes Attenuation with the SoftwareRenderer formula: 1.0 / (1.0 + 0.01 * d * d)
+
+                // 2. Synchronizes Attenuation with the SoftwareRenderer formula: 1.0 / (1.0 +
+                // 0.01 * d * d)
                 glLightf(lightId, GL_CONSTANT_ATTENUATION, 1.0f);
                 glLightf(lightId, GL_LINEAR_ATTENUATION, 0.0f);
                 glLightf(lightId, GL_QUADRATIC_ATTENUATION, 0.01f);
-                
+
                 // 3. Disables default specular highlights (to avoid a "washed/plastic" look)
                 // This maintains the simple Lambertian look of the Software renderer
                 glLightfv(lightId, GL_SPECULAR, new float[] { 0.0f, 0.0f, 0.0f, 1.0f });
@@ -151,7 +155,8 @@ public class OpenGLRenderer implements IRenderer {
         }
 
         for (GameObject obj : objects) {
-            if (!obj.isVisible) continue;
+            if (!obj.isVisible)
+                continue;
 
             glPushMatrix();
             // Model Matrix: Translate -> Rotate (None in Transform yet) -> Scale
@@ -340,12 +345,16 @@ public class OpenGLRenderer implements IRenderer {
      */
     @Override
     public boolean isSsaaEnabled() {
-        // do nothing (return false for now)
-        return false;
+        return msaaEnabled;
     }
 
     @Override
     public void toggleSsaa() {
-        // do nothing
+        msaaEnabled = !msaaEnabled;
+        if (msaaEnabled) {
+            glEnable(GL_MULTISAMPLE);
+        } else {
+            glDisable(GL_MULTISAMPLE);
+        }
     }
 }
