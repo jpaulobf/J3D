@@ -5,6 +5,7 @@ import j3d.core.GameObject;
 import j3d.input.InputManager;
 import j3d.physics.PlayerPhysics;
 import j3d.physics.PhysicsEngine;
+import j3d.sound.OggSoundLoader;
 import j3d.window.IGameWindow;
 import java.awt.event.KeyEvent;
 import java.util.List;
@@ -18,8 +19,11 @@ public class PlayerController {
     private InputManager input;
     private IGameWindow window;
     private PlayerPhysics playerPhysics;
+    private int stepSourceId;
     private final double WALK_SPEED = 0.3;
     private final double RUN_MULTIPLIER = 2.0;
+
+    private double footstepTimer = 0;
 
     /**
      * Constructor for PlayerController.
@@ -28,12 +32,15 @@ public class PlayerController {
      * @param input
      * @param window
      * @param physics
+     * @param stepSourceId The OpenAL source ID for the footstep sound
      */
-    public PlayerController(Camera camera, InputManager input, IGameWindow window, PhysicsEngine physics) {
+    public PlayerController(Camera camera, InputManager input, IGameWindow window, PhysicsEngine physics,
+            int stepSourceId) {
         this.camera = camera;
         this.input = input;
         this.window = window;
         this.playerPhysics = new PlayerPhysics(physics);
+        this.stepSourceId = stepSourceId;
     }
 
     /**
@@ -91,5 +98,23 @@ public class PlayerController {
 
         // 4. Delegate Physics Processing
         playerPhysics.handlePhysics(deltaTime, camera, moveX, moveZ, jumpRequested, worldObjects);
+
+        // 5. Footstep Audio Logic
+        // Only play sound if moving horizontally and touching the ground
+        if (playerPhysics.isGrounded() && (moveX != 0 || moveZ != 0)) {
+            footstepTimer += deltaTime;
+            // Interval between steps: 0.3s when running, 0.5s when walking
+            double interval = (window.isKeyDown(java.awt.Toolkit.getDefaultToolkit(), KeyEvent.VK_CAPS_LOCK)) ? 0.3
+                    : 0.4;
+
+            if (footstepTimer >= interval) {
+                OggSoundLoader.playSound(stepSourceId);
+                footstepTimer = 0;
+            }
+        } else {
+            // Reset timer to a high value so the first step plays immediately when starting
+            // to move
+            footstepTimer = 0.5;
+        }
     }
 }
