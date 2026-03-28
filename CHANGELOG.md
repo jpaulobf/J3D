@@ -2,6 +2,16 @@
 
 Todas as alterações notáveis neste projeto serão documentadas neste arquivo.
 
+## [1.2.0] - Audio & Movement Feedback Update
+### Adicionado
+- **Integração OpenAL**: Implementação de um subsistema de áudio acelerado por hardware no `AbstractGame`.
+- **OggSoundLoader**: Nova utilidade para carregamento e decodificação de arquivos OGG Vorbis via `stb_vorbis`.
+- **Sistema de Cadência de Passos**: Lógica no `PlayerController` que sincroniza sons de passos com a velocidade de movimento (caminhada vs. corrida).
+- **Efeito Sonoro de Pulo**: Gatilho de áudio disparado no momento do pulo, validado pelo estado de `isGrounded`.
+
+### Corrigido
+- **Gerenciamento de Recursos**: Limpeza adequada de buffers e fontes de áudio no `shutdown`.
+
 ## [1.1.0] - High-Performance & Visual Parity Update
 ### Adicionado
 - **Otimização de Loop (High Precision)**: Implementação de *busy-wait* com `Thread.onSpinWait()` no `AbstractGame`, garantindo latência mínima e respeito ao `targetFps` sem as limitações do timer do Windows.

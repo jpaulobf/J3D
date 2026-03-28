@@ -8,6 +8,7 @@ O projeto segue padrões de design modulares para facilitar a manutenção e exp
 
 * **`core`**: O núcleo da aplicação. Contém o `Launcher`, a classe base `AbstractGame` (Game Loop) e interfaces centrais.
 * **`player`**: Responsável pela lógica de controle do jogador (`PlayerController`), integrando input e física.
+* **`sound`**: Gerencia a infraestrutura de áudio via OpenAL e decodificação de arquivos OGG, permitindo efeitos sonoros espaciais e feedback de movimento.
 * **`render`**: Gerencia o pipeline de renderização (`SoftwareRenderer`), a `Camera`, o loop principal e os buffers (Imagem e Z-Buffer).
 * **`math`**: Biblioteca matemática contendo `Matrix4` e `Transform` para cálculos de álgebra linear e transformações.
 * **`geometry`**: Define as formas geométricas (`Mesh`), que podem ser geradas ou carregadas de arquivos, e suas primitivas de construção (`Vertex`, `Triangle`).
@@ -30,6 +31,7 @@ Renderização acelerada por hardware (GPU). Alcança performance extrema (4000+
 | Categoria | Teclas | Função |
 | :--- | :--- | :--- |
 | **Movimento** | `W`, `S`, `A`, `D` | Navegação FPS (Frente, Trás, Strafe) |
+| **Movimento** | `Espaço` | **Pular** |
 | **Movimento** | `Caps Lock` | Alterna entre andar e **correr** |
 | **Movimento** | `Scroll do Mouse` | Sobe e desce a câmera verticalmente |
 | **Visão** | `Mouse` | Olhar ao redor (Yaw e Pitch) |
