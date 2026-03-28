@@ -7,11 +7,16 @@ import j3d.geometry.Mesh;
 import j3d.input.InputManager;
 import j3d.render.IRenderer;
 import j3d.window.IGameWindow;
+import org.lwjgl.openal.AL;
+import org.lwjgl.openal.ALC;
+import org.lwjgl.openal.ALCCapabilities;
 import java.awt.Color;
 import java.awt.Point;
 import java.awt.Toolkit;
 import java.awt.event.KeyEvent;
+import java.nio.ByteBuffer;
 import java.util.List;
+import static org.lwjgl.openal.ALC10.*;
 
 public abstract class AbstractGame implements Runnable {
 
@@ -28,6 +33,10 @@ public abstract class AbstractGame implements Runnable {
     protected int fps = 0;
     protected int windowCenterX;
     protected int windowCenterY;
+
+    // Audio context resources
+    private long audioDevice;
+    private long audioContext;
 
     public AbstractGame(String title, int width, int height, RenderType type) {
         this.width = width;
@@ -51,6 +60,13 @@ public abstract class AbstractGame implements Runnable {
         // 4. Initialize Renderer (Buffers, GL Capabilities)
         renderer.init();
 
+        // --- Audio Initialization ---
+        audioDevice = alcOpenDevice((ByteBuffer) null);
+        ALCCapabilities deviceCaps = ALC.createCapabilities(audioDevice);
+        audioContext = alcCreateContext(audioDevice, (int[]) null);
+        alcMakeContextCurrent(audioContext);
+        AL.createCapabilities(deviceCaps);
+
         // 5. Initialize Child Game Logic (Scene, Objects, etc)
         init();
 
@@ -67,7 +83,8 @@ public abstract class AbstractGame implements Runnable {
             lastTime = now;
 
             // "Spiral of Death" protection
-            if (delta > 10) delta = 10;
+            if (delta > 10)
+                delta = 10;
 
             boolean shouldRender = false;
             // 1. Fixed Update (UPS - Updates Per Second)
@@ -92,7 +109,7 @@ public abstract class AbstractGame implements Runnable {
                 fps = framesCount;
                 framesCount = 0;
                 timer += 1000;
-                
+
                 // Recalculate center if window moved
                 if (window.isFocused()) {
                     Point loc = window.getLocationOnScreen();
@@ -101,20 +118,30 @@ public abstract class AbstractGame implements Runnable {
                 }
             }
         }
-        
+
         shutdown();
+
+        // --- Audio Cleanup ---
+        alcMakeContextCurrent(0L);
+        alcDestroyContext(audioContext);
+        alcCloseDevice(audioDevice);
+
         window.destroy();
     }
 
     // --- Abstract Methods (To be implemented by Game) ---
     public abstract void init();
+
     public abstract void input();
+
     public abstract void update(double deltaTime);
+
     public abstract void render();
+
     public abstract void shutdown();
 
     // --- Helper Methods ---
-    
+
     public IGameWindow getWindow() {
         return window;
     }
